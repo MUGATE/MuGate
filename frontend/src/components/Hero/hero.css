@@ -1,0 +1,286 @@
+/*
+ * hero.css — DOM overlay styles for the cinematic Hero section.
+ *
+ * Styles the navbar, text block, and CTA button that float
+ * above the R3F Canvas. The 3D scene is handled by SceneEffect.jsx.
+ */
+
+/* ========================================
+   CSS VARIABLES
+   ======================================== */
+:root {
+  --hero-font: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --text-primary: #2e2d2b;
+  --text-secondary: #555453;
+
+  --title-size: 46px;
+  --title-weight: 600;
+  --subtitle-size: 16px;
+  --subtitle-lh: 24px;
+  --title-sub-gap: 10px;
+
+  --nav-top: 28px;
+  --nav-px: 50px;
+  --nav-gap: 44px;
+  --avatar-size: 52px;
+  --back-size: 44px;
+
+  --btn-w: 210px;
+  --btn-h: 54px;
+  --btn-r: 14px;
+  --btn-fs: 17px;
+  --btn-color: #4a5568;
+  --btn-glow-blur: 28px;
+  --btn-glow-color: rgba(180, 200, 230, 0.5);
+
+  --ease: cubic-bezier(.4, 0, .2, 1);
+}
+
+/* ========================================
+   HERO CONTAINER — full viewport
+   ======================================== */
+.hero-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  min-height: 680px;
+  overflow: hidden;
+  font-family: var(--hero-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /*
+   * Dreamy mesh-gradient background
+   * ────────────────────────────────
+   * Palette extracted from reference image:
+   *   Base ........... #e2eaf1  (cool blue-white)
+   *   Top-left warm .. #f2ead6  (cream / butter)
+   *   Top-center ..... #f6f1e6  (bright warm white)
+   *   Upper-right .... #d6e4f2  (ice blue)
+   *   Center bleed ... #eee8dc  (subtle cream)
+   *   Bottom-left .... #d0deee  (cool blue)
+   *   Bottom-right ... #eddbcc  (warm peach / apricot)
+   *   Mid-right ...... #dae6f0  (medium cool blue)
+   */
+  background:
+    /* 1  Top-left warm cream glow */
+    radial-gradient(ellipse 70% 60% at 12% 14%,
+      rgba(242, 234, 214, 0.72) 0%,
+      transparent 70%),
+    /* 2  Top-center bright warm white */
+    radial-gradient(ellipse 55% 50% at 42% 8%,
+      rgba(246, 241, 230, 0.68) 0%,
+      transparent 70%),
+    /* 3  Upper-right ice blue */
+    radial-gradient(ellipse 65% 55% at 82% 20%,
+      rgba(214, 228, 242, 0.75) 0%,
+      transparent 70%),
+    /* 4  Center cream bleed */
+    radial-gradient(ellipse 50% 45% at 40% 45%,
+      rgba(238, 232, 220, 0.50) 0%,
+      transparent 65%),
+    /* 5  Mid-right cool blue */
+    radial-gradient(ellipse 50% 55% at 78% 48%,
+      rgba(218, 230, 240, 0.55) 0%,
+      transparent 65%),
+    /* 6  Bottom-left cool blue */
+    radial-gradient(ellipse 60% 55% at 18% 82%,
+      rgba(208, 222, 238, 0.70) 0%,
+      transparent 65%),
+    /* 7  Bottom-right warm peach glow */
+    radial-gradient(ellipse 55% 50% at 78% 88%,
+      rgba(237, 219, 204, 0.65) 0%,
+      transparent 65%),
+    /* Base fill */
+    #e2eaf1;
+}
+
+/* ========================================
+   3D CANVAS WRAPPER — fills entire hero
+   ======================================== */
+.scene-canvas-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ========================================
+   NAVBAR — top overlay
+   ======================================== */
+.hero-nav {
+  position: absolute;
+  top: var(--nav-top);
+  left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--nav-px);
+  z-index: 100;
+  pointer-events: none;
+}
+.hero-nav > * { pointer-events: auto; }
+
+.hero-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-avatar {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.55);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  flex-shrink: 0;
+}
+.hero-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.hero-back-btn {
+  width: var(--back-size);
+  height: var(--back-size);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.40);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.50);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.hero-back-btn:hover {
+  background: rgba(255,255,255,0.60);
+  transform: scale(1.05);
+}
+
+.hero-nav-menu { display: flex; gap: var(--nav-gap); }
+
+.hero-nav-link {
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s var(--ease);
+  letter-spacing: 0.2px;
+}
+.hero-nav-link:hover { color: var(--text-primary); }
+
+/* ========================================
+   TEXT CONTENT — below logos, above CTA
+   ======================================== */
+.hero-text-block {
+  position: absolute;
+  bottom: 180px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 50;
+  pointer-events: none;
+  animation: heroFadeUp 0.45s var(--ease) both;
+  width: max-content;
+  max-width: 88vw;
+}
+
+.hero-title {
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--text-primary);
+  margin: 0 0 var(--title-sub-gap) 0;
+  letter-spacing: -0.3px;
+}
+
+.hero-subtitle {
+  font-size: var(--subtitle-size);
+  line-height: var(--subtitle-lh);
+  color: var(--text-secondary);
+  margin: 0 auto;
+  max-width: 420px;
+}
+
+/* ========================================
+   CTA GLASS BUTTON
+   ========================================
+   Frosted glass effect with subtle gradient,
+   prismatic edge glow, and pulsing shadow.
+   ======================================== */
+.hero-cta {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--btn-w);
+  height: var(--btn-h);
+  border-radius: var(--btn-r);
+  font-size: var(--btn-fs);
+  font-weight: 500;
+  font-family: var(--hero-font);
+  color: var(--btn-color);
+  cursor: pointer;
+  z-index: 50;
+  letter-spacing: 0.3px;
+  line-height: var(--btn-h);
+  text-align: center;
+
+  background:
+    radial-gradient(ellipse at 0%   0%,   rgba(170,195,215,0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 0%,   rgba(185,190,215,0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 0%   100%, rgba(200,195,175,0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(175,190,220,0.28) 0%, transparent 55%),
+    rgba(255,255,255,0.22);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  border: 1.5px solid rgba(255,255,255,0.55);
+
+  box-shadow:
+    0 0 var(--btn-glow-blur) var(--btn-glow-color),
+    inset 0 1px 0 rgba(255,255,255,0.40),
+    0 4px 16px rgba(0,0,0,0.04);
+
+  transition: all 0.25s var(--ease);
+  animation: btnPulse 3s ease-in-out infinite;
+}
+
+.hero-cta:hover {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow:
+    0 0 calc(var(--btn-glow-blur) + 12px) var(--btn-glow-color),
+    inset 0 1px 0 rgba(255,255,255,0.55),
+    0 6px 22px rgba(0,0,0,0.06);
+  background:
+    radial-gradient(ellipse at 0%   0%,   rgba(170,195,215,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 0%,   rgba(185,190,215,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 0%   100%, rgba(200,195,175,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(175,190,220,0.35) 0%, transparent 55%),
+    rgba(255,255,255,0.30);
+}
+.hero-cta:active {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(14px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Subtle pulsing glow on CTA button */
+@keyframes btnPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 28px rgba(180,200,230,0.40),
+      inset 0 1px 0 rgba(255,255,255,0.35),
+      0 3px 14px rgba(0,0,0,0.04);
+  }
+  50% {
+    box-shadow:
+      0 0 42px rgba(180,200,230,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.45),
+      0 3px 14px rgba(0,0,0,0.04);
+  }
+}
