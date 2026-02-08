@@ -1,8 +1,10 @@
 ﻿import { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
+import { Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { companyData } from '../../data/companies';
 import LogoPlane from './LogoPlane';
+import GlassStage from './GlassStage';
 
 /* ================================================================
    CAROUSEL ITEM
@@ -17,22 +19,22 @@ const CarouselItem = ({ index, activeIndex, company, onClick, total }) => {
   useFrame((_, delta) => {
     if (!ref.current) return;
     const t = Math.min(3.5 * delta, 0.16);
-    const sp = 3.2;
+    const sp = 2.7;
 
     let tPos, tRot, tScale;
 
     if (diff === 0) {
-      tPos   = new THREE.Vector3(0, 0.15, 2);
+      tPos   = new THREE.Vector3(0, 0.35, 2);
       tRot   = new THREE.Euler(0, 0, 0);
-      tScale = new THREE.Vector3(1.0, 1.0, 1.0);
+      tScale = new THREE.Vector3(1.15, 1.15, 1.15);
     } else if (Math.abs(diff) === 1) {
-      tPos   = new THREE.Vector3(diff * sp, -0.05, 0);
+      tPos   = new THREE.Vector3(diff * sp, 0.15, 0);
       tRot   = new THREE.Euler(0, diff * -0.06, 0);
-      tScale = new THREE.Vector3(0.6, 0.6, 0.6);
+      tScale = new THREE.Vector3(0.7, 0.7, 0.7);
     } else if (Math.abs(diff) === 2) {
-      tPos   = new THREE.Vector3(diff * sp * 0.85, -0.15, -1.5);
+      tPos   = new THREE.Vector3(diff * sp * 0.85, 0.05, -1.5);
       tRot   = new THREE.Euler(0, diff * -0.12, 0);
-      tScale = new THREE.Vector3(0.4, 0.4, 0.4);
+      tScale = new THREE.Vector3(0.5, 0.5, 0.5);
     } else {
       tPos   = new THREE.Vector3(diff * sp * 1.5, 0, -6);
       tRot   = new THREE.Euler(0, 0, 0);
@@ -86,7 +88,14 @@ const SceneEffect = ({ activeIndex = 0, onLogoClick }) => (
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: true }}
     >
+      {/* Soft ambient only — no directional light on glass */}
+      <ambientLight intensity={0.4} />
+
+      {/* HDRI for transmission to render */}
+      <Environment preset="studio" background={false} />
+
       <Carousel3D activeIndex={activeIndex} onLogoClick={onLogoClick} />
+      <GlassStage />
     </Canvas>
   </div>
 );

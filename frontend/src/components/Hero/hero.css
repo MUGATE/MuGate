@@ -173,7 +173,7 @@
    ======================================== */
 .hero-text-block {
   position: absolute;
-  bottom: 180px;
+  bottom: 220px;
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
@@ -208,7 +208,7 @@
    ======================================== */
 .hero-cta {
   position: absolute;
-  bottom: 100px;
+  bottom: 140px;
   left: 50%;
   transform: translateX(-50%);
   width: var(--btn-w);
