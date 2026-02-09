@@ -43,22 +43,77 @@ function useRoundedRectGeometry(w = 50, d = 50, thickness = 0.06, cornerRadius =
 
 /* ----------------------------------------------------------------
    ALPHA-MAP GENERATOR
-   Creates a fade from front (opaque) to back (transparent)
+   Creates triangular fade with background color blending and blur
+   for seamless environmental integration
    ---------------------------------------------------------------- */
-function useAlphaMap(width = 256, height = 256) {
+function useAlphaMap(width = 512, height = 512) {
   return useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
 
-    const grad = ctx.createLinearGradient(0, 0, 0, height);
-    grad.addColorStop(0.0, 'rgba(255,255,255,1.0)');   // front edge fully visible
-    grad.addColorStop(0.5, 'rgba(255,255,255,0.6)');
-    grad.addColorStop(1.0, 'rgba(255,255,255,0.0)');   // back edge fades out
-
-    ctx.fillStyle = grad;
+    // Start with full opacity everywhere
+    ctx.fillStyle = 'rgba(255,255,255,1.0)';
     ctx.fillRect(0, 0, width, height);
+
+    // Create triangular disappearance region with background blending
+    ctx.globalCompositeOperation = 'destination-out';
+    
+    // Define triangle path - apex at back center, base extends beyond corners
+    ctx.beginPath();
+    ctx.moveTo(width * 0.5, height * 0.35);           // triangle apex (earlier start)
+    ctx.lineTo(-width * 0.1, height);                // beyond back-left corner
+    ctx.lineTo(width * 1.1, height);                 // beyond back-right corner
+    ctx.closePath();
+
+    // Create gradient within triangle for complete removal
+    const triangleGrad = ctx.createLinearGradient(
+      width * 0.5, height * 0.35,    // apex
+      width * 0.5, height           // base
+    );
+    triangleGrad.addColorStop(0.0, 'rgba(255,255,255,0.1)');     // apex - start removal
+    triangleGrad.addColorStop(0.2, 'rgba(255,255,255,0.4)');     // moderate removal
+    triangleGrad.addColorStop(0.4, 'rgba(255,255,255,0.8)');     // heavy removal
+    triangleGrad.addColorStop(0.6, 'rgba(255,255,255,0.95)');    // almost complete
+    triangleGrad.addColorStop(0.8, 'rgba(255,255,255,1.0)');     // completely gone
+    triangleGrad.addColorStop(1.0, 'rgba(255,255,255,1.0)');     // stay gone
+
+    ctx.fillStyle = triangleGrad;
+    ctx.fill();
+
+    // Apply blur to soften edges
+    ctx.filter = 'blur(3px)';
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fill();
+    ctx.filter = 'none';
+
+    // Reset and add background color blending
+    ctx.globalCompositeOperation = 'source-over';
+    
+    // Background color blend layer (#f0f2f5)
+    const bgBlend = ctx.createLinearGradient(0, height * 0.4, 0, height);
+    bgBlend.addColorStop(0.0, 'rgba(240,242,245,0.0)');    // no blend at front
+    bgBlend.addColorStop(0.4, 'rgba(240,242,245,0.1)');    // start blending
+    bgBlend.addColorStop(0.65, 'rgba(240,242,245,0.25)');   // moderate blend
+    bgBlend.addColorStop(0.85, 'rgba(240,242,245,0.45)');   // strong blend
+    bgBlend.addColorStop(1.0, 'rgba(240,242,245,0.7)');     // full background merge
+
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = bgBlend;
+    ctx.fillRect(0, 0, width, height);
+
+    // Add subtle atmospheric blur to the entire rear section
+    ctx.filter = 'blur(1px)';
+    ctx.globalCompositeOperation = 'source-over';
+    const rearBlur = ctx.createLinearGradient(0, height * 0.5, 0, height);
+    rearBlur.addColorStop(0.0, 'rgba(240,242,245,0.0)');    // no blur at front
+    rearBlur.addColorStop(0.7, 'rgba(240,242,245,0.05)');    // subtle blur
+    rearBlur.addColorStop(1.0, 'rgba(240,242,245,0.15)');    // atmospheric blur
+
+    ctx.fillStyle = rearBlur;
+    ctx.fillRect(0, 0, width, height);
+    ctx.filter = 'none';
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.needsUpdate = true;
@@ -82,24 +137,24 @@ const GlassStage = () => {
         rotation={[0., -7.069, 0]}    // Front edge raised, back edge lowered — more level
       >
         <meshPhysicalMaterial
-          color="#d8e8ff"
-          attenuationColor="#c0d8ff"
-          attenuationDistance={2.0}
+          color="#e8f0ff"
+          attenuationColor="#d0e8ff"
+          attenuationDistance={1.5}
 
-          transmission={0.88}
-          ior={1.52}
-          thickness={0.8}
+          transmission={0.85}
+          ior={1.48}
+          thickness={0.6}
 
-          roughness={0.24}
+          roughness={0.28}
           metalness={0.0}
-          clearcoat={0.8}
-          clearcoatRoughness={0.15}
+          clearcoat={0.75}
+          clearcoatRoughness={0.18}
 
           transparent
-          opacity={0.90}
+          opacity={0.75}
           alphaMap={alphaMap}
 
-          envMapIntensity={1.0}
+          envMapIntensity={0.8}
           side={THREE.DoubleSide}
           depthWrite={false}
         />
