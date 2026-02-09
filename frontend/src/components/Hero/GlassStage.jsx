@@ -122,14 +122,76 @@ function useAlphaMap(width = 512, height = 512) {
 }
 
 /* ----------------------------------------------------------------
+   SHADOW MAP GENERATOR
+   Creates a soft elliptical shadow beneath the glass stage
+   ---------------------------------------------------------------- */
+function useShadowMap(width = 512, height = 512) {
+  return useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas (fully transparent)
+    ctx.clearRect(0, 0, width, height);
+
+    // Soft radial gradient for natural shadow falloff
+    const cx = width / 2;
+    const cy = height / 2;
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, cx * 0.75);
+    gradient.addColorStop(0.0, 'rgba(0,0,0,0.45)');
+    gradient.addColorStop(0.3, 'rgba(0,0,0,0.30)');
+    gradient.addColorStop(0.6, 'rgba(0,0,0,0.15)');
+    gradient.addColorStop(0.85, 'rgba(0,0,0,0.04)');
+    gradient.addColorStop(1.0, 'rgba(0,0,0,0.0)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+  }, [width, height]);
+}
+
+/* ----------------------------------------------------------------
    GLASS STAGE — smooth circular corners via ExtrudeGeometry
    ---------------------------------------------------------------- */
 const GlassStage = () => {
   const alphaMap = useAlphaMap();
+  const shadowMap = useShadowMap();
   const geometry = useRoundedRectGeometry(50, 50, 0.14, 3); // 3-unit corner radius, thicker slab
 
   return (
     <group>
+      {/* ── Shadow beneath stage (right side) ────────────────────── */}
+      <group position={[0, -58, -151.5]} rotation={[0, -7.069, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[1500, 64]} />
+          <meshBasicMaterial
+            map={shadowMap}
+            transparent
+            opacity={0.5}
+            depthWrite={false}
+            blending={THREE.MultiplyBlending}
+          />
+        </mesh>
+      </group>
+
+      {/* ── Shadow beneath stage (left side) ─────────────────────── */}
+      <group position={[0, -58, -151.5]} rotation={[0, 7.069, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[1500, 64]} />
+          <meshBasicMaterial
+            map={shadowMap}
+            transparent
+            opacity={0.5}
+            depthWrite={false}
+            blending={THREE.MultiplyBlending}
+          />
+        </mesh>
+      </group>
+
       {/* ── Glass Slab ────────────────────────────────────────────── */}
       <mesh
         geometry={geometry}

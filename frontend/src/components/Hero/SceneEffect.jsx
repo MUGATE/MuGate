@@ -29,21 +29,25 @@ const CarouselItem = ({ index, activeIndex, company, onClick, total, timeRef }) 
     let tPos, tRot, tScale;
 
     if (diff === 0) {
-      // Active logo - slower floating motion
-      const floatX = Math.sin(time * 0.4) * 0.08;
-      const floatY = Math.sin(time * 0.6) * 0.03 + 0.35;
-      tPos = new THREE.Vector3(floatX, floatY, 2);
-      tRot = new THREE.Euler(0, Math.sin(time * 0.3) * 0.03, 0);
+      // Active logo - at rest, no motion
+      tPos = new THREE.Vector3(0, 0.35, 2);
+      tRot = new THREE.Euler(0, 0, 0);
       tScale = new THREE.Vector3(1.15, 1.15, 1.15);
     } else if (Math.abs(diff) === 1) {
-      // Adjacent logos - stable horizontal position, no drift
-      tPos = new THREE.Vector3(diff * sp, 0.15, -0);
-      tRot = new THREE.Euler(0, diff * -0.25, 0);
+      // Adjacent logos - gentle floating motion
+      const floatX = diff * sp + Math.sin(time * 0.25 + index * 1.5) * 0.06;
+      const floatY = 0.15 + Math.sin(time * 0.35 + index * 2.0) * 0.04;
+      const floatRot = diff * -0.25 + Math.sin(time * 0.2 + index) * 0.03;
+      tPos = new THREE.Vector3(floatX, floatY, -0);
+      tRot = new THREE.Euler(0, floatRot, 0);
       tScale = new THREE.Vector3(0.7, 0.7, 0.7);
     } else if (Math.abs(diff) === 2) {
-      // Further logos - stable horizontal position, no drift
-      tPos = new THREE.Vector3(diff * sp * 0.85, 0.05, -1.5);
-      tRot = new THREE.Euler(0, diff * -0.19, 0);
+      // Further logos - gentle floating motion
+      const floatX = diff * sp * 0.85 + Math.sin(time * 0.3 + index * 1.8) * 0.07;
+      const floatY = 0.05 + Math.sin(time * 0.4 + index * 2.5) * 0.05;
+      const floatRot = diff * -0.19 + Math.sin(time * 0.22 + index * 1.2) * 0.04;
+      tPos = new THREE.Vector3(floatX, floatY, -1.5);
+      tRot = new THREE.Euler(0, floatRot, 0);
       tScale = new THREE.Vector3(0.5, 0.5, 0.5);
     } else {
       // Distant logos - no motion
