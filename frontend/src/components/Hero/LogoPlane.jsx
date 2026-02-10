@@ -1,133 +1,124 @@
 ﻿import { useEffect, useState, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-
+import { Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 
-
-
 /**
-
  * LogoPlane — Extruded 3D logo from SVG texture.
-
- *
-
- * Pipeline: SVG string → data:URI → Image → Canvas → CanvasTexture
-
- *           → front face (full color) + stacked depth layers (shaded) + back face
-
- *
-
- * Creates a convincing extruded-solid look for any arbitrary SVG logo.
-
  */
 
+const EXTRUDE_DEPTH = 0.4;
+const LAYER_COUNT = 10;
 
-
-const EXTRUDE_DEPTH = 0.4;   // total extrusion depth
-
-const LAYER_COUNT = 10;        // slices for smooth side appearance
-
-
-
-const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = true }) => {
+const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = true, isCenter = false }) => {
   const [texture, setTexture] = useState(null);
   const groupRef = useRef();
   const reflectionRef = useRef();
 
+  // ── Premium Alpha-Masked Sweep Shine ───────────────────────
+  const sweepMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      uniforms: {
+        uTime: { value: 0 },
+        uOpacity: { value: 0.4 },
+        uTexture: { value: null }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform float uTime;
+        uniform float uOpacity;
+        uniform sampler2D uTexture;
+
+        void main() {
+          vec4 texColor = texture2D(uTexture, vUv);
+          if (texColor.a < 0.01) discard;
+
+          // 5 second total cycle: 2s sweep, 3s pause
+          float cycle = 5.0;
+          float t = mod(uTime, cycle);
+          float progress = clamp(t / 2.0, 0.0, 1.0);
+          
+          // Diagonal position for y - x (range is -1 to 1)
+          float pos = mix(-1.5, 1.5, progress);
+          
+          // Narrow high-end band using y - x for "down right to top left"
+          float band = smoothstep(pos - 0.2, pos, vUv.y - vUv.x) * 
+                       smoothstep(pos + 0.2, pos, vUv.y - vUv.x);
+          
+          float visibility = progress < 1.0 ? 1.0 : 0.0;
+          
+          float alpha = band * uOpacity * texColor.a * visibility;
+          gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+        }
+      `,
+    });
+  }, []);
 
   useEffect(() => {
-
     if (!svgContent) return;
-
     let cancelled = false;
 
-
-
     const SIZE = 512;
-
     const canvas = document.createElement('canvas');
-
     canvas.width = SIZE;
-
     canvas.height = SIZE;
-
     const ctx = canvas.getContext('2d');
 
-
-
     const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`;
-
     const img = new Image();
 
-
-
     img.onload = () => {
-
       if (cancelled) return;
-
       const w = img.naturalWidth || SIZE;
-
       const h = img.naturalHeight || SIZE;
-
       const scale = Math.min(SIZE / w, SIZE / h) * 0.82;
-
       const dx = (SIZE - w * scale) / 2;
-
       const dy = (SIZE - h * scale) / 2;
 
-
-
       ctx.clearRect(0, 0, SIZE, SIZE);
-
       ctx.drawImage(img, dx, dy, w * scale, h * scale);
 
-
-
       const tex = new THREE.CanvasTexture(canvas);
-
       tex.needsUpdate = true;
-
       tex.colorSpace = THREE.SRGBColorSpace;
-
       setTexture(tex);
-
     };
-
-
 
     img.onerror = () => {
-
       if (!cancelled) console.warn('[LogoPlane] SVG failed to load');
-
     };
 
-
-
     img.src = dataUri;
-
     return () => { cancelled = true; };
-
   }, [svgContent]);
 
-  useFrame(() => {
+  useFrame((state) => {
     if (groupRef.current && reflectionRef.current) {
-      // Get the world Y of the logo group
       const worldPos = new THREE.Vector3();
       groupRef.current.getWorldPosition(worldPos);
-
-      // Calculate local Y for the reflection to stay at floorY
-      // Local Y = floorY - 0.6 - worldY
-      // If billboard is vertical (1.8 height), and we want its top at floorY,
-      // its center should be at floorY - 0.9.
       reflectionRef.current.position.y = (floorY - 0.6) - worldPos.y;
+    }
+    if (sweepMaterial && texture) {
+      sweepMaterial.uniforms.uTime.value = state.clock.elapsedTime;
+      sweepMaterial.uniforms.uTexture.value = texture;
     }
   });
 
-  // Pre-compute layer colors — keep bright to avoid dark outlines
+  // Pre-compute layer colors
   const layerColors = useMemo(() =>
     Array.from({ length: LAYER_COUNT }, (_, i) => {
-      const t = i / (LAYER_COUNT - 1);          // 0 = closest to front, 1 = deepest
-      const brightness = -0.4 - t * 0.15;       // subtle shading, never dark
+      const t = i / (LAYER_COUNT - 1);
+      const brightness = -0.4 - t * 0.15;
       return new THREE.Color(brightness, brightness, brightness);
     }),
     []);
@@ -159,10 +150,7 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
         varying vec2 vUv;
 
         void main() {
-          // Vertical flip
           vec2 flippedUv = vec2(vUv.x, 1.0 - vUv.y);
-          
-          // Stronger blur (gaussian-like 9-tap spread)
           float off = 6.0 / 512.0;
           vec4 color = texture2D(tDiffuse, flippedUv) * 0.22;
           color += texture2D(tDiffuse, flippedUv + vec2(off, 0.0)) * 0.12;
@@ -175,13 +163,8 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
           color += texture2D(tDiffuse, flippedUv + vec2(-off, -off)) * 0.075;
 
           if (color.a < 0.01) discard;
-
-          // Desaturation (10%)
           float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
           color.rgb = mix(color.rgb, vec3(gray), 0.1);
-
-          // Smooth gradient fade: only the top 25% from the floor boundary is visible
-          // vUv.y=1 is the contact point with the floor
           float fade = smoothstep(0.3, 1.5, vUv.y);
           color.a *= fade * opacity;
 
@@ -189,7 +172,6 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
             color.rgb = mix(color.rgb, vec3(1.0, 0.0, 1.0), 0.4);
             color.a = mix(color.a, 0.5, 0.5);
           }
-
           gl_FragColor = color;
         }
       `,
@@ -202,6 +184,27 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
     <group ref={groupRef}>
       {/* ── Main Logo Group (Tilted) ───────────────────────────── */}
       <group rotation={[-0.16, -0.16, 0]}>
+        {/* Subtle white shine & sparkles */}
+        {isCenter && (
+          <group position={[0, 0, 0.05]} renderOrder={LAYER_COUNT + 5}>
+            {/* White sweep shine */}
+            <mesh>
+              <planeGeometry args={planeArgs} />
+              <primitive object={sweepMaterial} attach="material" />
+            </mesh>
+
+            {/* White Animated Sparkles */}
+            <Sparkles
+              count={60}
+              scale={3.0}
+              size={2.5}
+              speed={0.4}
+              opacity={0.9}
+              color={"#ffffff"}
+            />
+          </group>
+        )}
+
         {/* Front face */}
         <mesh renderOrder={LAYER_COUNT + 2}>
           <planeGeometry args={planeArgs} />

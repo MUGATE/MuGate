@@ -11,6 +11,8 @@ import { companyData } from '../../data/companies';
 import LogoPlane from './LogoPlane';
 
 import GlassStage from './GlassStage';
+import VolumetricBeam from './VolumetricBeam';
+import BackgroundHalo from './BackgroundHalo';
 
 
 
@@ -133,6 +135,8 @@ const CarouselItem = ({ index, activeIndex, company, onClick, total, timeRef }) 
       <LogoPlane
         svgContent={company.svgString}
         showReflection={diff !== 0}
+        isCenter={diff === 0}
+        color={company.colors?.[0] || "#ffffff"}
       />
 
 
@@ -237,45 +241,34 @@ const Carousel3D = ({ activeIndex, onLogoClick }) => {
 
 };
 
-const SceneEffect = ({ activeIndex = 0, onLogoClick }) => (
+const SceneEffect = ({ activeIndex = 0, onLogoClick }) => {
+  const activeCompany = companyData[activeIndex];
+  // Use the first color from the array or fallback to white
+  const activeColor = activeCompany?.colors?.[0] || "#ffffff";
 
-  <div className="scene-canvas-wrapper">
+  return (
+    <div className="scene-canvas-wrapper">
+      <Canvas
+        camera={{ position: [0, 0.5, 10], fov: 35 }}
+        dpr={[1, 2]}
+        gl={{ antialias: true, alpha: true }}
+      >
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[3, 4, 5]} intensity={0.6} />
+        <directionalLight position={[-2, 2, 3]} intensity={0.25} />
 
-    <Canvas
+        <Environment preset="studio" background={false} />
 
-      camera={{ position: [0, 0.5, 10], fov: 35 }}
+        <BackgroundHalo color="#ffffff" opacity={0.12} />
 
-      dpr={[1, 2]}
+        <Carousel3D activeIndex={activeIndex} onLogoClick={onLogoClick} />
+        <GlassStage />
 
-      gl={{ antialias: true, alpha: true }}
-
-    >
-
-      {/* Soft ambient + directional for 3D logo depth */}
-
-      <ambientLight intensity={0.5} />
-
-      <directionalLight position={[3, 4, 5]} intensity={0.6} />
-
-      <directionalLight position={[-2, 2, 3]} intensity={0.25} />
-
-
-
-      {/* HDRI for transmission to render */}
-
-      <Environment preset="studio" background={false} />
-
-
-
-      <Carousel3D activeIndex={activeIndex} onLogoClick={onLogoClick} />
-
-      <GlassStage />
-
-    </Canvas>
-
-  </div>
-
-);
+        <VolumetricBeam color="#ffffff" />
+      </Canvas>
+    </div>
+  );
+};
 
 
 

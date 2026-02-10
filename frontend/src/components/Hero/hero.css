@@ -20,16 +20,16 @@
   --title-sub-gap: 10px;
 
   --nav-top: 28px;
-  --nav-px: 50px;
-  --nav-gap: 44px;
-  --avatar-size: 52px;
-  --back-size: 44px;
+  --nav-px: 120px;
+  --nav-gap: 52px;
+  --avatar-size: 64px;
+  --back-size: 54px;
 
-  --btn-w: 210px;
-  --btn-h: 54px;
-  --btn-r: 14px;
-  --btn-fs: 17px;
-  --btn-color: #4a5568;
+  --btn-w: 220px;
+  --btn-h: 58px;
+  --btn-r: 16px;
+  --btn-fs: 18px;
+  --btn-color: #ffffff;
   --btn-glow-blur: 28px;
   --btn-glow-color: rgba(180, 200, 230, 0.5);
 
@@ -110,7 +110,8 @@
 .hero-nav {
   position: absolute;
   top: var(--nav-top);
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -118,7 +119,10 @@
   z-index: 100;
   pointer-events: none;
 }
-.hero-nav > * { pointer-events: auto; }
+
+.hero-nav>* {
+  pointer-events: auto;
+}
 
 .hero-nav-left {
   display: flex;
@@ -131,42 +135,56 @@
   height: var(--avatar-size);
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid rgba(255,255,255,0.55);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   flex-shrink: 0;
 }
-.hero-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.hero-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .hero-back-btn {
   width: var(--back-size);
   height: var(--back-size);
   border-radius: 50%;
-  background: rgba(255,255,255,0.40);
+  background: rgba(255, 255, 255, 0.40);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.50);
-  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: all 0.2s var(--ease);
   color: var(--text-secondary);
   flex-shrink: 0;
 }
+
 .hero-back-btn:hover {
-  background: rgba(255,255,255,0.60);
+  background: rgba(255, 255, 255, 0.60);
   transform: scale(1.05);
 }
 
-.hero-nav-menu { display: flex; gap: var(--nav-gap); }
+.hero-nav-menu {
+  display: flex;
+  gap: var(--nav-gap);
+}
 
 .hero-nav-link {
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
   text-decoration: none;
   transition: color 0.2s var(--ease);
   letter-spacing: 0.2px;
 }
-.hero-nav-link:hover { color: var(--text-primary); }
+
+.hero-nav-link:hover {
+  color: var(--text-primary);
+}
 
 /* ========================================
    TEXT CONTENT — below logos, above CTA
@@ -225,20 +243,20 @@
   text-align: center;
 
   background:
-    radial-gradient(ellipse at 0%   0%,   rgba(170,195,215,0.28) 0%, transparent 55%),
-    radial-gradient(ellipse at 100% 0%,   rgba(185,190,215,0.28) 0%, transparent 55%),
-    radial-gradient(ellipse at 0%   100%, rgba(200,195,175,0.28) 0%, transparent 55%),
-    radial-gradient(ellipse at 100% 100%, rgba(175,190,220,0.28) 0%, transparent 55%),
-    rgba(255,255,255,0.22);
+    radial-gradient(ellipse at 0% 0%, rgba(170, 195, 215, 0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 0%, rgba(185, 190, 215, 0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 0% 100%, rgba(200, 195, 175, 0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(175, 190, 220, 0.28) 0%, transparent 55%),
+    rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 
-  border: 1.5px solid rgba(255,255,255,0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
 
   box-shadow:
     0 0 var(--btn-glow-blur) var(--btn-glow-color),
-    inset 0 1px 0 rgba(255,255,255,0.40),
-    0 4px 16px rgba(0,0,0,0.04);
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    0 4px 16px rgba(0, 0, 0, 0.04);
 
   transition: all 0.25s var(--ease);
   animation: btnPulse 3s ease-in-out infinite;
@@ -248,15 +266,16 @@
   transform: translateX(-50%) translateY(-2px);
   box-shadow:
     0 0 calc(var(--btn-glow-blur) + 12px) var(--btn-glow-color),
-    inset 0 1px 0 rgba(255,255,255,0.55),
-    0 6px 22px rgba(0,0,0,0.06);
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 6px 22px rgba(0, 0, 0, 0.06);
   background:
-    radial-gradient(ellipse at 0%   0%,   rgba(170,195,215,0.35) 0%, transparent 55%),
-    radial-gradient(ellipse at 100% 0%,   rgba(185,190,215,0.35) 0%, transparent 55%),
-    radial-gradient(ellipse at 0%   100%, rgba(200,195,175,0.35) 0%, transparent 55%),
-    radial-gradient(ellipse at 100% 100%, rgba(175,190,220,0.35) 0%, transparent 55%),
-    rgba(255,255,255,0.30);
+    radial-gradient(ellipse at 0% 0%, rgba(170, 195, 215, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 0%, rgba(185, 190, 215, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 0% 100%, rgba(200, 195, 175, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(175, 190, 220, 0.35) 0%, transparent 55%),
+    rgba(255, 255, 255, 0.30);
 }
+
 .hero-cta:active {
   transform: translateX(-50%) translateY(0);
 }
@@ -265,22 +284,32 @@
    ANIMATIONS
    ======================================== */
 @keyframes heroFadeUp {
-  from { opacity: 0; transform: translateX(-50%) translateY(14px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* Subtle pulsing glow on CTA button */
 @keyframes btnPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow:
-      0 0 28px rgba(180,200,230,0.40),
-      inset 0 1px 0 rgba(255,255,255,0.35),
-      0 3px 14px rgba(0,0,0,0.04);
+      0 0 28px rgba(180, 200, 230, 0.40),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 3px 14px rgba(0, 0, 0, 0.04);
   }
+
   50% {
     box-shadow:
-      0 0 42px rgba(180,200,230,0.55),
-      inset 0 1px 0 rgba(255,255,255,0.45),
-      0 3px 14px rgba(0,0,0,0.04);
+      0 0 42px rgba(180, 200, 230, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.45),
+      0 3px 14px rgba(0, 0, 0, 0.04);
   }
 }
