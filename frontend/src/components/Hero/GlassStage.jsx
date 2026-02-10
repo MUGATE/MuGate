@@ -114,10 +114,10 @@ const GlassStage = () => {
 
       {/* ── White Edge Glow (Focused Halo) ────────────────────────── */}
       <mesh
-        position={[0, -4.75, -41.5]}
-        rotation={[0., -7.069, 0]}
+        position={[0, -4.72, -41.5]}
+        rotation={[0, -7.069, 0]}
       >
-        <planeGeometry args={[52, 52]} />
+        <planeGeometry args={[52.2, 52.2]} />
         <shaderMaterial
           transparent
           blending={THREE.AdditiveBlending}
@@ -136,17 +136,17 @@ const GlassStage = () => {
             varying vec2 vUv;
             uniform vec3 uColor;
             void main() {
-              // Create a 'hollow' rectangular glow that follows the edge
-              float edgeX = smoothstep(0.0, 0.04, vUv.x) * smoothstep(1.0, 0.96, vUv.x);
-              float edgeY = smoothstep(0.0, 0.04, vUv.y) * smoothstep(1.0, 0.96, vUv.y);
+              // Extremely sharp edge glow to suggest polished thickness
+              float edgeX = smoothstep(0.0, 0.02, vUv.x) * smoothstep(1.0, 0.98, vUv.x);
+              float edgeY = smoothstep(0.0, 0.02, vUv.y) * smoothstep(1.0, 0.98, vUv.y);
               float outerMask = edgeX * edgeY;
               
-              float innerX = smoothstep(0.005, 0.035, vUv.x) * smoothstep(0.995, 0.965, vUv.x);
-              float innerY = smoothstep(0.005, 0.035, vUv.y) * smoothstep(0.995, 0.965, vUv.y);
+              float innerX = smoothstep(0.002, 0.015, vUv.x) * smoothstep(0.998, 0.985, vUv.x);
+              float innerY = smoothstep(0.002, 0.015, vUv.y) * smoothstep(0.998, 0.985, vUv.y);
               float innerMask = innerX * innerY;
               
-              float glow = outerMask - innerMask;
-              gl_FragColor = vec4(uColor, max(0.0, glow) * 0.4);
+              float glow = (outerMask - innerMask) * 1.5;
+              gl_FragColor = vec4(uColor, max(0.0, glow) * 0.8);
             }
           `}
         />
@@ -156,15 +156,15 @@ const GlassStage = () => {
       <mesh
         geometry={geometry}
         position={[0, -4.75, -41.5]}
-        rotation={[0., -7.069, 0]}
+        rotation={[0, -7.069, 0]}
       >
         <meshPhysicalMaterial
           color="#ffffff"
           transmission={0.995}
-          ior={1.52}
-          thickness={2.8}
+          ior={1.8}
+          thickness={4.5} // Visually deeper refraction
 
-          roughness={0.03}
+          roughness={0.02}
           metalness={0.0}
           clearcoat={1.0}
           clearcoatRoughness={0.0}
@@ -173,7 +173,7 @@ const GlassStage = () => {
           opacity={1.0}
           alphaMap={alphaMap}
 
-          envMapIntensity={1.4}
+          envMapIntensity={2.5} // Catch the studio lights better
           side={THREE.DoubleSide}
           depthWrite={false}
         />
@@ -184,16 +184,16 @@ const GlassStage = () => {
         position={[0, -0.65, 0.8]}
         rotation={[-Math.PI / 2, 0, 0]}
       >
-        <planeGeometry args={[22, 7]} />
+        <planeGeometry args={[22, 10]} />
         <shaderMaterial
           transparent
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           uniforms={{
-            uColor1: { value: new THREE.Color("#b8c7ff") },
-            uColor2: { value: new THREE.Color("#ffb8e7") },
-            uColor3: { value: new THREE.Color("#b8ffef") },
-            uColor4: { value: new THREE.Color("#fff8b8") },
+            uColor1: { value: new THREE.Color("#88aaff") }, // More vibrant blue
+            uColor2: { value: new THREE.Color("#ff88dd") }, // More vibrant pink
+            uColor3: { value: new THREE.Color("#88ffee") }, // More vibrant cyan
+            uColor4: { value: new THREE.Color("#fff288") }, // More vibrant yellow
           }}
           vertexShader={`
             varying vec2 vUv;
@@ -213,10 +213,12 @@ const GlassStage = () => {
               vec3 bottom = mix(uColor3, uColor4, vUv.x);
               vec3 color = mix(bottom, top, vUv.y);
               
-              float mask = smoothstep(0.0, 0.4, vUv.x) * smoothstep(1.0, 0.6, vUv.x);
-              mask *= smoothstep(0.0, 0.2, vUv.y) * smoothstep(1.0, 0.4, vUv.y);
+              // Saturated, colorful glow mask
+              float mask = smoothstep(0.0, 0.5, vUv.x) * smoothstep(1.0, 0.5, vUv.x);
+              mask *= smoothstep(0.0, 0.3, vUv.y) * smoothstep(1.0, 0.5, vUv.y);
+              mask = pow(mask, 1.2);
               
-              gl_FragColor = vec4(color, mask * 0.4);
+              gl_FragColor = vec4(color, mask * 0.6); // Increased intensity
             }
           `}
         />

@@ -39,7 +39,7 @@ const HeroSection = () => {
   // ── Keyboard: ArrowLeft / ArrowRight ──
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'ArrowLeft')  { e.preventDefault(); goPrev(); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
       if (e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
     };
     window.addEventListener('keydown', onKey);

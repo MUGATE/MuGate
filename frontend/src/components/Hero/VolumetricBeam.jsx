@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 
 const VolumetricBeam = ({
-    position = [0, 8.0, 2],
+    position = [0, 8.0, 2.5],
     color = "#ffffff",
     opacity = 0.45,
     radiusTop = 0.05,
@@ -11,7 +11,7 @@ const VolumetricBeam = ({
     // Calculated to stop exactly at floor (floor is at -4.75)
     // Source is at position[1]=8.0. Target is -4.75.
     // Total height = 12.75
-    // Mesh Y = (8.0 + -4.75) / 2 = 1.625. Relative to group position [0, 8.0, 2],
+    // Mesh Y = (8.0 + -4.75) / 2 = 1.625. Relative to group position [0, 8.0, 2.5],
     // mesh local Y = 1.625 - 8.0 = -6.375.
 
     const BEAM_HEIGHT = 12.75;
@@ -66,7 +66,7 @@ const VolumetricBeam = ({
             depthWrite: false,
             uniforms: {
                 uColor: { value: new THREE.Color("#ffffff") },
-                uOpacity: { value: opacity * 0.2 }, // Reduced significantly to stop washing out
+                uOpacity: { value: opacity * 0.8 }, // Lowered opacity significantly
             },
             vertexShader: `
         varying vec2 vUv;
@@ -83,9 +83,9 @@ const VolumetricBeam = ({
         void main() {
           float dist = length(vUv - vec2(0.5));
           
-          // Tight, sharp circular edge to "stand out"
-          float rim = smoothstep(0.5, 0.49, dist);
-          float core = smoothstep(0.49, 0.0, dist) * 0.2; // Much lower core brightness
+          // Sharp circular edge to "stand out"
+          float rim = smoothstep(0.5, 0.48, dist);
+          float core = smoothstep(0.48, 0.0, dist) * 0.7;
           
           gl_FragColor = vec4(uColor, (rim + core) * uOpacity);
         }
@@ -101,8 +101,8 @@ const VolumetricBeam = ({
                 <primitive object={beamMaterial} attach="material" />
             </mesh>
 
-            {/* Spotlight on the floor - EXACTLY AT FLOOR LEVEL (Z=0 to be below logo) */}
-            <mesh position={[0, FLOOR_Y, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            {/* Spotlight on the floor - EXACTLY AT FLOOR LEVEL */}
+            <mesh position={[0, FLOOR_Y, 0.8]} rotation={[-Math.PI / 2, 0, 0]}>
                 <planeGeometry args={[radiusBottom * 2.0, radiusBottom * 2.0]} />
                 <primitive object={spotLightMaterial} attach="material" />
             </mesh>

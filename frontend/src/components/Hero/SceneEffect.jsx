@@ -11,7 +11,7 @@ import { companyData } from '../../data/companies';
 import LogoPlane from './LogoPlane';
 
 import GlassStage from './GlassStage';
-import VolumetricBeam from './VolumetricBeam';
+import GodRayFountain from './GodRayFountain';
 import BackgroundHalo from './BackgroundHalo';
 
 
@@ -264,7 +264,7 @@ const SceneEffect = ({ activeIndex = 0, onLogoClick }) => {
         <Carousel3D activeIndex={activeIndex} onLogoClick={onLogoClick} />
         <GlassStage />
 
-        <VolumetricBeam color="#ffffff" />
+        <GodRayFountain color={activeColor} />
       </Canvas>
     </div>
   );
