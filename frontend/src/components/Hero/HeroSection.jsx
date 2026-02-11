@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { companyData } from '../../data/companies';
 import SceneEffect from './SceneEffect';
+import GlassButton from './GlassButton';
 import './hero.css';
 
 /**
@@ -84,7 +85,7 @@ const HeroSection = () => {
       </div>
 
       {/* ── CTA BUTTON ── */}
-      <button className="hero-cta">Explore Now</button>
+      <GlassButton>Explore Now</GlassButton>
     </div>
   );
 };

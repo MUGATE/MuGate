@@ -242,29 +242,26 @@
   line-height: var(--btn-h);
   text-align: center;
   overflow: visible;
-  /* Changed to visible for border glow */
 
+  /* Milky Glass Background */
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(136, 170, 255, 0.35) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(255, 136, 221, 0.35) 0%, transparent 60%),
-    radial-gradient(ellipse at 20% 80%, rgba(136, 255, 238, 0.35) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 80%, rgba(255, 242, 136, 0.35) 0%, transparent 60%),
-    rgba(255, 255, 255, 0.18);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%),
+    rgba(255, 255, 255, 0.1);
 
-  backdrop-filter: blur(25px) saturate(1.8);
-  -webkit-backdrop-filter: blur(25px) saturate(1.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 
-  /* Restore the sharp clean white stroke as the stable base track */
-  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  /* Distinct White Border */
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
 
+  /* Inner Top Highlight & Outer Glow */
   box-shadow:
-    0 0 25px rgba(180, 210, 255, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.5),
-    0 8px 24px rgba(0, 0, 0, 0.08);
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.3),
+    0 4px 20px rgba(0, 0, 0, 0.1);
 
-  /* Transition & Pulse */
+  /* Transition */
   transition: all 0.3s var(--ease);
-  animation: btnPulse 4s ease-in-out infinite;
 }
 
 /* ── SVG Spark Overlay ── */
@@ -282,20 +279,20 @@
 .cta-border-spark {
   fill: none;
   stroke: #ffffff;
-  stroke-width: 1.5;
+  stroke-width: 2.3;
   /* Match base border thickness */
-  stroke-dasharray: 12 88;
+  stroke-dasharray: 35 220;
   /* 12% length spark */
-  stroke-dashoffset: 0;
+  stroke-dashoffset: 30;
   stroke-linecap: round;
   filter: drop-shadow(0 0 8px #ffffff);
-  animation: sparkRun 0.6s linear infinite;
+  animation: sparkRun 3s linear infinite;
   /* High energy speed */
 }
 
 @keyframes sparkRun {
   to {
-    stroke-dashoffset: -100;
+    stroke-dashoffset: -480;
     /* Uses pathLength="100" logic from JSX */
   }
 }
@@ -321,15 +318,15 @@
 }
 
 .hero-cta:hover {
-  transform: translateX(-50%) translateY(-3px);
+  transform: translateX(-50%) translateY(-2px);
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(136, 170, 255, 0.45) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(255, 136, 221, 0.45) 0%, transparent 60%),
-    rgba(255, 255, 255, 0.25);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%),
+    rgba(255, 255, 255, 0.2);
   box-shadow:
-    0 0 40px rgba(180, 210, 255, 0.6),
-    inset 0 1px 1px rgba(255, 255, 255, 0.7),
-    0 12px 32px rgba(0, 0, 0, 0.12);
+    inset 0 1px 0 rgba(255, 255, 255, 1.0),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .hero-cta:active {
