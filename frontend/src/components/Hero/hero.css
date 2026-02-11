@@ -25,9 +25,9 @@
   --avatar-size: 64px;
   --back-size: 54px;
 
-  --btn-w: 220px;
+  --btn-w: 195px;
   --btn-h: 58px;
-  --btn-r: 16px;
+  --btn-r: 10px;
   --btn-fs: 18px;
   --btn-color: #ffffff;
   --btn-glow-blur: 28px;
@@ -93,6 +93,52 @@
       transparent 65%),
     /* Base fill */
     #e2eaf1;
+}
+
+/* ── Saturated Color Glow — premium ambient radiance ── */
+.hero-container::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    /* Rose-pink bloom — upper left */
+    radial-gradient(ellipse 45% 40% at 20% 25%,
+      rgba(255, 120, 170, 0.25) 0%, transparent 65%),
+    /* Electric blue — upper right */
+    radial-gradient(ellipse 50% 45% at 80% 20%,
+      rgba(100, 160, 255, 0.3) 0%, transparent 65%),
+    /* Lavender — center */
+    radial-gradient(ellipse 40% 35% at 50% 50%,
+      rgba(180, 140, 255, 0.2) 0%, transparent 55%),
+    /* Cyan — lower left */
+    radial-gradient(ellipse 45% 40% at 25% 75%,
+      rgba(80, 220, 240, 0.22) 0%, transparent 60%),
+    /* Golden — lower right */
+    radial-gradient(ellipse 40% 35% at 75% 80%,
+      rgba(255, 200, 100, 0.2) 0%, transparent 60%);
+  background-size: 200% 200%;
+  animation: colorGlow 16s ease-in-out infinite alternate;
+  filter: blur(40px);
+}
+
+@keyframes colorGlow {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  33% {
+    background-position: 50% 100%;
+  }
+
+  66% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 100% 100%;
+  }
 }
 
 /* ========================================
@@ -211,9 +257,9 @@
 }
 
 .hero-subtitle {
-  font-size: var(--subtitle-size);
-  line-height: var(--subtitle-lh);
-  color: var(--text-secondary);
+  font-size: 17px;
+  line-height: 26px;
+  color: #3a3937;
   margin: 0 auto;
   max-width: 420px;
 }
@@ -238,7 +284,11 @@
   color: var(--btn-color);
   cursor: pointer;
   z-index: 50;
-  letter-spacing: 0.5px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  letter-spacing: 0.6px;
   line-height: var(--btn-h);
   text-align: center;
   overflow: visible;
@@ -302,6 +352,42 @@
   z-index: 2;
 }
 
+/* ── Swimming Colors Background ── */
+.hero-cta::after {
+  content: "";
+  position: absolute;
+  /* Inset slightly to avoid covering the 1.5px border */
+  inset: 2px;
+  border-radius: inherit;
+  z-index: -1;
+  /* Rich multi-color swimming mesh */
+  background:
+    radial-gradient(circle at 10% 20%, rgba(255, 100, 150, 0.5), transparent 20%),
+    radial-gradient(circle at 90% 80%, rgba(100, 255, 255, 0.5), transparent 20%),
+    radial-gradient(circle at 80% 10%, rgba(180, 100, 255, 0.5), transparent 10%),
+    radial-gradient(circle at 20% 90%, rgba(255, 220, 100, 0.5), transparent 20%),
+    radial-gradient(circle at 50% 50%, rgba(100, 180, 255, 0.5), transparent 10%);
+  background-size: 400% 400%;
+  opacity: 100;
+  mix-blend-mode: overlay;
+  animation: bgSwim 4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes bgSwim {
+  0% {
+    background-position: 0% 0%, 100% 0%, 50% 100%, 0% 100%, 50% 50%;
+  }
+
+  50% {
+    background-position: 100% 100%, 0% 0%, 100% 100%, 100% 0%, 50% 50%;
+  }
+
+  100% {
+    background-position: 50% 0%, 50% 100%, 0% 0%, 100% 100%, 50% 50%;
+  }
+}
+
 /* Shimmer Sweep Effect */
 .hero-cta::before {
   content: "";
@@ -315,7 +401,10 @@
   transform: translateX(-150%) skewX(-25deg);
   animation: shimmerSweep 6s infinite ease-in-out;
   pointer-events: none;
+  z-index: 0;
+  /* Ensure it's above the swimming colors */
 }
+
 
 .hero-cta:hover {
   transform: translateX(-50%) translateY(-2px);

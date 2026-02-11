@@ -216,6 +216,39 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
           />
         </mesh>
 
+        {/* Underlight — white glow on the logo itself, from below */}
+        {isCenter && (
+          <mesh position={[0, 0, 0.03]} renderOrder={LAYER_COUNT + 4}>
+            <planeGeometry args={planeArgs} />
+            <shaderMaterial
+              transparent
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+              uniforms={{
+                uTexture: { value: texture },
+              }}
+              vertexShader={`
+                varying vec2 vUv;
+                void main() {
+                  vUv = uv;
+                  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+              `}
+              fragmentShader={`
+                varying vec2 vUv;
+                uniform sampler2D uTexture;
+                void main() {
+                  float logoAlpha = texture2D(uTexture, vUv).a;
+                  if (logoAlpha < 0.1) discard;
+                  // Glow tightly concentrated at the very bottom
+                  float upFade = 1.0 - smoothstep(0.0, 0.35, vUv.y);
+                  gl_FragColor = vec4(1.0, 1.0, 1.0, upFade * logoAlpha * 0.25);
+                }
+              `}
+            />
+          </mesh>
+        )}
+
         {/* Depth layers */}
         {layerColors.map((color, i) => (
           <mesh
