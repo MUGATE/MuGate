@@ -314,6 +314,16 @@
   transition: all 0.3s var(--ease);
 }
 
+/* ── Background Clipper for contained glow/shimmer effects ── */
+.cta-background-clipper {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* ── SVG Spark Overlay ── */
 .cta-border-svg {
   position: absolute;
@@ -353,7 +363,7 @@
 }
 
 /* ── Swimming Colors Background ── */
-.hero-cta::after {
+.cta-background-clipper::after {
   content: "";
   position: absolute;
   /* Inset slightly to avoid covering the 1.5px border */
@@ -389,7 +399,7 @@
 }
 
 /* Shimmer Sweep Effect */
-.hero-cta::before {
+.cta-background-clipper::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -401,7 +411,7 @@
   transform: translateX(-150%) skewX(-25deg);
   animation: shimmerSweep 6s infinite ease-in-out;
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
   /* Ensure it's above the swimming colors */
 }
 
