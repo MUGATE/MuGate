@@ -1,0 +1,400 @@
+/* SOLIDROAD STYLE REDESIGN - HIGH FIDELITY */
+
+/* CUSTOM FONTS */
+@font-face {
+    font-family: 'SolidroadCustom';
+    src: url('./assets/Videos/Fonts/1ZFS7N918ojhhd0nQWdj3jz4w.ttf') format('truetype');
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'SolidroadCustom';
+    src: url('./assets/Videos/Fonts/JnSOH7RupDCN6KVnC1gWkQOKE.ttf') format('truetype');
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: 'SolidroadCustom';
+    src: url('./assets/Videos/Fonts/vQyevYAyHtARFwPqUzQGpnDs.ttf') format('truetype');
+    font-weight: 600;
+}
+
+@font-face {
+    font-family: 'SolidroadCustom';
+    src: url('./assets/Videos/Fonts/dcBhZgAFiyqqQO8SkGjomdakHJ8.ttf') format('truetype');
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'Matter';
+    src: url('./assets/Videos/Fonts/JnSOH7RupDCN6KVnC1gWkQOKE.ttf') format('truetype');
+}
+
+.home-container {
+    background-color: #ffffff;
+    width: 100%;
+    font-family: 'SolidroadCustom', sans-serif;
+}
+
+.video-hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    padding: 15px;
+    /* Narrower border as requested */
+    /* Unified white border padding */
+    background: #ffffff;
+    /* Removed flex to avoid pushing video down */
+}
+
+/* NOTCHED NAVBAR - GLOBAL STICKY OVERLAY */
+.navbar-notch-wrapper {
+    position: sticky;
+    /* Sticky works better for "flexible across all home page" */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    /* Zero height prevents pushing the video down */
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    background: transparent;
+    pointer-events: none;
+    overflow: visible;
+    /* Allows the deeper notch to be seen */
+}
+
+.hero-nav-notched {
+    background: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 60px;
+    /* Better link spacing */
+    border-radius: 0 0 32px 32px;
+    min-width: 1450px;
+    /* Wider for 4 links to prevent clipping */
+    height: 90px;
+    position: relative;
+    pointer-events: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+}
+
+/* NOTCH CURVES - SMOOTH INTERSECTION */
+.hero-nav-notched::before,
+.hero-nav-notched::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    pointer-events: none;
+}
+
+.hero-nav-notched::before {
+    left: -30px;
+    border-radius: 0 30px 0 0;
+    box-shadow: 15px -15px 0 15px #ffffff;
+    /* Matches 15px border */
+}
+
+.hero-nav-notched::after {
+    right: -30px;
+    border-radius: 30px 0 0 0;
+    box-shadow: -15px -15px 0 15px #ffffff;
+    /* Matches 15px border */
+}
+
+.nav-group-left,
+.nav-group-right {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.nav-group-left a,
+.nav-signin {
+    color: #000000;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-family: 'Matter', sans-serif !important;
+    /* Specific requested font */
+    font-weight: 400;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+
+.nav-group-left a:hover,
+.nav-signin:hover {
+    opacity: 0.7;
+}
+
+.branding-logo-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nav-logo-black {
+    height: 32px;
+    width: auto;
+}
+
+.brand-name-black {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: #000000;
+    letter-spacing: -0.02em;
+}
+
+.nav-demo-btn-solidroad {
+    background: #4ade80;
+    color: #ffffff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    /* Less rounded as requested */
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+
+.nav-demo-btn-solidroad:hover {
+    background: #22c55e;
+}
+
+/* CONTAINED VIDEO SECTION */
+.hero-video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    /* Fills the 100vh minus 20px padding of parent */
+    border-radius: 24px;
+    overflow: hidden;
+    background: #000;
+}
+
+.hero-video-bg {
+    position: absolute;
+    top: 50%;
+    left: 49.95%;
+    /* Tiny offset to cover the left black line artifact */
+    width: 100.1%;
+    /* Very slight over-width to ensure no edge gaps */
+    height: 100%;
+    object-fit: cover;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
+.hero-dark-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 2;
+}
+
+/* HERO CONTENT - SHARP TYPOGRAPHY */
+.hero-content-wrapper {
+    position: relative;
+    z-index: 3;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 0 20px;
+    margin-top: -40px;
+    /* Pull text up closer to nav */
+}
+
+.hero-heading-sharp {
+    font-family: inherit;
+    font-size: clamp(2.5rem, 5vw, 3.8rem);
+    font-weight: 500;
+    /* Sharp, not too bold */
+    color: #ffffff;
+    line-height: 1.15;
+    margin-bottom: 12px;
+    letter-spacing: -0.03em;
+}
+
+.hero-subtext-sharp {
+    font-size: clamp(1rem, 1.2vw, 1.1rem);
+    color: rgba(255, 255, 255, 0.85);
+    font-family: 'Matter', sans-serif !important;
+    /* Specific requested font */
+    line-height: 1.5;
+    margin-bottom: 32px;
+    max-width: 650px;
+    font-weight: 400;
+}
+
+/* EMAIL INPUT - LESS ROUNDED */
+.email-input-group-rect {
+    background: #ffffff;
+    padding: 6px;
+    padding-left: 20px;
+    border-radius: 12px;
+    /* Less rounded corners */
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    gap: 12px;
+    margin: 0 auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.input-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-grow: 1;
+}
+
+.mail-icon {
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+}
+
+.email-input-group-rect input {
+    border: none;
+    outline: none;
+    font-family: 'Matter', sans-serif !important;
+    /* Specific requested font */
+    font-size: 0.95rem;
+    color: #111827;
+    width: 100%;
+    background: transparent;
+}
+
+.invite-btn-demo {
+    background: #fbbf24;
+    color: #000;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 10px;
+    /* Less rounded as requested */
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s, background 0.2s;
+    white-space: nowrap;
+}
+
+.invite-btn-demo:hover {
+    background: #f59e0b;
+    transform: scale(1.02);
+}
+
+/* INFINITE LOGO CAROUSEL */
+.logo-carousel-mask {
+    position: absolute;
+    bottom: 90px;
+    /* Raised carousel position as requested */
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    z-index: 10;
+    mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+}
+
+.logo-carousel-track {
+    display: flex;
+    align-items: center;
+    gap: 100px;
+    /* Consistent gap between items */
+    width: max-content;
+    padding: 0;
+    margin: 0;
+    animation: scroll-logos 35s linear infinite;
+    will-change: transform;
+}
+
+.logo-item {
+    color: #ffffff;
+    font-size: 1.6rem;
+    font-weight: 500;
+    /* Sharp, medium weight as requested */
+    letter-spacing: -0.04em;
+    opacity: 1;
+    /* Fully white and visible as requested */
+    white-space: nowrap;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* NAVBAR INTERNAL REFINEMENTS */
+.chevron {
+    font-size: 0.75rem;
+    margin-left: 5px;
+    opacity: 0.5;
+    vertical-align: middle;
+}
+
+.btn-arrow {
+    font-size: 1.1rem;
+    line-height: 0;
+    margin-left: 8px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-top: -2px;
+}
+
+.logo-item:hover {
+    opacity: 1;
+}
+
+@keyframes scroll-logos {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.home-section {
+    height: 100vh;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 80px;
+}
+
+.section-content {
+    max-width: 1200px;
+    text-align: center;
+}
+
+.intro h1 {
+    font-size: clamp(3rem, 6vw, 5rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.intro p {
+    margin-top: 24px;
+    font-size: 1.2rem;
+    color: #666;
+}
+
+.outro h2 {
+    font-size: clamp(2.5rem, 4vw, 3.5rem);
+}
