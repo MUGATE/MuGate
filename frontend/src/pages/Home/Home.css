@@ -3,54 +3,71 @@
 /* CUSTOM FONTS */
 @font-face {
     font-family: 'SolidroadCustom';
-    src: url('./assets/Videos/Fonts/1ZFS7N918ojhhd0nQWdj3jz4w.ttf') format('truetype');
+    src: url('./assets/Fonts/1ZFS7N918ojhhd0nQWdj3jz4w.ttf') format('truetype');
     font-weight: 400;
 }
 
 @font-face {
     font-family: 'SolidroadCustom';
-    src: url('./assets/Videos/Fonts/JnSOH7RupDCN6KVnC1gWkQOKE.ttf') format('truetype');
+    src: url('./assets/Fonts/JnSOH7RupDCN6KVnC1gWkQOKE.ttf') format('truetype');
     font-weight: 500;
 }
 
 @font-face {
     font-family: 'SolidroadCustom';
-    src: url('./assets/Videos/Fonts/vQyevYAyHtARFwPqUzQGpnDs.ttf') format('truetype');
+    src: url('./assets/Fonts/vQyevYAyHtARFwPqUzQGpnDs.ttf') format('truetype');
     font-weight: 600;
 }
 
 @font-face {
     font-family: 'SolidroadCustom';
-    src: url('./assets/Videos/Fonts/dcBhZgAFiyqqQO8SkGjomdakHJ8.ttf') format('truetype');
+    src: url('./assets/Fonts/dcBhZgAFiyqqQO8SkGjomdakHJ8.ttf') format('truetype');
     font-weight: 700;
+}
+
+/* CONSOLIDATED MATTER FONT FAMILY */
+@font-face {
+    font-family: 'Matter';
+    src: url('./assets/Fonts/vQyevYAyHtARFwPqUzQGpnDs.ttf') format('truetype');
+    font-weight: 300;
 }
 
 @font-face {
     font-family: 'Matter';
-    src: url('./assets/Videos/Fonts/JnSOH7RupDCN6KVnC1gWkQOKE.ttf') format('truetype');
+    src: url('./assets/Fonts/JnSOH7RupDCN6KVnC1gWkQOKE.ttf') format('truetype');
+    font-weight: 400;
+    /* Use this for sharpest regular look */
+}
+
+@font-face {
+    font-family: 'Matter';
+    src: url('./assets/Fonts/dcBhZgAFiyqqQO8SkGjomdakHJ8.ttf') format('truetype');
+    font-weight: 700;
 }
 
 .home-container {
     background-color: #ffffff;
     width: 100%;
     font-family: 'SolidroadCustom', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    position: relative;
+    min-height: 100vh;
 }
 
 .video-hero {
     position: relative;
     width: 100%;
     height: 100vh;
-    padding: 15px;
-    /* Narrower border as requested */
-    /* Unified white border padding */
     background: #ffffff;
-    /* Removed flex to avoid pushing video down */
+    /* Unified background white */
+    overflow: hidden;
 }
 
-/* NOTCHED NAVBAR - GLOBAL STICKY OVERLAY */
-.navbar-notch-wrapper {
+/* TRULY UNIFIED STICKY HEADER + BORDER */
+.hero-unified-frame {
     position: sticky;
-    /* Sticky works better for "flexible across all home page" */
     top: 0;
     left: 0;
     width: 100%;
@@ -59,26 +76,48 @@
     z-index: 1000;
     display: flex;
     justify-content: center;
-    background: transparent;
     pointer-events: none;
+    background: transparent;
     overflow: visible;
-    /* Allows the deeper notch to be seen */
+    /* Allows the navbar and borders to be seen */
+}
+
+/* THE 16PX WHITE FRAME - STRUCTURALLY TIED TO THE STICKY HEADER */
+.hero-unified-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    border: 16px solid #ffffff;
+    /* Absolute white */
+    border-radius: 40px;
+    /* Smooth rounded internal edges */
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 2;
+    /* Ensure it stays above the video container */
 }
 
 .hero-nav-notched {
     background: #ffffff;
+    /* Absolute white */
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 60px;
-    /* Better link spacing */
+    padding: 0 40px;
+    /* Reduced side padding slightly to complement tighter width */
     border-radius: 0 0 32px 32px;
-    min-width: 1450px;
-    /* Wider for 4 links to prevent clipping */
+    min-width: 1200px;
+    /* More compact width as requested */
     height: 90px;
     position: relative;
+    top: 16px;
+    /* Sit perfectly below the 16px white top border */
     pointer-events: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+    /* Neutralized shadow to prevent color tinting */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
 }
 
 /* NOTCH CURVES - SMOOTH INTERSECTION */
@@ -97,14 +136,14 @@
     left: -30px;
     border-radius: 0 30px 0 0;
     box-shadow: 15px -15px 0 15px #ffffff;
-    /* Matches 15px border */
+    /* Flush with 15px top border */
 }
 
 .hero-nav-notched::after {
     right: -30px;
     border-radius: 30px 0 0 0;
     box-shadow: -15px -15px 0 15px #ffffff;
-    /* Matches 15px border */
+    /* Flush with 15px top border */
 }
 
 .nav-group-left,
@@ -112,6 +151,12 @@
     display: flex;
     align-items: center;
     gap: 32px;
+    flex: 1;
+    /* Center the middle logo group */
+}
+
+.nav-group-right {
+    justify-content: flex-end;
 }
 
 .nav-group-left a,
@@ -120,10 +165,14 @@
     text-decoration: none;
     font-size: 0.9rem;
     font-family: 'Matter', sans-serif !important;
-    /* Specific requested font */
     font-weight: 400;
+    /* Regular weight for maximum sharpness */
     transition: opacity 0.2s;
     white-space: nowrap;
+    /* Extreme Sharpness Rendering */
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.015em;
 }
 
 .nav-group-left a:hover,
@@ -138,16 +187,23 @@
 }
 
 .nav-logo-black {
-    height: 32px;
+    height: 48px;
+    /* Adjusted for Logo2.png */
     width: auto;
+    filter: brightness(0);
+    /* Force logo to pure black */
 }
 
 .brand-name-black {
-    font-family: inherit;
-    font-weight: 700;
-    font-size: 1.4rem;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 900;
+    font-size: 1.75rem;
     color: #000000;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
+    text-transform: uppercase;
+    line-height: 1;
+    display: flex;
+    align-items: center;
 }
 
 .nav-demo-btn-solidroad {
@@ -170,28 +226,30 @@
     background: #22c55e;
 }
 
-/* CONTAINED VIDEO SECTION */
+/* FULLSCREEN HERO VIDEO - SEALED INSIDE THE ROUNDED FRAME */
 .hero-video-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    /* Fills the 100vh minus 20px padding of parent */
+    position: absolute;
+    /* Offset by 16px to sit perfectly INSIDE the white frame */
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    /* Match the internal curve of the 40px frame (40px outer - 16px border = 24px inner) */
     border-radius: 24px;
     overflow: hidden;
     background: #000;
+    z-index: 1;
 }
 
 .hero-video-bg {
     position: absolute;
-    top: 50%;
-    left: 49.95%;
-    /* Tiny offset to cover the left black line artifact */
+    inset: 0;
     width: 100.1%;
-    /* Very slight over-width to ensure no edge gaps */
+    /* Slight over-width to cover any edge gaps */
     height: 100%;
     object-fit: cover;
-    transform: translate(-50%, -50%);
     z-index: 1;
+    /* REPLACED TRANSFORM WITH INSET + OBJECT-FIT FOR CRISP RENDERING */
 }
 
 .hero-dark-overlay {
@@ -220,7 +278,7 @@
     font-family: inherit;
     font-size: clamp(2.5rem, 5vw, 3.8rem);
     font-weight: 500;
-    /* Sharp, not too bold */
+    /* Pure white as requested */
     color: #ffffff;
     line-height: 1.15;
     margin-bottom: 12px;
@@ -229,13 +287,17 @@
 
 .hero-subtext-sharp {
     font-size: clamp(1rem, 1.2vw, 1.1rem);
-    color: rgba(255, 255, 255, 0.85);
+    color: #ffffff;
+    /* Pure white as requested */
     font-family: 'Matter', sans-serif !important;
-    /* Specific requested font */
-    line-height: 1.5;
+    font-weight: 400;
+    line-height: 1.65;
     margin-bottom: 32px;
     max-width: 650px;
-    font-weight: 400;
+    /* Extreme Sharpness Rendering (Vector-based for clear zoom) */
+    text-rendering: geometricPrecision;
+    letter-spacing: -0.015em;
+    -webkit-font-smoothing: antialiased;
 }
 
 /* EMAIL INPUT - LESS ROUNDED */
@@ -271,11 +333,16 @@
     border: none;
     outline: none;
     font-family: 'Matter', sans-serif !important;
-    /* Specific requested font */
+    font-weight: 400;
+    /* Sharp and clear */
     font-size: 0.95rem;
     color: #111827;
     width: 100%;
     background: transparent;
+    /* Extreme Sharpness Rendering */
+    text-rendering: geometricPrecision;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
 }
 
 .invite-btn-demo {
@@ -317,12 +384,19 @@
     display: flex;
     align-items: center;
     gap: 100px;
-    /* Consistent gap between items */
+    /* Restored original gap */
     width: max-content;
     padding: 0;
     margin: 0;
     animation: scroll-logos 35s linear infinite;
     will-change: transform;
+    /* transition: animation-duration 0.8s ease; // Some browsers struggle with this, but it adds a layer of smoothness */
+}
+
+/* SLOWDOWN ON HOVER (NOT PAUSE) */
+.logo-carousel-mask:hover .logo-carousel-track {
+    animation-duration: 150s;
+    /* Drag it out so it slows down significantly */
 }
 
 .logo-item {

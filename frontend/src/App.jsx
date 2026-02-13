@@ -7,12 +7,10 @@ function App() {
   return (
     <Router>
       <GlobalGlow />
-      <div className="premium-smooth">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/chatbot" element={<Chatbot />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/chatbot" element={<Chatbot />} />
+      </Routes>
     </Router>
   );
 }

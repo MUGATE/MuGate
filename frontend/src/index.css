@@ -99,24 +99,17 @@ body {
   }
 }
 
-/* ── PREMIUM SMOOTHING ── */
-.premium-smooth {
-  filter: blur(0.55px);
-  /* Increased for extra "down to top" softness */
-  transition: filter 0.3s ease;
-}
+/* ── PREMIUM SMOOTHING REMOVED TO FIX BLUR ── */
 
-/* ── CINEMATIC VIGNETTE (Edge Blur) ── */
+/* ── CINEMATIC VIGNETTE (Standard Gradient for Sharpness) ── */
 .cinematic-vignette {
   position: absolute;
   inset: 0;
   z-index: 2;
   /* Over the blobs */
   pointer-events: none;
-  /* Massive blurry edges using mask and backdrop-filter */
-  backdrop-filter: blur(15px);
-  mask-image: radial-gradient(circle, transparent 40%, black 100%);
-  -webkit-mask-image: radial-gradient(circle, transparent 40%, black 100%);
+  /* Replaced backdrop-filter with standard gradient to maintain text vector sharpness */
+  background: radial-gradient(circle, transparent 40%, rgba(10, 12, 16, 0.4) 100%);
   opacity: 0.6;
 }
 

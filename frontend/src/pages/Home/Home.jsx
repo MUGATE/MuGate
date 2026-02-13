@@ -1,8 +1,8 @@
 import React from "react";
-import "./home.css";
+import "./Home.css";
 import heroVideo from "./assets/Videos/MU VIDEO LANDING PAGE.mp4";
 
-import logo from "./assets/Videos/Logo.png";
+import logo from "./assets/Images/Logo2.png";
 
 const Section = ({ id, children, className = "" }) => {
   return (
@@ -15,21 +15,20 @@ const Section = ({ id, children, className = "" }) => {
 const Home = () => {
   return (
     <div className="home-container">
-
-      {/* TOP NAVBAR - NOTCHED TAB DESIGN (GLOBAL STICKY) */}
-      <div className="navbar-notch-wrapper">
+      {/* THE ENTIRE WHITE FRAME (TOP, LEFT, RIGHT, BOTTOM) + NAVBAR MOVES AS ONE */}
+      <div className="hero-unified-frame">
         <nav className="hero-nav-notched">
           <div className="nav-group-left">
-            <a href="#internships">Internships <span className="chevron">⌄</span></a>
+            <a href="#internships">Internships</a>
             <a href="#resume">Resume</a>
-            <a href="#chatbot">Chatbot <span className="chevron">⌄</span></a>
+            <a href="#chatbot">Chatbot</a>
             <a href="#scheduler">Scheduler</a>
           </div>
 
           <div className="nav-group-center">
             <div className="branding-logo-box">
               <img src={logo} alt="MuGate Logo" className="nav-logo-black" />
-              <span className="brand-name-black">MuGate</span>
+              <span className="brand-name-black">MUGATE</span>
             </div>
           </div>
 
@@ -62,7 +61,7 @@ const Home = () => {
           <div className="hero-content-wrapper">
             <div className="hero-text-block-refined">
               <h1 className="hero-heading-sharp">
-                QA and train your <br /> human and AI agents
+                Welcome To The <br /> Al Maaref University Gate
               </h1>
               <p className="hero-subtext-sharp">
                 Make every customer interaction better, faster, and more consistent <br />
@@ -90,23 +89,21 @@ const Home = () => {
           <div className="logo-carousel-mask">
             <div className="logo-carousel-track">
               {/* First Set */}
-              <span className="logo-item">crypto.com</span>
-              <span className="logo-item">Podium</span>
-              <span className="logo-item">FINOM</span>
-              <span className="logo-item">RYANAIR</span>
-              <span className="logo-item">amenitiz</span>
-              <span className="logo-item">fever</span>
-              <span className="logo-item">F A I R E</span>
-              <span className="logo-item">ŌURA</span>
+              <span className="logo-item">Engineering</span>
+              <span className="logo-item">Sciences</span>
+              <span className="logo-item">Business Administration</span>
+              <span className="logo-item">Mass Communication and Fine Arts</span>
+              <span className="logo-item">Health Sciences</span>
+              <span className="logo-item">Religions and Human Sciences</span>
+              <span className="logo-item">Education</span>
               {/* Second Set (Perfect Mirror for seamless loop) */}
-              <span className="logo-item">crypto.com</span>
-              <span className="logo-item">Podium</span>
-              <span className="logo-item">FINOM</span>
-              <span className="logo-item">RYANAIR</span>
-              <span className="logo-item">amenitiz</span>
-              <span className="logo-item">fever</span>
-              <span className="logo-item">F A I R E</span>
-              <span className="logo-item">ŌURA</span>
+              <span className="logo-item">Engineering</span>
+              <span className="logo-item">Sciences</span>
+              <span className="logo-item">Business Administration</span>
+              <span className="logo-item">Mass Communication and Fine Arts</span>
+              <span className="logo-item">Health Sciences</span>
+              <span className="logo-item">Religions and Human Sciences</span>
+              <span className="logo-item">Education</span>
             </div>
           </div>
         </div>
