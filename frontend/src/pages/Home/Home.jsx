@@ -33,9 +33,9 @@ const Home = () => {
           </div>
 
           <div className="nav-group-right">
-            <a href="#login" className="nav-signin">Sign in</a>
+            <a href="#login" className="nav-signin">Register</a>
             <button className="nav-demo-btn-solidroad">
-              See a demo <span className="btn-arrow">→</span>
+              Sign in <span className="btn-arrow">→</span>
             </button>
           </div>
         </nav>
@@ -64,8 +64,8 @@ const Home = () => {
                 Welcome To The <br /> Al Maaref University Gate
               </h1>
               <p className="hero-subtext-sharp">
-                Make every customer interaction better, faster, and more consistent <br />
-                with the optimization platform for CX agents.
+                A university-scoped AI platform unifying internships, scheduling,<br />
+                and academic guidance into one intelligent decision system.
               </p>
 
               <div className="email-input-group-rect">
@@ -79,7 +79,7 @@ const Home = () => {
                   <input type="email" placeholder="Email address" />
                 </div>
                 <button className="invite-btn-demo">
-                  See a demo <span className="btn-arrow">→</span>
+                  Sign in <span className="btn-arrow">→</span>
                 </button>
               </div>
             </div>
@@ -87,23 +87,25 @@ const Home = () => {
 
           {/* INFINITE LOGO CAROUSEL */}
           <div className="logo-carousel-mask">
-            <div className="logo-carousel-track">
-              {/* First Set */}
-              <span className="logo-item">Engineering</span>
-              <span className="logo-item">Sciences</span>
-              <span className="logo-item">Business Administration</span>
-              <span className="logo-item">Mass Communication and Fine Arts</span>
-              <span className="logo-item">Health Sciences</span>
-              <span className="logo-item">Religions and Human Sciences</span>
-              <span className="logo-item">Education</span>
-              {/* Second Set (Perfect Mirror for seamless loop) */}
-              <span className="logo-item">Engineering</span>
-              <span className="logo-item">Sciences</span>
-              <span className="logo-item">Business Administration</span>
-              <span className="logo-item">Mass Communication and Fine Arts</span>
-              <span className="logo-item">Health Sciences</span>
-              <span className="logo-item">Religions and Human Sciences</span>
-              <span className="logo-item">Education</span>
+            <div className="logo-carousel-slow-wrapper">
+              <div className="logo-carousel-track">
+                {/* First Set */}
+                <span className="logo-item">Engineering</span>
+                <span className="logo-item">Sciences</span>
+                <span className="logo-item">Business Administration</span>
+                <span className="logo-item">Mass Communication and Fine Arts</span>
+                <span className="logo-item">Health Sciences</span>
+                <span className="logo-item">Religions and Human Sciences</span>
+                <span className="logo-item">Education</span>
+                {/* Second Set (Perfect Mirror for seamless loop) */}
+                <span className="logo-item">Engineering</span>
+                <span className="logo-item">Sciences</span>
+                <span className="logo-item">Business Administration</span>
+                <span className="logo-item">Mass Communication and Fine Arts</span>
+                <span className="logo-item">Health Sciences</span>
+                <span className="logo-item">Religions and Human Sciences</span>
+                <span className="logo-item">Education</span>
+              </div>
             </div>
           </div>
         </div>
