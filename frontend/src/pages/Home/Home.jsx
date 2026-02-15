@@ -1,6 +1,7 @@
 import React from "react";
 import "./Home.css";
 import heroVideo from "./assets/Videos/MU VIDEO LANDING PAGE.mp4";
+import InstructorCarousel from "./DoctorCarousel";
 
 import logo from "./assets/Images/Logo2.png";
 
@@ -111,7 +112,10 @@ const Home = () => {
         </div>
       </section>
 
-      {/* SECTION 2 — FEATURE */}
+      {/* SECTION 2 — INSTRUCTORS CAROUSEL */}
+      <InstructorCarousel />
+
+      {/* SECTION 3 — FEATURE */}
       <Section id="feature1">
         <div className="split-layout">
           <div className="text">
@@ -125,7 +129,7 @@ const Home = () => {
         </div>
       </Section>
 
-      {/* SECTION 3 — FEATURE */}
+      {/* SECTION 4 — FEATURE */}
       <Section id="feature2">
         <div className="split-layout reverse">
           <div className="text">
@@ -139,7 +143,7 @@ const Home = () => {
         </div>
       </Section>
 
-      {/* SECTION 4 — FEATURE */}
+      {/* SECTION 5 — FEATURE */}
       <Section id="feature3">
         <h2 className="center-title">Built For Scale</h2>
         <p className="center-text">
@@ -147,7 +151,7 @@ const Home = () => {
         </p>
       </Section>
 
-      {/* SECTION 5 — FEATURE */}
+      {/* SECTION 6 — FEATURE */}
       <Section id="feature4">
         <div className="split-layout">
           <div className="text">
@@ -160,7 +164,7 @@ const Home = () => {
         </div>
       </Section>
 
-      {/* SECTION 6 — OUTRO */}
+      {/* SECTION 7 — OUTRO */}
       <Section id="outro" className="outro">
         <h2 className="outro-title">Ready To Experience It?</h2>
         <button

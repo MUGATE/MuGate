@@ -1,0 +1,665 @@
+/* ============================================================
+   3D GLASS CARD CAROUSEL — INSTRUCTORS SECTION
+   7 visible cards, glassmorphism, cinematic Generate button
+   ============================================================ */
+
+/* ── SECTION CONTAINER ── */
+.instructor-carousel-section {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 100px 0 80px;
+}
+
+/* Section heading */
+.instructor-carousel-heading {
+    text-align: center;
+    margin-bottom: 64px;
+    z-index: 1;
+    position: relative;
+}
+
+.instructor-carousel-heading h2 {
+    font-family: "SolidroadCustom", sans-serif;
+    font-size: clamp(3rem, 6vw, 4.5rem);
+    font-weight: 900;
+    color: #0e220e;
+    letter-spacing: -0.03em;
+    margin: 0 0 10px;
+    line-height: 1.15;
+    -webkit-text-stroke: 0.5px #0e220e;
+}
+
+.instructor-carousel-heading p {
+    font-family: "Matter", sans-serif;
+    font-size: clamp(1rem, 1.6vw, 1.2rem);
+    color: #666666;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+
+.carousel-subtitle-secondary {
+    font-family: "Matter", sans-serif;
+    font-size: clamp(0.9rem, 1.3vw, 1.05rem);
+    color: #999999;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    margin: 6px auto 0;
+    line-height: 1.5;
+}
+
+/* ── CAROUSEL TRACK ── */
+.carousel-track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 1800px;
+    height: 580px;
+    perspective: 1600px;
+    z-index: 1;
+}
+
+/* ── INDIVIDUAL CARD WRAPPER ── */
+.carousel-card-wrapper {
+    position: absolute;
+    width: 300px;
+    height: 420px;
+    cursor: pointer;
+    transition: transform 0.8s ease-in-out,
+        opacity 0.8s ease-in-out,
+        filter 0.8s ease-in-out;
+    transform-style: preserve-3d;
+}
+
+/* ── 7 POSITION CLASSES ──
+   Layout: [-3] [-2] [-1] [0 CENTER] [+1] [+2] [+3]
+   Scales:  0.6  0.75  0.9     1.0     0.9  0.75  0.6
+   ───────────────────────────────────────────────── */
+
+/* Far-left edge */
+.carousel-card-wrapper.pos-neg3 {
+    transform: translateX(-600px) scale(0.6) translateY(30px);
+    z-index: 1;
+    opacity: 0.45;
+    filter: brightness(0.7);
+}
+
+/* Left */
+.carousel-card-wrapper.pos-neg2 {
+    transform: translateX(-410px) scale(0.75) translateY(18px);
+    z-index: 2;
+    opacity: 0.6;
+    filter: brightness(0.78);
+}
+
+/* Inner left */
+.carousel-card-wrapper.pos-neg1 {
+    transform: translateX(-215px) scale(0.9) translateY(6px);
+    z-index: 3;
+    opacity: 0.85;
+    filter: brightness(0.9);
+}
+
+/* CENTER — Hero card */
+.carousel-card-wrapper.pos-0 {
+    transform: translateX(0px) scale(1) translateY(-30px);
+    z-index: 5;
+    opacity: 1;
+    filter: brightness(1);
+}
+
+/* Inner right */
+.carousel-card-wrapper.pos-pos1 {
+    transform: translateX(215px) scale(0.9) translateY(6px);
+    z-index: 3;
+    opacity: 0.85;
+    filter: brightness(0.9);
+}
+
+/* Right */
+.carousel-card-wrapper.pos-pos2 {
+    transform: translateX(410px) scale(0.75) translateY(18px);
+    z-index: 2;
+    opacity: 0.6;
+    filter: brightness(0.78);
+}
+
+/* Far-right edge */
+.carousel-card-wrapper.pos-pos3 {
+    transform: translateX(600px) scale(0.6) translateY(30px);
+    z-index: 1;
+    opacity: 0.45;
+    filter: brightness(0.7);
+}
+
+/* Hidden card — invisible, centered, no interaction */
+.carousel-card-wrapper.pos-hidden {
+    transform: translateX(0) scale(0.5) translateY(30px);
+    opacity: 0;
+    z-index: 0;
+    pointer-events: none;
+    filter: brightness(0.5);
+}
+
+/* ── ENTRY / EXIT KEYFRAME ANIMATIONS ──
+   Cards enter/exit from page borders, never crossing the screen.
+   @keyframes override transitions during animation playback.
+   ─────────────────────────────────────────────────────────── */
+
+/* Disable CSS transitions on animating cards so keyframes have full control */
+.carousel-card-wrapper.entering-from-right,
+.carousel-card-wrapper.entering-from-left,
+.carousel-card-wrapper.exiting-to-right,
+.carousel-card-wrapper.exiting-to-left,
+.carousel-card-wrapper.no-transition {
+    transition: none !important;
+}
+
+/* ── ENTER FROM RIGHT PAGE BORDER ── */
+@keyframes slideInFromRight {
+    from {
+        transform: translateX(calc(50vw + 200px)) scale(0.6) translateY(30px);
+        opacity: 0;
+        filter: brightness(0.5);
+    }
+}
+
+.carousel-card-wrapper.entering-from-right {
+    animation: slideInFromRight 0.8s ease-in-out;
+}
+
+/* ── ENTER FROM LEFT PAGE BORDER ── */
+@keyframes slideInFromLeft {
+    from {
+        transform: translateX(calc(-50vw - 200px)) scale(0.6) translateY(30px);
+        opacity: 0;
+        filter: brightness(0.5);
+    }
+}
+
+.carousel-card-wrapper.entering-from-left {
+    animation: slideInFromLeft 0.8s ease-in-out;
+}
+
+/* ── EXIT TO LEFT PAGE BORDER ──
+   Exiting cards keep their OLD position class, so the implicit `from`
+   matches their actual visible position. Only `to` is needed.
+   ────────────────────────────────────────────────────────────────── */
+@keyframes slideOutToLeft {
+    to {
+        transform: translateX(calc(-50vw - 200px)) scale(0.5) translateY(30px);
+        opacity: 0;
+        filter: brightness(0.5);
+    }
+}
+
+.carousel-card-wrapper.exiting-to-left {
+    animation: slideOutToLeft 0.8s ease-in-out forwards;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ── EXIT TO RIGHT PAGE BORDER ── */
+@keyframes slideOutToRight {
+    to {
+        transform: translateX(calc(50vw + 200px)) scale(0.5) translateY(30px);
+        opacity: 0;
+        filter: brightness(0.5);
+    }
+}
+
+.carousel-card-wrapper.exiting-to-right {
+    animation: slideOutToRight 0.8s ease-in-out forwards;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ── CARD INNER (flip container) ── */
+.carousel-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.carousel-card-wrapper.flipped .carousel-card-inner {
+    transform: rotateY(180deg);
+}
+
+/* ── CARD FACES (shared base) ── */
+.card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 22px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    overflow: hidden;
+}
+
+/* ── FRONT FACE ── */
+.card-front {
+    /* Glass morphism — no color gradient, pure frosted glass */
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* Instructor image — shown clearly, no color tint */
+.card-front-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center bottom;
+    background: rgba(200, 200, 210, 0.08);
+    display: block;
+}
+
+/* Placeholder when no image is set — neutral frosted glass look */
+.card-front-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(200, 200, 210, 0.15);
+}
+
+.card-front-placeholder .placeholder-icon {
+    font-size: 4.5rem;
+    opacity: 0.3;
+    user-select: none;
+}
+
+/* Name overlay at bottom */
+.card-front-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 44px 22px 22px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.card-front-name {
+    font-family: "SolidroadCustom", sans-serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.card-front-department {
+    font-family: "Matter", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.75);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+/* ── BACK FACE ── */
+.card-back {
+    transform: rotateY(180deg);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 36px 28px;
+    gap: 14px;
+}
+
+.card-back-name {
+    font-family: "SolidroadCustom", sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.card-back-department {
+    font-family: "Matter", sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0;
+}
+
+.card-back-divider {
+    width: 44px;
+    height: 2px;
+    background: rgba(0, 0, 0, 0.12);
+    border: none;
+    margin: 0;
+}
+
+.card-back-bio {
+    font-family: "Matter", sans-serif;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #444444;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.card-back-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: auto;
+}
+
+.card-back-meta span {
+    font-family: "Matter", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: #888888;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-back-meta .meta-icon {
+    font-size: 0.95rem;
+    width: 18px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+/* ── HOVER STATES ── */
+.carousel-card-wrapper:not(.pos-0):hover {
+    filter: brightness(1) !important;
+    opacity: 0.9 !important;
+}
+
+.carousel-card-wrapper.pos-0 .card-front {
+    transition: box-shadow 0.3s ease;
+}
+
+.carousel-card-wrapper.pos-0:hover .card-front {
+    box-shadow: 0 14px 48px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ══════════════════════════════════════════════════
+   CINEMATIC GENERATE BUTTON
+   ══════════════════════════════════════════════════ */
+.carousel-generate-area {
+    margin-top: 16px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.carousel-generate-btn {
+    position: relative;
+    font-family: "SolidroadCustom", sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.02em;
+    padding: 24px 80px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 18px;
+    cursor: pointer;
+    overflow: hidden;
+    z-index: 1;
+
+    /* Vibrant gradient */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 200%;
+
+    /* Glass layer */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    /* Cinematic shadow */
+    box-shadow:
+        0 8px 32px rgba(102, 126, 234, 0.35),
+        0 4px 16px rgba(118, 75, 162, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+    /* Smooth gradient animation */
+    animation: btn-gradient-shift 4s ease infinite;
+
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.3s ease;
+}
+
+/* Shimmer overlay */
+.carousel-generate-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.15) 50%,
+            transparent 100%);
+    transition: left 0.6s ease;
+    z-index: -1;
+}
+
+.carousel-generate-btn:hover::before {
+    left: 100%;
+}
+
+.carousel-generate-btn:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow:
+        0 14px 48px rgba(102, 126, 234, 0.5),
+        0 8px 28px rgba(118, 75, 162, 0.35),
+        0 0 60px rgba(102, 126, 234, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.carousel-generate-btn:active {
+    transform: translateY(-1px) scale(1.01);
+}
+
+/* Subtle pulsing glow ring */
+.carousel-generate-btn::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+    z-index: -2;
+    opacity: 0;
+    filter: blur(12px);
+    transition: opacity 0.3s ease;
+}
+
+.carousel-generate-btn:hover::after {
+    opacity: 0.6;
+    animation: btn-glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes btn-gradient-shift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes btn-glow-pulse {
+
+    0%,
+    100% {
+        opacity: 0.4;
+        filter: blur(12px);
+    }
+
+    50% {
+        opacity: 0.7;
+        filter: blur(18px);
+    }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1600px) {
+    .carousel-card-wrapper {
+        width: 260px;
+        height: 380px;
+    }
+
+    .carousel-track {
+        height: 500px;
+    }
+
+    .carousel-card-wrapper.pos-neg3 {
+        transform: translateX(-510px) scale(0.6) translateY(28px);
+    }
+
+    .carousel-card-wrapper.pos-neg2 {
+        transform: translateX(-350px) scale(0.75) translateY(16px);
+    }
+
+    .carousel-card-wrapper.pos-neg1 {
+        transform: translateX(-185px) scale(0.9) translateY(5px);
+    }
+
+    .carousel-card-wrapper.pos-pos1 {
+        transform: translateX(185px) scale(0.9) translateY(5px);
+    }
+
+    .carousel-card-wrapper.pos-pos2 {
+        transform: translateX(350px) scale(0.75) translateY(16px);
+    }
+
+    .carousel-card-wrapper.pos-pos3 {
+        transform: translateX(510px) scale(0.6) translateY(28px);
+    }
+}
+
+@media (max-width: 1200px) {
+    .carousel-card-wrapper {
+        width: 220px;
+        height: 320px;
+    }
+
+    .carousel-track {
+        height: 430px;
+    }
+
+    .carousel-card-wrapper.pos-neg3 {
+        transform: translateX(-420px) scale(0.58) translateY(26px);
+    }
+
+    .carousel-card-wrapper.pos-neg2 {
+        transform: translateX(-290px) scale(0.72) translateY(14px);
+    }
+
+    .carousel-card-wrapper.pos-neg1 {
+        transform: translateX(-150px) scale(0.88) translateY(4px);
+    }
+
+    .carousel-card-wrapper.pos-pos1 {
+        transform: translateX(150px) scale(0.88) translateY(4px);
+    }
+
+    .carousel-card-wrapper.pos-pos2 {
+        transform: translateX(290px) scale(0.72) translateY(14px);
+    }
+
+    .carousel-card-wrapper.pos-pos3 {
+        transform: translateX(420px) scale(0.58) translateY(26px);
+    }
+}
+
+@media (max-width: 900px) {
+    .carousel-card-wrapper {
+        width: 180px;
+        height: 270px;
+    }
+
+    .carousel-track {
+        height: 360px;
+    }
+
+    .carousel-card-wrapper.pos-neg3 {
+        transform: translateX(-330px) scale(0.55) translateY(22px);
+    }
+
+    .carousel-card-wrapper.pos-neg2 {
+        transform: translateX(-230px) scale(0.68) translateY(12px);
+    }
+
+    .carousel-card-wrapper.pos-neg1 {
+        transform: translateX(-120px) scale(0.84) translateY(4px);
+    }
+
+    .carousel-card-wrapper.pos-0 {
+        transform: translateX(0) scale(1) translateY(-18px);
+    }
+
+    .carousel-card-wrapper.pos-pos1 {
+        transform: translateX(120px) scale(0.84) translateY(4px);
+    }
+
+    .carousel-card-wrapper.pos-pos2 {
+        transform: translateX(230px) scale(0.68) translateY(12px);
+    }
+
+    .carousel-card-wrapper.pos-pos3 {
+        transform: translateX(330px) scale(0.55) translateY(22px);
+    }
+
+    .card-back {
+        padding: 20px 16px;
+        gap: 10px;
+    }
+
+    .card-back-name {
+        font-size: 1.05rem;
+    }
+
+    .card-back-bio {
+        font-size: 0.8rem;
+    }
+
+    .carousel-generate-btn {
+        font-size: 1.15rem;
+        padding: 20px 56px;
+    }
+}
