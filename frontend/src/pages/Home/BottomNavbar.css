@@ -1,0 +1,156 @@
+/* ══════════════════════════════════════════════════
+   BOTTOM NAVBAR — Compact, centered, external rounded bottom corners
+   Inverse of top navbar shape (which has border-radius: 0 0 32px 32px
+   with external notch curves at top via ::before/::after)
+   ══════════════════════════════════════════════════ */
+
+.bottom-navbar {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    width: auto;
+    height: auto;
+    padding: 12px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    overflow: visible;
+
+    /* Top corners: 16px internal rounding (normal) */
+    border-radius: 16px 16px 0 0;
+
+    /* Use drop-shadow so it wraps the ENTIRE shape including pseudo-elements */
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+
+    /* Hidden by default — below viewport */
+    /* translateX(-50%) keeps it centered; translateY(100%) hides it */
+    transform: translateX(-50%) translateY(calc(100% + 32px));
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+}
+
+.bottom-navbar.visible {
+    transform: translateX(-50%) translateY(0);
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── EXTERNAL ROUNDED CORNERS AT BOTTOM ──
+   Same technique as the top navbar's notch curves (::before/::after
+   with transparent background + box-shadow) but inverted for the bottom.
+   
+   Creates outward-curving "ears" at the bottom corners:
+        ┌────────────────┐
+        │     NAVBAR     │
+        │                │
+   ╭────┘                └────╮  ← external curves via box-shadow
+   ──────────────────────────── 
+   ─────────────────────────────────────────────── */
+
+.bottom-navbar::before,
+.bottom-navbar::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    pointer-events: none;
+}
+
+/* External curve — bottom left */
+.bottom-navbar::before {
+    left: -32px;
+    border-radius: 0 0 32px 0;
+    box-shadow: 16px 16px 0 16px #ffffff;
+}
+
+/* External curve — bottom right */
+.bottom-navbar::after {
+    right: -32px;
+    border-radius: 0 0 0 32px;
+    box-shadow: -16px 16px 0 16px #ffffff;
+}
+
+/* ── DARK BLUE BUTTON — Clean, no effects ── */
+
+.bottom-navbar-btn {
+    font-family: "SolidroadCustom", sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.02em;
+    padding: 12px 24px 12px 32px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    /* Animated gradient — copied from carousel-generate-btn */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 200%;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    animation: bottom-btn-gradient-shift 4s ease infinite;
+
+    /* No shadow, no glow */
+    box-shadow: none;
+}
+
+@keyframes bottom-btn-gradient-shift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Arrow rotates up on hover */
+.bottom-navbar-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 200%;
+    transform: none;
+    box-shadow: none;
+}
+
+.bottom-navbar-btn:hover .bottom-navbar-arrow-circle {
+    transform: rotate(-90deg);
+}
+
+.bottom-navbar-btn:active {
+    transform: none;
+}
+
+/* ── ARROW IN CIRCLE ── */
+
+.bottom-navbar-arrow-circle {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #ffffff;
+    transition: transform 0.3s ease;
+}
+
+/* ── BUTTON TEXT ── */
+
+.bottom-navbar-btn-text {
+    position: relative;
+    display: inline-block;
+    min-width: 1px;
+}

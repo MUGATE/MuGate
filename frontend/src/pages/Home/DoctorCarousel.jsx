@@ -99,7 +99,8 @@ const CardFront = ({ instructor }) => (
     </>
 );
 
-const InstructorCarousel = () => {
+const InstructorCarousel = (props) => {
+    const { "data-page": dataPage, ...otherProps } = props;
     const [activeIndex, setActiveIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
     const isAnimating = useRef(false);
@@ -178,11 +179,10 @@ const InstructorCarousel = () => {
     const allCards = getAllCards();
 
     return (
-        <section className="instructor-carousel-section" id="instructors">
+        <section className="instructor-carousel-section" id="instructors" data-page={dataPage}>
             <div className="instructor-carousel-heading">
-                <h2>Generate Your Schedule</h2>
-                <p>Choose Your Instructor</p>
-                <p className="carousel-subtitle-secondary">Select a course</p>
+                <h2>Struggling to Build the Perfect Schedule?</h2>
+                <p>Our intelligent scheduling system generates an optimized timetable tailored to your selected courses and preferences.</p>
             </div>
 
             <div className="carousel-track">
@@ -296,8 +296,8 @@ const InstructorCarousel = () => {
                     <div
                         key={`ghost-${ghost.id}`}
                         className={`carousel-card-wrapper ${POSITION_CLASSES[ghost.fromOff]} ${ghost.direction === "right"
-                                ? "exiting-to-left"
-                                : "exiting-to-right"
+                            ? "exiting-to-left"
+                            : "exiting-to-right"
                             }`}
                         aria-hidden="true"
                         style={{ pointerEvents: "none" }}
@@ -311,9 +311,6 @@ const InstructorCarousel = () => {
                 ))}
             </div>
 
-            <div className="carousel-generate-area">
-                <button className="carousel-generate-btn">Generate</button>
-            </div>
         </section>
     );
 };

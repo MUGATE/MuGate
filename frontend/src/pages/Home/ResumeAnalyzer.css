@@ -1,0 +1,339 @@
+/* ══════════════════════════════════════════════════
+   PAGE 3 — AI RESUME ANALYZER SECTION
+   Two-column layout: glassy CV preview + content
+   ══════════════════════════════════════════════════ */
+
+.resume-analyzer-section {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    background: linear-gradient(to bottom, #ffffff 0%, #f5f5f5 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 80px;
+    overflow: hidden;
+}
+
+/* ── INNER CONTAINER — TWO COLUMNS ── */
+
+.resume-analyzer-inner {
+    display: flex;
+    align-items: center;
+    gap: 80px;
+    max-width: 1300px;
+    width: 100%;
+}
+
+/* ── LEFT: GLASSY CV CONTAINER ── */
+
+.resume-cv-container {
+    flex: 0 0 40%;
+    display: flex;
+    justify-content: center;
+}
+
+.resume-cv-glass {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    aspect-ratio: 8.5 / 11;
+    border-radius: 24px;
+    overflow: hidden;
+
+    /* Glassmorphism — matches instructor card style */
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.resume-cv-glass:hover {
+    transform: translateY(-6px);
+    box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.resume-cv-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+}
+
+/* ── AI ANNOTATION BADGES ── */
+
+.ai-badge {
+    position: absolute;
+    right: -12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-family: "Matter", sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+    animation: badge-float 3s ease-in-out infinite;
+}
+
+.ai-badge-top {
+    top: 18%;
+    animation-delay: 0s;
+}
+
+.ai-badge-mid {
+    top: 48%;
+    right: -18px;
+    animation-delay: 1s;
+}
+
+.ai-badge-bot {
+    top: 75%;
+    animation-delay: 2s;
+}
+
+.ai-badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    flex-shrink: 0;
+}
+
+@keyframes badge-float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+/* ── RIGHT: CONTENT SECTION ── */
+
+.resume-content-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.resume-title {
+    font-family: "SolidroadCustom", sans-serif;
+    font-size: clamp(2.4rem, 4.5vw, 3.5rem);
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin: 0 0 24px;
+}
+
+.resume-title-accent {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.resume-subtitle {
+    font-family: "Matter", sans-serif;
+    font-size: clamp(1rem, 1.4vw, 1.15rem);
+    font-weight: 400;
+    color: #4a5568;
+    line-height: 1.8;
+    max-width: 560px;
+    margin: 0 0 32px;
+    letter-spacing: -0.01em;
+}
+
+/* ── FEATURES LIST ── */
+
+.resume-features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 36px;
+}
+
+.resume-feature-item {
+    font-family: "Matter", sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: -0.01em;
+}
+
+.resume-feature-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* ── UPLOAD BUTTON — Gradient matching bottom navbar ── */
+
+.upload-resume-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-family: "SolidroadCustom", sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.02em;
+    padding: 16px 36px 16px 44px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 14px;
+    cursor: pointer;
+    margin-bottom: 36px;
+    align-self: flex-start;
+
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 200%;
+    animation: resume-btn-gradient 4s ease infinite;
+
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.upload-resume-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(102, 126, 234, 0.4);
+}
+
+.upload-resume-btn:hover .upload-arrow-circle {
+    transform: rotate(-90deg);
+}
+
+.upload-arrow-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #ffffff;
+    transition: transform 0.3s ease;
+}
+
+@keyframes resume-btn-gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* ── TRUST INDICATORS ── */
+
+.resume-trust {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.resume-trust-text {
+    font-family: "Matter", sans-serif;
+    font-size: 0.92rem;
+    font-weight: 400;
+    color: #718096;
+    margin: 0;
+}
+
+.resume-trust-text strong {
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.resume-trust-rating {
+    font-size: 0.88rem;
+    color: #a0aec0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.resume-trust-rating span {
+    font-family: "Matter", sans-serif;
+    font-weight: 400;
+}
+
+/* ── RESPONSIVE ── */
+
+@media (max-width: 1100px) {
+    .resume-analyzer-section {
+        padding: 80px 40px;
+    }
+
+    .resume-analyzer-inner {
+        gap: 48px;
+    }
+}
+
+@media (max-width: 900px) {
+    .resume-analyzer-inner {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .resume-cv-container {
+        flex: none;
+        width: 100%;
+        max-width: 340px;
+    }
+
+    .resume-content-section {
+        align-items: center;
+    }
+
+    .resume-subtitle {
+        max-width: none;
+    }
+
+    .upload-resume-btn {
+        align-self: center;
+    }
+
+    .resume-features-list {
+        align-items: center;
+    }
+
+    .ai-badge {
+        display: none;
+    }
+}
