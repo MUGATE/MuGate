@@ -3,6 +3,7 @@ import "./Home.css";
 import heroVideo from "./assets/Videos/MU VIDEO LANDING PAGE.mp4";
 import InstructorCarousel from "./DoctorCarousel";
 import ResumeAnalyzer from "./ResumeAnalyzer";
+import InternshipShowcase from "./InternshipShowcase";
 import BottomNavbar from "./BottomNavbar";
 
 import logo from "./assets/Images/Logo2.png";
@@ -120,19 +121,8 @@ const Home = () => {
       {/* SECTION 3 — AI RESUME ANALYZER */}
       <ResumeAnalyzer data-page="3" />
 
-      {/* SECTION 4 — FEATURE */}
-      <Section id="feature2" data-page="4">
-        <div className="split-layout reverse">
-          <div className="text">
-            <h2>Seamless Interaction</h2>
-            <p>
-              A refined user experience combining modern motion design
-              with intuitive navigation.
-            </p>
-          </div>
-          <div className="visual-placeholder" />
-        </div>
-      </Section>
+      {/* SECTION 4 — INTERNSHIP SHOWCASE */}
+      <InternshipShowcase data-page="4" />
 
       {/* SECTION 5 — FEATURE */}
       <Section id="feature3" data-page="5">

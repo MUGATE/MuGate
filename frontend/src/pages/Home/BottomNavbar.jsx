@@ -13,8 +13,8 @@ import "./BottomNavbar.css";
 const PAGE_BUTTON_TEXT = {
     1: null,        // Hidden
     2: "Generate",
-    3: "Explore",
-    4: "Discover",
+    3: "Upload",
+    4: "Explore",
     5: "Create",
     6: "Learn",
     7: null,        // Hidden

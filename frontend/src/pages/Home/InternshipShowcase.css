@@ -1,0 +1,215 @@
+/* ══════════════════════════════════════════════════
+   PAGE 4 — INTERNSHIP SHOWCASE WITH PARALLAX
+   Organic image layout + scroll-based animations
+   ══════════════════════════════════════════════════ */
+
+/* ── SECTION CONTAINER ── */
+.internship-showcase-section {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    background: linear-gradient(to bottom, #ebebeb 0%, #ffffff 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 0 120px;
+    overflow: hidden;
+}
+
+/* ── TEXT SECTION ── */
+.internship-text-block {
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto 72px;
+    padding: 0 40px;
+    z-index: 2;
+    position: relative;
+}
+
+/* Match Page 2 "Struggling to Build the Perfect Schedule?" style exactly */
+.internship-text-line {
+    display: block;
+    font-family: "SolidroadCustom", sans-serif;
+    font-size: clamp(1.5rem, 2.8vw, 2.9rem);
+    font-weight: 900;
+    color: #0e220e;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    -webkit-text-stroke: 0.5px #0e220e;
+    opacity: 0.2;
+    transition: opacity 0.4s ease;
+    white-space: nowrap;
+}
+
+/* ── IMAGES VIEWPORT ── */
+.internship-images-viewport {
+    position: relative;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
+    padding: 40px 0;
+}
+
+/* Inner track — holds all images, translated via JS */
+.internship-images-track {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: max-content;
+    will-change: transform;
+    /* Offset to center the initial view — pushed left so images 1-8 are visible */
+    padding: 0 40px;
+}
+
+/* ── INDIVIDUAL IMAGE CONTAINER ── */
+.internship-image-wrapper {
+    position: relative;
+    flex-shrink: 0;
+    border-radius: 14px;
+    overflow: visible;
+    cursor: default;
+    will-change: transform;
+    transition: transform 0.1s linear;
+}
+
+.internship-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+/* ── HOVER OVERLAY ── */
+.internship-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    padding: 20px;
+}
+
+.internship-image-wrapper:hover .internship-overlay {
+    opacity: 1;
+}
+
+.overlay-title {
+    font-family: "SolidroadCustom", sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #ffffff;
+    margin-bottom: 4px;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+    letter-spacing: -0.01em;
+}
+
+.internship-image-wrapper:hover .overlay-title {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.overlay-divider {
+    width: 2px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.7);
+    margin: 8px 0;
+    opacity: 0;
+    transition: opacity 0.3s ease 0.15s;
+}
+
+.internship-image-wrapper:hover .overlay-divider {
+    opacity: 1;
+}
+
+.overlay-description {
+    font-family: "Matter", sans-serif;
+    font-weight: 400;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.5;
+    max-width: 85%;
+    margin: 0 auto;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.3s ease 0.18s, transform 0.3s ease 0.18s;
+}
+
+.internship-image-wrapper:hover .overlay-description {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ── ORGANIC LAYOUT — vertical offset per image via CSS variable ── */
+.internship-image-wrapper {
+    margin-top: var(--offset-y, 0px);
+    margin-right: var(--gap, 24px);
+}
+
+/* ── RESPONSIVE ── */
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .internship-showcase-section {
+        padding: 80px 0 100px;
+    }
+
+    .internship-text-line {
+        font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    }
+
+    .internship-text-block {
+        margin-bottom: 48px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .internship-showcase-section {
+        padding: 60px 0 80px;
+    }
+
+    .internship-text-line {
+        font-size: clamp(1.4rem, 5vw, 2rem);
+        -webkit-text-stroke: 0;
+    }
+
+    .internship-text-block {
+        margin-bottom: 36px;
+        padding: 0 20px;
+    }
+
+    /* Stack images vertically on mobile */
+    .internship-images-track {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        width: 100%;
+        padding: 0 20px;
+    }
+
+    .internship-image-wrapper {
+        margin-top: 0 !important;
+        margin-right: 0 !important;
+        width: 90vw !important;
+        max-width: 400px;
+        height: auto !important;
+    }
+
+    .internship-image-wrapper img {
+        height: auto;
+        aspect-ratio: 4 / 3;
+    }
+}

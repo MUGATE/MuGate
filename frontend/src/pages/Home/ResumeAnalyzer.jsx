@@ -1,17 +1,53 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./ResumeAnalyzer.css";
 import resumeImg from "./assets/Images/Cv/Abed Resume.png";
 
 /**
- * Page 3 — AI Resume Analyzer Section
- *
- * Two-column layout:
- *   Left:  Glassy CV container with sample resume preview
- *   Right: Title, description, feature list, upload CTA
+ * Animated counter hook — counts from 0 to target over duration ms.
+ * Only starts when visible (via IntersectionObserver).
  */
+const useAnimatedCounter = (target, duration = 2000) => {
+    const [count, setCount] = useState(0);
+    const [started, setStarted] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting && !started) setStarted(true);
+            },
+            { threshold: 0.3 }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [started]);
+
+    useEffect(() => {
+        if (!started) return;
+        const steps = 60;
+        const increment = target / steps;
+        const interval = duration / steps;
+        let current = 0;
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                setCount(target);
+                clearInterval(timer);
+            } else {
+                setCount(Math.floor(current));
+            }
+        }, interval);
+        return () => clearInterval(timer);
+    }, [started, target, duration]);
+
+    return { count, ref };
+};
 
 const ResumeAnalyzer = (props) => {
-    const { "data-page": dataPage, ...rest } = props;
+    const { "data-page": dataPage } = props;
+    const { count, ref: counterRef } = useAnimatedCounter(10000, 2200);
 
     return (
         <section className="resume-analyzer-section" data-page={dataPage}>
@@ -45,8 +81,7 @@ const ResumeAnalyzer = (props) => {
                 {/* RIGHT: Content */}
                 <div className="resume-content-section">
                     <h2 className="resume-title">
-                        Perfect Your Resume{" "}
-                        <span className="resume-title-accent">with AI</span>
+                        Perfect Your Resume <span className="resume-title-accent">with AI</span>
                     </h2>
 
                     <p className="resume-subtitle">
@@ -75,28 +110,13 @@ const ResumeAnalyzer = (props) => {
                         </div>
                     </div>
 
-                    <button className="upload-resume-btn">
-                        <span>Upload Your Resume</span>
-                        <div className="upload-arrow-circle" aria-hidden="true">
-                            <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <line x1="5" y1="12" x2="19" y2="12" />
-                                <polyline points="12 5 19 12 12 19" />
-                            </svg>
-                        </div>
-                    </button>
-
-                    <div className="resume-trust">
+                    <div className="resume-trust" ref={counterRef}>
                         <p className="resume-trust-text">
-                            Join <strong>10,000+</strong> students who improved their resumes
+                            Join{" "}
+                            <strong className="resume-trust-counter">
+                                {count.toLocaleString()}+
+                            </strong>{" "}
+                            students who improved their resumes
                         </p>
                         <div className="resume-trust-rating">
                             ⭐⭐⭐⭐⭐ <span>4.9/5 average rating</span>

@@ -49,11 +49,11 @@
 
 .carousel-subtitle-secondary {
     font-family: "Matter", sans-serif;
-    font-size: clamp(0.9rem, 1.3vw, 1.05rem);
+    font-size: clamp(0.95rem, 1.4vw, 1.12rem);
     color: #999999;
     font-weight: 400;
     letter-spacing: -0.01em;
-    margin: 6px auto 0;
+    margin: 16px auto 0;
     line-height: 1.5;
 }
 
