@@ -10,7 +10,7 @@
     left: 50%;
     width: auto;
     height: auto;
-    padding: 12px;
+    padding: 16px;
     background: #ffffff;
     display: flex;
     align-items: center;
@@ -77,13 +77,13 @@
 
 .bottom-navbar-btn {
     font-family: "SolidroadCustom", sans-serif;
-    font-size: 1.15rem;
+    font-size: 1.3rem;
     font-weight: 700;
     color: #ffffff;
     letter-spacing: 0.02em;
-    padding: 12px 24px 12px 32px;
+    padding: 17px 29px;
     border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
     position: relative;
     z-index: 2;
@@ -135,8 +135,8 @@
 /* ── ARROW IN CIRCLE ── */
 
 .bottom-navbar-arrow-circle {
-    width: 26px;
-    height: 26px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.25);
     display: flex;

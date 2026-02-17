@@ -1,37 +1,48 @@
 /* ══════════════════════════════════════════════════
-   PAGE 4 — INTERNSHIP SHOWCASE WITH PARALLAX
-   Organic image layout + scroll-based animations
+   PAGE 4 — INTERNSHIP SHOWCASE WITH STICKY SCROLL
+   Organic image layout + scroll-hijacked horizontal movement
    ══════════════════════════════════════════════════ */
 
-/* ── SECTION CONTAINER ── */
-.internship-showcase-section {
+/* ── SCROLL RUNWAY — tall invisible wrapper that provides scroll distance ── */
+.internship-scroll-runway {
     position: relative;
     width: 100%;
-    min-height: 100vh;
+    /* Height = 1 viewport for the visible section + extra for scroll room.
+       The extra height is how much the user scrolls while the section is pinned. */
+    height: 220vh;
+}
+
+/* ── STICKY SECTION — pins to viewport while runway scrolls behind ── */
+.internship-showcase-section {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 100vh;
     background: linear-gradient(to bottom, #ebebeb 0%, #ffffff 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 100px 0 120px;
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
+    z-index: 1;
 }
 
 /* ── TEXT SECTION ── */
 .internship-text-block {
-    text-align: center;
-    max-width: 900px;
-    margin: 0 auto 72px;
+    text-align: left;
+    width: fit-content;
+    margin: 0 auto 32px;
     padding: 0 40px;
     z-index: 2;
     position: relative;
 }
 
-/* Match Page 2 "Struggling to Build the Perfect Schedule?" style exactly */
+/* Match Page 2 heading style */
 .internship-text-line {
     display: block;
     font-family: "SolidroadCustom", sans-serif;
-    font-size: clamp(1.5rem, 2.8vw, 2.9rem);
+    font-size: clamp(1.5rem, 2.8vw, 3.5rem);
     font-weight: 900;
     color: #0e220e;
     letter-spacing: -0.03em;
@@ -46,9 +57,9 @@
 .internship-images-viewport {
     position: relative;
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
     overflow-y: visible;
-    padding: 40px 0;
+    padding: 20px 0;
 }
 
 /* Inner track — holds all images, translated via JS */
@@ -58,8 +69,7 @@
     gap: 0;
     width: max-content;
     will-change: transform;
-    /* Offset to center the initial view — pushed left so images 1-8 are visible */
-    padding: 0 40px;
+    padding: 0 0 0 40px;
 }
 
 /* ── INDIVIDUAL IMAGE CONTAINER ── */
@@ -121,10 +131,11 @@
 }
 
 .overlay-divider {
-    width: 2px;
-    height: 18px;
-    background: rgba(255, 255, 255, 0.7);
-    margin: 8px 0;
+    width: 40px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.4);
+    margin: 10px 0;
+    border-radius: 1px;
     opacity: 0;
     transition: opacity 0.3s ease 0.15s;
 }
@@ -162,8 +173,8 @@
 
 /* Tablet */
 @media (max-width: 1024px) {
-    .internship-showcase-section {
-        padding: 80px 0 100px;
+    .internship-scroll-runway {
+        height: 200vh;
     }
 
     .internship-text-line {
@@ -175,9 +186,15 @@
     }
 }
 
-/* Mobile */
+/* Mobile — disable sticky scroll, stack vertically */
 @media (max-width: 768px) {
+    .internship-scroll-runway {
+        height: auto;
+    }
+
     .internship-showcase-section {
+        position: relative;
+        height: auto;
         padding: 60px 0 80px;
     }
 

@@ -51,12 +51,12 @@ const instructors = [
     },
     {
         id: 5,
-        name: "Dr. Abdullah Abbas",
+        name: "Dr. Mohamad AlSamoury",
         department: "Computer Science",
-        image: abdullahImg,
-        bio: "Computer Engineer with a Master’s in Artificial Intelligence and a Ph.D. in Semantic Web. Specialized in ontologies, meta-modeling, and graph data, with industry experience at Orange Labs and involvement in ETSI standardization. Taught at universities in France and Lebanon.",
-        experience: "14 Years",
-        credentials: "PhD — Computer Science",
+        image: sammouriImg,
+        bio: "PhD in Pure and Applied Mathematics specializing in PDEs, with university-level teaching and curriculum coordination experience at Al Maaref University, and publications in international journals.",
+        experience: "17 Years",
+        credentials: "PhD — Mathematics",
     },
     {
         id: 6,
@@ -78,13 +78,14 @@ const instructors = [
     },
     {
         id: 8,
-        name: "Dr. Mohamad AlSamoury",
+        name: "Dr. Abdullah Abbas",
         department: "Computer Science",
-        image: sammouriImg,
-        bio: "PhD in Pure and Applied Mathematics specializing in PDEs, with university-level teaching and curriculum coordination experience at Al Maaref University, and publications in international journals.",
-        experience: "17 Years",
-        credentials: "PhD — Mathematics",
+        image: abdullahImg,
+        bio: "Computer Engineer with a Master’s in Artificial Intelligence and a Ph.D. in Semantic Web. Specialized in ontologies, meta-modeling, and graph data, with industry experience at Orange Labs and involvement in ETSI standardization. Taught at universities in France and Lebanon.",
+        experience: "14 Years",
+        credentials: "PhD — Computer Science",
     },
+    
 ];
 
 export default instructors;

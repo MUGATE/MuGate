@@ -16,7 +16,6 @@ import img10 from "./assets/Images/People/1770914179363.jpg";
 /**
  * Internship image data — 10 images with varied dimensions.
  * `offsetY` creates the organic scattered layout.
- * `tall` flags trigger dramatic vertical parallax.
  */
 const INTERNSHIP_IMAGES = [
     {
@@ -121,11 +120,11 @@ const INTERNSHIP_IMAGES = [
     },
 ];
 
-/** Text lines — 5 lines, 5-6 words each, for progressive fade-in */
+/** Text lines — 5 lines for progressive fade-in */
 const TEXT_LINES = [
     "A centralized and structured listing of",
-    "internship opportunities officially provided by",
-    "the faculty designed to help students",
+    "internship opportunities officially provided",
+    "by the faculty designed to help students",
     "easily explore options aligned with their",
     "academic specialization and career goals.",
 ];
@@ -133,20 +132,14 @@ const TEXT_LINES = [
 const InternshipShowcase = (props) => {
     const { "data-page": dataPage, ...otherProps } = props;
 
-    const sectionRef = useRef(null);
-    const trackRef = useRef(null);
+    const runwayRef = useRef(null);   // The tall scroll runway
+    const stickyRef = useRef(null);   // The sticky visible section
+    const trackRef = useRef(null);    // The image track
     const textLinesRef = useRef([]);
     const imageWrappersRef = useRef([]);
+    const ticking = useRef(false);
 
-    // Mutable parallax state (not React state — avoids re-renders)
-    const parallaxState = useRef({
-        lastScrollY: 0,
-        horizontalOffset: 0,
-        verticalOffsets: new Array(INTERNSHIP_IMAGES.length).fill(0),
-        ticking: false,
-    });
-
-    // Check if mobile (disable parallax)
+    // Check if mobile (disable sticky scroll)
     const isMobile = useRef(false);
 
     useEffect(() => {
@@ -158,168 +151,154 @@ const InternshipShowcase = (props) => {
         return () => window.removeEventListener("resize", checkMobile);
     }, []);
 
-    // ── TEXT LINE-BY-LINE FADE-IN ──
-    const updateTextOpacity = useCallback(() => {
-        const section = sectionRef.current;
-        if (!section) return;
+    // ── MAIN SCROLL HANDLER — progress-based ──
+    const handleScroll = useCallback(() => {
+        if (ticking.current) return;
 
-        const sectionRect = section.getBoundingClientRect();
-        const viewportH = window.innerHeight;
+        ticking.current = true;
+        requestAnimationFrame(() => {
+            const runway = runwayRef.current;
+            const sticky = stickyRef.current;
+            const track = trackRef.current;
 
-        // Trigger when section enters the viewport
-        // The text starts fading when section top is at 80% of viewport
-        const triggerStart = viewportH * 0.8;
-        const progress = (triggerStart - sectionRect.top) / (viewportH * 0.6);
+            if (!runway || !sticky || !track) {
+                ticking.current = false;
+                return;
+            }
 
-        textLinesRef.current.forEach((lineEl, index) => {
-            if (!lineEl) return;
-            // Each line fades in with a stagger
-            const lineProgress = progress - index * 0.15;
-            const clampedProgress = Math.max(0, Math.min(1, lineProgress));
-            const opacity = 0.2 + clampedProgress * 0.8; // 0.2 → 1.0
-            lineEl.style.opacity = opacity;
+            const runwayRect = runway.getBoundingClientRect();
+            const viewportH = window.innerHeight;
+
+            // ── TEXT FADE-IN ──
+            // Trigger when the runway top enters the viewport
+            const textTriggerStart = viewportH * 0.8;
+            const textProgress = (textTriggerStart - runwayRect.top) / (viewportH * 0.6);
+
+            textLinesRef.current.forEach((lineEl, index) => {
+                if (!lineEl) return;
+                const lineProgress = textProgress - index * 0.15;
+                const clampedProgress = Math.max(0, Math.min(1, lineProgress));
+                const opacity = 0.2 + clampedProgress * 0.8;
+                lineEl.style.opacity = opacity;
+            });
+
+            // ── HORIZONTAL IMAGE MOVEMENT (sticky scroll) ──
+            if (!isMobile.current) {
+                // How far the runway top has scrolled past the viewport top
+                // When runwayRect.top = 0, scroll has just reached the section
+                // When runwayRect.top = -(runwayHeight - viewportH), scroll has
+                // passed through the entire runway
+                const runwayHeight = runway.offsetHeight;
+                const scrollableDistance = runwayHeight - viewportH;
+
+                if (scrollableDistance > 0) {
+                    // progress: 0 = just entered, 1 = about to leave
+                    const rawProgress = -runwayRect.top / scrollableDistance;
+                    const progress = Math.max(0, Math.min(1, rawProgress));
+
+                    // Calculate how far to move the track
+                    // We need to shift enough to reveal images 9 + half of 10
+                    const trackWidth = track.scrollWidth;
+                    const viewportWidth = sticky.offsetWidth;
+                    const maxShift = trackWidth - viewportWidth + 40; // 40px buffer
+
+                    const horizontalOffset = -progress * maxShift;
+                    track.style.transform = `translateX(${horizontalOffset}px)`;
+
+                    // ── Alternating vertical parallax per image ──
+                    // Some slide up, others slide down — creates dynamic staggered feel
+                    // Tall images (≥400px) don't move vertically to avoid cropping
+                    INTERNSHIP_IMAGES.forEach((imgData, index) => {
+                        const isTall = imgData.height >= 400;
+                        const wrapper = imageWrappersRef.current[index];
+                        if (!wrapper) return;
+
+                        if (isTall) {
+                            // Tall images: no vertical movement — prevents cropping
+                            wrapper.style.transform = "translateY(0px)";
+                            return;
+                        }
+
+                        // Alternating direction: even index → up on scroll, odd → down
+                        const direction = index % 2 === 0 ? -1 : 1;
+                        const maxVertical = 20; // subtle movement range
+
+                        // Map progress (0→1) to vertical offset
+                        const verticalOffset = direction * (progress - 0.5) * 2 * maxVertical;
+                        const clamped = Math.max(-maxVertical, Math.min(maxVertical, verticalOffset));
+
+                        wrapper.style.transform = `translateY(${clamped}px)`;
+                    });
+                }
+            }
+
+            ticking.current = false;
         });
     }, []);
 
-    // ── PARALLAX SCROLL HANDLER ──
-    const handleScroll = useCallback(() => {
-        const state = parallaxState.current;
-        if (state.ticking) return;
-
-        state.ticking = true;
-        requestAnimationFrame(() => {
-            const section = sectionRef.current;
-            const track = trackRef.current;
-
-            if (!section || !track) {
-                state.ticking = false;
-                return;
-            }
-
-            // Update text fade
-            updateTextOpacity();
-
-            // Skip parallax on mobile
-            if (isMobile.current) {
-                state.ticking = false;
-                return;
-            }
-
-            const currentScrollY = window.scrollY;
-            const scrollDelta = currentScrollY - state.lastScrollY;
-            const sectionRect = section.getBoundingClientRect();
-            const viewportH = window.innerHeight;
-
-            // Only apply parallax when section is in/near viewport
-            const isNearViewport =
-                sectionRect.top < viewportH + 200 &&
-                sectionRect.bottom > -200;
-
-            if (isNearViewport && Math.abs(scrollDelta) > 0) {
-                // ── Horizontal movement ──
-                // Scroll DOWN → images move LEFT (subtract)
-                // Scroll UP → images move RIGHT (add)
-                const horizontalSpeed = 1.2;
-                state.horizontalOffset -= scrollDelta * horizontalSpeed;
-
-                // Clamp horizontal range — wide enough to reveal images 9 & 10
-                state.horizontalOffset = Math.max(-600, Math.min(600, state.horizontalOffset));
-
-                // Apply horizontal transform to track
-                track.style.transform = `translateX(${state.horizontalOffset}px)`;
-
-                // ── Vertical movement per image ──
-                INTERNSHIP_IMAGES.forEach((imgData, index) => {
-                    const isTall = imgData.height >= 400;
-                    const verticalSpeed = isTall ? 0.6 : 0.15;
-
-                    // Scroll DOWN → images move UP (subtract)
-                    state.verticalOffsets[index] -= scrollDelta * verticalSpeed;
-
-                    // Clamp vertical range
-                    const maxVertical = isTall ? 100 : 25;
-                    state.verticalOffsets[index] = Math.max(
-                        -maxVertical,
-                        Math.min(maxVertical, state.verticalOffsets[index])
-                    );
-
-                    const wrapper = imageWrappersRef.current[index];
-                    if (wrapper) {
-                        wrapper.style.transform = `translateY(${state.verticalOffsets[index]}px)`;
-                    }
-                });
-            }
-
-            state.lastScrollY = currentScrollY;
-            state.ticking = false;
-        });
-    }, [updateTextOpacity]);
-
     // ── ATTACH SCROLL LISTENER ──
     useEffect(() => {
-        parallaxState.current.lastScrollY = window.scrollY;
         window.addEventListener("scroll", handleScroll, { passive: true });
-
-        // Initial text opacity check
-        updateTextOpacity();
-
+        handleScroll(); // Initial check
         return () => window.removeEventListener("scroll", handleScroll);
-    }, [handleScroll, updateTextOpacity]);
+    }, [handleScroll]);
 
     return (
-        <section
-            className="internship-showcase-section"
-            id="internships-showcase"
-            data-page={dataPage}
-            ref={sectionRef}
-        >
-            {/* ── TEXT SECTION ── */}
-            <div className="internship-text-block">
-                {TEXT_LINES.map((line, i) => (
-                    <span
-                        key={i}
-                        className="internship-text-line"
-                        ref={(el) => (textLinesRef.current[i] = el)}
-                    >
-                        {line}
-                    </span>
-                ))}
-            </div>
-
-            {/* ── IMAGES SECTION ── */}
-            <div className="internship-images-viewport">
-                <div className="internship-images-track" ref={trackRef}>
-                    {INTERNSHIP_IMAGES.map((img, index) => (
-                        <div
-                            key={img.id}
-                            className="internship-image-wrapper"
-                            ref={(el) => (imageWrappersRef.current[index] = el)}
-                            style={{
-                                width: `${img.width}px`,
-                                height: `${img.height}px`,
-                                "--offset-y": `${img.offsetY}px`,
-                                "--gap": `${img.gap}px`,
-                            }}
+        <div className="internship-scroll-runway" ref={runwayRef}>
+            <section
+                className="internship-showcase-section"
+                id="internships-showcase"
+                data-page={dataPage}
+                ref={stickyRef}
+            >
+                {/* ── TEXT SECTION ── */}
+                <div className="internship-text-block">
+                    {TEXT_LINES.map((line, i) => (
+                        <span
+                            key={i}
+                            className="internship-text-line"
+                            ref={(el) => (textLinesRef.current[i] = el)}
                         >
-                            <img
-                                src={img.src}
-                                alt={`Internship at ${img.company}`}
-                                loading="lazy"
-                            />
-                            <div className="internship-overlay">
-                                <span className="overlay-title">
-                                    Available Internship at {img.company}
-                                </span>
-                                <div className="overlay-divider" />
-                                <span className="overlay-description">
-                                    {img.description}
-                                </span>
-                            </div>
-                        </div>
+                            {line}
+                        </span>
                     ))}
                 </div>
-            </div>
-        </section>
+
+                {/* ── IMAGES SECTION ── */}
+                <div className="internship-images-viewport">
+                    <div className="internship-images-track" ref={trackRef}>
+                        {INTERNSHIP_IMAGES.map((img, index) => (
+                            <div
+                                key={img.id}
+                                className="internship-image-wrapper"
+                                ref={(el) => (imageWrappersRef.current[index] = el)}
+                                style={{
+                                    width: `${img.width}px`,
+                                    height: `${img.height}px`,
+                                    "--offset-y": `${img.offsetY}px`,
+                                    "--gap": `${img.gap}px`,
+                                }}
+                            >
+                                <img
+                                    src={img.src}
+                                    alt={`Internship at ${img.company}`}
+                                    loading="lazy"
+                                />
+                                <div className="internship-overlay">
+                                    <span className="overlay-title">
+                                        Available Internship at {img.company}
+                                    </span>
+                                    <div className="overlay-divider" />
+                                    <span className="overlay-description">
+                                        {img.description}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+        </div>
     );
 };
 
