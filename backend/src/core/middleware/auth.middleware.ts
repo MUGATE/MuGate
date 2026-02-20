@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../security/jwt.util";
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export interface AuthRequest extends Request {
+    user?: any;
+}
+
+export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {

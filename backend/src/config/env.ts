@@ -8,9 +8,9 @@ export const env = {
   encryptionSecret: process.env.ENCRYPTION_SECRET,
   db: {
     user: process.env.DB_USER || "FONIX",
-    password: process.env.DB_PASSWORD || "",
+    password: process.env.DB_PASSWORD || "***REMOVED***",
     server: process.env.DB_SERVER || "localhost",
-    database: process.env.DB_NAME || "mugate",
+    database: process.env.DB_NAME || "MuGate",
 },
 
 };

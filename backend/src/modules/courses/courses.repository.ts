@@ -1,4 +1,4 @@
-import pool from "../../core/database/connection";
+import { pool } from "../../core/database/connection";
 
 export class CoursesRepository {
     static async findAll() {
