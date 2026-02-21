@@ -1,67 +1,47 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { apiFetch } from '../../utils/api';
 import { Link } from 'react-router-dom';
 import './schedule.css';
 
 /* ── Data ── */
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const HOURS = Array.from({ length: 10 }, (_, i) => i + 8); // 8 AM – 5 PM
+const HOURS = Array.from({ length: 11 }, (_, i) => i + 8); // 8 AM – 6 PM
 
-const INSTRUCTORS = [
-  'Dr. Mubarak Mohamad',
-  'Dr. Abdullah Abbas',
-  'Dr. Abed Al Safadi',
-  'Dr. Ali Ghorayib',
-  'Dr. Rayan Al Sibai',
-  'Dr. Fatima Abdullah',
-];
+// Helper to convert typical backend formats like "M,W" or "T,Th" to indices [0, 2]
+const parseDays = (dayString) => {
+  if (!dayString || dayString === "TBA") return [];
+  const map = {
+    'M': 0,
+    'T': 1,
+    'W': 2,
+    'TH': 3,
+    'F': 4
+  };
+  return dayString.split(',').map(d => map[d.trim().toUpperCase()]).filter(d => d !== undefined);
+};
 
-const DEFAULT_COURSES = [
-  {
-    id: 1,
-    name: 'Web Development',
-    instructor: 'Rayan Al Sibai',
-    room: 'Room 522',
-    color: 'blue',
-    slots: [
-      { day: 0, startHour: 10, duration: 1.25 },
-      { day: 2, startHour: 10, duration: 1.25 },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Data Structures',
-    instructor: 'Dr. Mubarak Mohamad',
-    room: 'Room 406',
-    color: 'green',
-    slots: [
-      { day: 0, startHour: 13, duration: 1.25 },
-      { day: 2, startHour: 13, duration: 1.25
-       },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Algorithms',
-    instructor: 'Dr. Abdullah Abbas',
-    room: 'Room 508',
-    color: 'yellow',
-    slots: [
-      { day: 1, startHour: 11, duration: 1.25 },
-      { day: 3, startHour: 11, duration: 1.25 },
-    ],
-  },
-  {
-    id: 4,
-    name: 'Theory of Computation',
-    instructor: 'Dr. Fatima Abdullah',
-    room: 'Room 506',
-    color: 'peach',
-    slots: [
-      { day: 1, startHour: 14, duration: 1.25 },
-      { day: 3, startHour: 14, duration: 1.25 },
-    ],
-  },
-];
+// Map backend times (e.g., "11:00:00" or Date obj) to decimal hours (11.0)
+const timeToDecimalHour = (timeVal) => {
+  if (!timeVal) return null;
+  let str = timeVal.toString();
+  if (timeVal instanceof Date || str.includes('T')) {
+    const d = new Date(timeVal);
+    // MUST use UTC because SQL server saves the exact local time string as purely UTC (e.g. 1970-01-01T08:00:00Z)
+    // and using local getHours() will shift the 8AM based on the browser's timezone (+02:00 -> 10AM).
+    return d.getUTCHours() + (d.getUTCMinutes() / 60);
+  }
+  const parts = str.split(':');
+  if (parts.length >= 2) {
+    return parseInt(parts[0]) + (parseInt(parts[1]) / 60);
+  }
+  return null;
+};
+
+// Stable color assignment for courses
+const COURSE_COLORS = ['blue', 'green', 'yellow', 'peach', 'purple', 'pink', 'teal', 'orange'];
+const assignColor = (courseCode, index) => {
+  return COURSE_COLORS[index % COURSE_COLORS.length];
+};
 
 /* ── Helpers ── */
 const formatHour = (h) => {
@@ -72,9 +52,11 @@ const formatHour = (h) => {
 
 const formatTime = (h) => {
   const suffix = h >= 12 ? 'PM' : 'AM';
-  const hour = h > 12 ? h - 12 : h === 0 ? 12 : h;
-  const mins = h % 1 !== 0 ? '30' : '00';
-  return `${Math.floor(hour)}:${mins} ${suffix}`;
+  let hour = h % 12;
+  const displayHour = Math.floor(hour) === 0 ? 12 : Math.floor(hour);
+  const minsDecimal = h % 1;
+  const preciseMins = Math.round(minsDecimal * 60).toString().padStart(2, '0');
+  return `${displayHour}:${preciseMins} ${suffix}`;
 };
 
 /* ── Toggle Switch ── */
@@ -86,11 +68,11 @@ const ToggleSwitch = ({ checked, onChange }) => (
 );
 
 /* ── Course Block (clean, no edit icon) ── */
-const BLOCK_HEIGHT = 68; // fixed height for all blocks
-const ROW_HEIGHT = 58;   // must match CSS td height
+const ROW_HEIGHT = 59;   // CSS height 58px + 1px border = 59px
 
 const CourseBlock = ({ course, slot, onClick }) => {
   const topOffset = (slot.startHour - 8) * ROW_HEIGHT;
+  const blockHeight = slot.duration * ROW_HEIGHT;
 
   return (
     <div
@@ -98,7 +80,7 @@ const CourseBlock = ({ course, slot, onClick }) => {
       style={{
         position: 'absolute',
         top: `${topOffset}px`,
-        height: `${BLOCK_HEIGHT}px`,
+        height: `${blockHeight - 2}px`,
         left: '2px',
         right: '2px',
       }}
@@ -138,7 +120,7 @@ const CourseModal = ({ course, onClose }) => {
             <div className="modal-slot" key={i}>
               <span className="modal-slot-day">{DAYS[slot.day]}</span>
               <span className="modal-slot-time">
-                {formatTime(slot.startHour)} – {formatTime(slot.startHour + slot.duration)}
+                {formatTime(slot.startHour)} – {formatTime(slot.endHour)}
               </span>
             </div>
           ))}
@@ -150,35 +132,211 @@ const CourseModal = ({ course, onClose }) => {
 
 /* ===== Main Component ===== */
 const Schedule = () => {
-  const [preferences, setPreferences] = useState({
-    skip8am: true,
-    minimizeGaps: true,
-    freeFridays: true,
+  const [preferences, setPreferences] = useState(() => {
+    const saved = localStorage.getItem('mugate_preferences');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) { }
+    }
+    return {
+      skip8am: false,
+      minimizeGaps: false,
+      freeFridays: false,
+      maxCredits: 17
+    };
   });
 
-  const [courses, setCourses] = useState(DEFAULT_COURSES);
-  // Schedule grid is hidden until user clicks "Generate Schedule"
+  const [generatedSchedules, setGeneratedSchedules] = useState([]); // Array of all top 20
+  const [visibleCount, setVisibleCount] = useState(0); // How many we have unlocked so far
+  const [currentIndex, setCurrentIndex] = useState(0); // Which one we are viewing
+  const [courses, setCourses] = useState([]); // UI representation of the current schedule
+  const [studentInfo, setStudentInfo] = useState(null);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const [scheduleVisible, setScheduleVisible] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [toastMessage, setToastMessage] = useState("");
+
   const gridRef = useRef(null);
 
-  /* Toggle a preference */
-  const togglePref = (key) =>
-    setPreferences((prev) => ({ ...prev, [key]: !prev[key] }));
+  /* Transform a single Backend Schedule item into Frontend UI state */
+  const parseBackendSchedule = useCallback((backendScheduleArr) => {
+    let parsedCourses = [];
 
-  /* Generate schedule handler */
-  const handleGenerateSchedule = () => {
-    setScheduleVisible(true);
+    backendScheduleArr.forEach((item, index) => {
+      // Backend shape: { courseCode: "CSC214", courseName: "Data Structures", section: { day: "0,2", startTime: "10:00:00", endTime: "11:15:00", instructor: "...", type: "Major" } }
+      const sec = item.section || {};
+      const startH = timeToDecimalHour(sec.startTime);
+      const endH = timeToDecimalHour(sec.endTime);
+      const daysArr = parseDays(sec.day);
+
+      let duration = 0;
+      if (startH !== null && endH !== null) {
+        duration = endH - startH;
+      }
+
+      const uiCourse = {
+        id: item.courseId || index,
+        code: item.courseCode,
+        name: item.courseName,
+        instructor: sec.instructor || "TBA",
+        room: sec.room || "TBA", // API might not have room scraped yet depending on portal
+        color: assignColor(item.courseCode, index),
+        type: item.type || sec.type,
+        credits: item.credits,
+        slots: daysArr.map(d => ({
+          day: d,
+          startHour: startH,
+          endHour: endH,
+          duration: duration
+        }))
+      };
+      parsedCourses.push(uiCourse);
+    });
+
+    setCourses(parsedCourses);
+  }, []);
+
+  // Protect Route & Fetch Saved Schedule
+  useEffect(() => {
+    const token = localStorage.getItem("mugate_token");
+    if (!token) {
+      window.location.href = "/";
+      return;
+    }
+
+    const fetchSaved = async () => {
+      try {
+        const res = await apiFetch("/schedules");
+        if (res.data && res.data.length > 0) {
+          // Display the newest saved schedule
+          const saved = res.data[0];
+          parseBackendSchedule(saved.courses);
+          setScheduleVisible(true);
+        }
+      } catch (e) {
+        console.error("No saved schedule found or error fetching", e);
+      }
+    };
+    fetchSaved();
+  }, [parseBackendSchedule]);
+
+  /* Toggle a preference */
+  const togglePref = (key) => {
+    setPreferences((prev) => {
+      const newPrefs = { ...prev, [key]: !prev[key] };
+      localStorage.setItem('mugate_preferences', JSON.stringify(newPrefs));
+      return newPrefs;
+    });
+    setErrorMsg("");
   };
 
-  /* Change instructor */
+  /* Generate schedule handler */
+  const handleGenerateSchedule = async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    setScheduleVisible(false);
+
+    try {
+      // The backend needs a semesterId (e.g., 202410 for Fall 2024). 
+      // Hardcoding for MVP, eventually this should be a dropdown selector.
+      const payload = {
+        semesterId: 38,
+        preferences: {
+          excludeDays: preferences.freeFridays ? [4] : [], // Friday is 4 in 0-indexed mapped Days
+          startTime: preferences.skip8am ? "9:00:00" : null,
+          maxCredits: preferences.maxCredits,
+          minimizeGaps: preferences.minimizeGaps
+        }
+      };
+
+      const res = await apiFetch("/generate", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      if (res.data && res.data.topSchedules && res.data.topSchedules.length > 0) {
+        setGeneratedSchedules(res.data.topSchedules);
+        setVisibleCount(1);
+        setCurrentIndex(0);
+        parseBackendSchedule(res.data.topSchedules[0].schedule);
+        setScheduleVisible(true);
+      } else {
+        throw new Error("No combination of courses found that match your strict preferences. Try relaxing 'Skip 8AM' or 'Free Fridays'.");
+      }
+
+    } catch (err) {
+      setErrorMsg(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNextSchedule = () => {
+    if (currentIndex < visibleCount - 1) {
+      setCurrentIndex(currentIndex + 1);
+      parseBackendSchedule(generatedSchedules[currentIndex + 1].schedule);
+    }
+  };
+
+  const handlePrevSchedule = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+      parseBackendSchedule(generatedSchedules[currentIndex - 1].schedule);
+    }
+  };
+
+  const handleRegenerate = () => {
+    if (visibleCount < generatedSchedules.length) {
+      const nextCount = visibleCount + 1;
+      setVisibleCount(nextCount);
+      setCurrentIndex(nextCount - 1); // jump to the newly revealed option
+      parseBackendSchedule(generatedSchedules[nextCount - 1].schedule);
+    }
+  };
+
+  /* Change instructor - currently disabled since we pull directly from API actual bounds */
   const changeInstructor = useCallback((courseId, newInstructor) => {
-    setCourses((prev) =>
-      prev.map((c) =>
-        c.id === courseId ? { ...c, instructor: newInstructor } : c
-      )
-    );
+    // Disabled logic
   }, []);
+
+  /* Save the currently active schedule to the user's profile */
+  const handleConfirmSchedule = async () => {
+    if (!generatedSchedules || generatedSchedules.length === 0) return;
+
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      const activeSchedule = generatedSchedules[currentIndex];
+      // Map the UI courses back into their raw backend Section IDs so the Database can store them
+      const sectionIds = activeSchedule.schedule.map(c => c.section.sectionId);
+
+      const payload = {
+        name: `Generated Schedule ${new Date().toLocaleDateString()}`,
+        score: activeSchedule.score,
+        totalCredits: activeSchedule.totalCredits,
+        sectionIds: sectionIds
+      };
+
+      const res = await apiFetch("/schedules/save", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      if (res.success) {
+        setToastMessage("Schedule successfully saved to your profile!");
+        setTimeout(() => setToastMessage(""), 4000);
+      }
+
+    } catch (err) {
+      setErrorMsg(err.message || "Failed to save the schedule.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   /* Build a lookup: dayIndex → array of { course, slot } */
   const slotsByDay = {};
@@ -187,7 +345,10 @@ const Schedule = () => {
   });
   courses.forEach((course) => {
     course.slots.forEach((slot) => {
-      slotsByDay[slot.day].push({ course, slot });
+      // Safely ignore TBA/online courses with no defined day so they don't break the grid mapper
+      if (slot.day >= 0 && slot.day < 5) {
+        slotsByDay[slot.day].push({ course, slot });
+      }
     });
   });
 
@@ -198,6 +359,29 @@ const Schedule = () => {
       <div className="bg-mesh-1" />
       <div className="bg-mesh-2" />
       <div className="bg-mesh-3" />
+
+      {/* Cool Toast Notification */}
+      {toastMessage && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'linear-gradient(135deg, #48c6a0, #4a90d9)',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '16px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+          zIndex: 9999,
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          animation: 'modalSlideUp 0.3s ease-out'
+        }}>
+          <span>✨</span> {toastMessage}
+        </div>
+      )}
 
       {/* Decorative sparkle elements */}
       <span className="sparkle sparkle-1">✦</span>
@@ -273,45 +457,112 @@ const Schedule = () => {
             />
           </div>
 
-          <button className="generate-btn" onClick={handleGenerateSchedule}>
-            Generate Schedule
+          {errorMsg && (
+            <div className="login-error-msg" style={{ marginTop: '15px' }}>
+              {errorMsg}
+            </div>
+          )}
+
+          <button className="generate-btn" onClick={handleGenerateSchedule} disabled={isLoading}>
+            {isLoading ? "Generating with AI✦..." : "Generate Schedule"}
           </button>
         </div>
 
         {/* Center — Weekly Grid */}
-        {/* Schedule grid is hidden until user clicks "Generate Schedule" */}
         <div className="schedule-grid-wrapper glass-card" ref={gridRef}>
           {scheduleVisible ? (
-            <table className="schedule-grid">
-              <thead>
-                <tr>
-                  <th />
-                  {DAYS.map((d) => (
-                    <th key={d}>{d}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {HOURS.map((hour) => (
-                  <tr key={hour}>
-                    <td>{formatHour(hour)}</td>
-                    {DAYS.map((_, di) => (
-                      <td key={di} style={{ position: 'relative' }}>
-                        {hour === 8 &&
-                          slotsByDay[di].map(({ course, slot }) => (
-                            <CourseBlock
-                              key={`${course.id}-${slot.day}-${slot.startHour}`}
-                              course={course}
-                              slot={slot}
-                              onClick={setSelectedCourse}
-                            />
-                          ))}
-                      </td>
+            <div style={{ width: '100%' }}>
+              {/* Top Carousel Paginator */}
+              {generatedSchedules.length > 0 ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', display: 'flex', gap: '15px', alignItems: 'center' }}>
+                    <button
+                      onClick={handlePrevSchedule}
+                      disabled={currentIndex === 0}
+                      style={{
+                        background: 'linear-gradient(135deg, #4a90d9, #a78bfa)',
+                        border: 'none',
+                        color: '#fff',
+                        cursor: currentIndex === 0 ? 'default' : 'pointer',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: currentIndex === 0 ? 0.4 : 1,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+                    </button>
+                    <span>Schedule Option {currentIndex + 1} of {visibleCount}</span>
+                    <button
+                      onClick={handleNextSchedule}
+                      disabled={currentIndex === visibleCount - 1}
+                      style={{
+                        background: 'linear-gradient(135deg, #4a90d9, #a78bfa)',
+                        border: 'none',
+                        color: '#fff',
+                        cursor: currentIndex === visibleCount - 1 ? 'default' : 'pointer',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: currentIndex === visibleCount - 1 ? 0.4 : 1,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+                    </button>
+                  </div>
+                  <div style={{ color: '#688ca8', fontSize: '0.9rem' }}>
+                    Credits: {generatedSchedules[currentIndex]?.totalCredits}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#4a90d9' }}>
+                    ✨ Saved Schedule Active
+                  </div>
+                  <div style={{ color: '#688ca8', fontSize: '0.9rem' }}>
+                    Credits: {courses.reduce((sum, c) => sum + c.credits, 0)}
+                  </div>
+                </div>
+              )}
+              <table className="schedule-grid">
+                <thead>
+                  <tr>
+                    <th />
+                    {DAYS.map((d) => (
+                      <th key={d}>{d}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {HOURS.map((hour) => (
+                    <tr key={hour}>
+                      <td>{formatHour(hour)}</td>
+                      {DAYS.map((_, di) => (
+                        <td key={di} style={{ position: 'relative' }}>
+                          {hour === 8 &&
+                            slotsByDay[di].map(({ course, slot }) => (
+                              <CourseBlock
+                                key={`${course.id}-${slot.day}-${slot.startHour}`}
+                                course={course}
+                                slot={slot}
+                                onClick={setSelectedCourse}
+                              />
+                            ))}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="schedule-placeholder">
               <span className="placeholder-icon">📅</span>
@@ -322,22 +573,21 @@ const Schedule = () => {
 
         {/* Right — Edit Instructors (scrollable, flexible) */}
         <div className="edit-panel glass-card">
-          <h2>Edit Instructors</h2>
+          <h2>Registered Courses</h2>
           <div className="edit-panel-scroll">
+            {courses.length === 0 && !scheduleVisible && (
+              <p style={{ color: '#688ca8', marginTop: '10px' }}>Generate a schedule to see your list of assigned classes.</p>
+            )}
             {courses.map((course) => (
               <div className="edit-instructor-item" key={course.id}>
-                <label>{course.name}</label>
-                <select
-                  className="instructor-select"
-                  value={course.instructor}
-                  onChange={(e) => changeInstructor(course.id, e.target.value)}
-                >
-                  {INSTRUCTORS.map((inst) => (
-                    <option key={inst} value={inst}>
-                      {inst}
-                    </option>
-                  ))}
-                </select>
+                <label>
+                  <span className={`modal-color-dot bg-${course.color}`} style={{ width: '8px', height: '8px', display: 'inline-block', marginRight: '6px' }} />
+                  {course.code} - {course.name}
+                  <span style={{ display: 'block', fontSize: '11px', color: '#688ca8', fontWeight: 'normal', marginTop: '2px' }}>{course.type} • {course.credits} Credits</span>
+                </label>
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px 10px', borderRadius: '6px', fontSize: '13px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  {course.instructor}
+                </div>
               </div>
             ))}
           </div>
@@ -345,13 +595,22 @@ const Schedule = () => {
       </div>
 
       {/* ── Bottom Action Buttons ── */}
-      {scheduleVisible && (
+      {scheduleVisible && generatedSchedules.length > 0 && (
         <div className="schedule-actions">
-          <button className="regenerate-btn" onClick={handleGenerateSchedule}>
+          <button
+            className="regenerate-btn"
+            onClick={handleRegenerate}
+            disabled={visibleCount >= generatedSchedules.length}
+            style={{ opacity: visibleCount >= generatedSchedules.length ? 0.5 : 1 }}
+          >
             Re-generate Schedule
           </button>
-          <button className="confirm-btn">
-            Confirm Schedule
+          <button
+            className="confirm-btn"
+            onClick={handleConfirmSchedule}
+            disabled={isLoading}
+          >
+            {isLoading ? "Saving..." : "Confirm & Save Selection"}
           </button>
         </div>
       )}
