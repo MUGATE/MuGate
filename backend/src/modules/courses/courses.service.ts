@@ -29,6 +29,13 @@ export class CoursesService {
         const universityIdString = decrypt(creds.encryptedUsername);
         const passwordString = decrypt(creds.encryptedPassword);
 
+        return await this.syncCoursesGlobal(universityIdString, passwordString, semesterId);
+    }
+
+    /**
+     * Core syncing logic separated so the background CRON job can trigger it globally.
+     */
+    static async syncCoursesGlobal(universityIdString: string, passwordString: string, semesterId: number) {
         // 2. Trigger Playwright to extract the courses
         const coursesData = await PortalScraper.extractCourses(universityIdString, passwordString, semesterId);
 

@@ -7,6 +7,8 @@ import authRoutes from "./modules/auth/auth.routes";
 import historyRoutes from "./modules/history/history.routes";
 import coursesRoutes from "./modules/courses/courses.routes";
 import { generatorRoutes } from "./modules/generator/generator.routes";
+import schedulesRoutes from "./modules/schedules/schedules.routes";
+import { initCronJobs } from "./modules/sync/sync.cron";
 
 const app = express();
 
@@ -19,6 +21,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/history", historyRoutes);
 app.use("/api/courses", coursesRoutes);
 app.use("/api/generate", generatorRoutes);
+app.use("/api/schedules", schedulesRoutes);
 
 // Helper route for checking auth route in browser
 app.get("/api/auth/login", (req, res) => {
@@ -42,5 +45,8 @@ app.get("/test-db", async (req, res) => {
 
 // Global Error Handler (must be the last middleware)
 app.use(errorMiddleware);
+
+// Initialize background CRON jobs
+initCronJobs();
 
 export default app;
