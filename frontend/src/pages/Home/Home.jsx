@@ -2,12 +2,16 @@ import React from "react";
 import { Link } from "react-router-dom";
 import "./Home.css";
 import heroVideo from "./assets/Videos/MU VIDEO LANDING PAGE.mp4";
+import InstructorCarousel from "./DoctorCarousel";
+import ResumeAnalyzer from "./ResumeAnalyzer";
+import InternshipShowcase from "./InternshipShowcase";
+import BottomNavbar from "./BottomNavbar";
 
 import logo from "./assets/Images/Logo2.png";
 
-const Section = ({ id, children, className = "" }) => {
+const Section = ({ id, children, className = "", ...rest }) => {
   return (
-    <section id={id} className={`home-section ${className}`}>
+    <section id={id} className={`home-section ${className}`} {...rest}>
       <div className="section-inner">{children}</div>
     </section>
   );
@@ -43,7 +47,7 @@ const Home = () => {
       </div>
 
       {/* VIDEO HERO SECTION */}
-      <section className="video-hero">
+      <section className="video-hero" data-page="1">
         <div className="hero-video-container">
           <video
             autoPlay
@@ -112,44 +116,25 @@ const Home = () => {
         </div>
       </section>
 
-      {/* SECTION 2 — FEATURE */}
-      <Section id="feature1">
-        <div className="split-layout">
-          <div className="text">
-            <h2>Innovative Infrastructure</h2>
-            <p>
-              Engineered with precision architecture and scalable systems
-              designed for performance and clarity.
-            </p>
-          </div>
-          <div className="visual-placeholder" />
-        </div>
-      </Section>
+      {/* SECTION 2 — INSTRUCTORS CAROUSEL */}
+      <InstructorCarousel data-page="2" />
 
-      {/* SECTION 3 — FEATURE */}
-      <Section id="feature2">
-        <div className="split-layout reverse">
-          <div className="text">
-            <h2>Seamless Interaction</h2>
-            <p>
-              A refined user experience combining modern motion design
-              with intuitive navigation.
-            </p>
-          </div>
-          <div className="visual-placeholder" />
-        </div>
-      </Section>
+      {/* SECTION 3 — AI RESUME ANALYZER */}
+      <ResumeAnalyzer data-page="3" />
 
-      {/* SECTION 4 — FEATURE */}
-      <Section id="feature3">
+      {/* SECTION 4 — INTERNSHIP SHOWCASE */}
+      <InternshipShowcase data-page="4" />
+
+      {/* SECTION 5 — FEATURE */}
+      <Section id="feature3" data-page="5">
         <h2 className="center-title">Built For Scale</h2>
         <p className="center-text">
           Optimized architecture that adapts and grows with your ambitions.
         </p>
       </Section>
 
-      {/* SECTION 5 — FEATURE */}
-      <Section id="feature4">
+      {/* SECTION 6 — FEATURE */}
+      <Section id="feature4" data-page="6">
         <div className="split-layout">
           <div className="text">
             <h2>Designed With Intention</h2>
@@ -161,8 +146,8 @@ const Home = () => {
         </div>
       </Section>
 
-      {/* SECTION 6 — OUTRO */}
-      <Section id="outro" className="outro">
+      {/* SECTION 7 — OUTRO */}
+      <Section id="outro" className="outro" data-page="7">
         <h2 className="outro-title">Ready To Experience It?</h2>
         <button
           className="primary-btn"
@@ -172,6 +157,7 @@ const Home = () => {
         </button>
       </Section>
 
+      <BottomNavbar />
     </div>
   );
 };
