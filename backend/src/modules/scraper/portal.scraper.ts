@@ -28,14 +28,10 @@ export class PortalScraper {
                 page.click('input[type="submit"], button[type="submit"], button')
             ]);
 
-            // Check if we are still on the login page or an error is displayed
+            // Check if we are still on the login page. A successful login navigates to the dashboard.
             const url = page.url();
-            const hasError = await page.evaluate(() => {
-                const bodyText = document.body.innerText.toLowerCase();
-                return bodyText.includes("invalid") || bodyText.includes("incorrect") || bodyText.includes("wrong");
-            });
 
-            if (url.includes("login.php") && hasError) {
+            if (url.toLowerCase().includes("login.php")) {
                 logger.warn(`Login failed for ID: ${universityId}`);
                 return false;
             }
