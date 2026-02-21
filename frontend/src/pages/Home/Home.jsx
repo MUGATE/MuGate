@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./Home.css";
 import heroVideo from "./assets/Videos/MU VIDEO LANDING PAGE.mp4";
@@ -18,6 +18,77 @@ const Section = ({ id, children, className = "", ...rest }) => {
 };
 
 const Home = () => {
+  const [universityId, setUniversityId] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [validationErrors, setValidationErrors] = useState({});
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check if token exists on mount
+    const token = localStorage.getItem("mugate_token");
+    if (token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("mugate_token");
+    setIsLoggedIn(false);
+    setUniversityId("");
+    setPassword("");
+    setValidationErrors({});
+    setErrorMsg("");
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setValidationErrors({});
+    setErrorMsg("");
+
+    const errors = {};
+    if (!universityId) {
+      errors.universityId = "Please fill out this field.";
+    }
+    if (!password) {
+      errors.password = "Please fill out this field.";
+    } else if (password.length < 3) {
+      errors.password = "Please lengthen this text to 3 characters or more.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ universityId, password })
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // Store the JWT token securely
+      localStorage.setItem("mugate_token", data.data.token);
+
+      // Update UI state to hide login block
+      setIsLoggedIn(true);
+
+    } catch (err) {
+      setErrorMsg(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="home-container">
       {/* THE ENTIRE WHITE FRAME (TOP, LEFT, RIGHT, BOTTOM) + NAVBAR MOVES AS ONE */}
@@ -38,10 +109,34 @@ const Home = () => {
           </div>
 
           <div className="nav-group-right">
-            <a href="#login" className="nav-signin">Register</a>
-            <button className="nav-demo-btn-solidroad">
-              Sign in <span className="btn-arrow">→</span>
-            </button>
+            {!isLoggedIn ? (
+              <button
+                className="nav-demo-btn-solidroad"
+                onClick={() => {
+                  const el = document.querySelector('[data-page="2"]');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                Start <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255, 255, 255, 0.3)" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </span>
+              </button>
+            ) : (
+              <button
+                className="nav-demo-btn-solidroad"
+                onClick={handleLogout}
+              >
+                Logout <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255, 255, 255, 0.3)" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </span>
+              </button>
+            )}
           </div>
         </nav>
       </div>
@@ -73,25 +168,84 @@ const Home = () => {
                 and academic guidance into one intelligent decision system.
               </p>
 
-              <div className="email-input-group-rect">
-                <div className="input-with-icon">
-                  <span className="mail-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-                    </svg>
-                  </span>
-                  <input type="email" placeholder="Email address" />
+              {!isLoggedIn && (
+                <div id="hero-login-section" className="login-form-container">
+                  <form className="hero-login-form" onSubmit={handleLogin} noValidate>
+                    {/* User ID Field */}
+                    <div className="input-with-icon-stacked" style={{ position: "relative" }}>
+                      <span className="mail-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="User ID"
+                        value={universityId}
+                        onChange={(e) => {
+                          setUniversityId(e.target.value);
+                          if (validationErrors.universityId) setValidationErrors(prev => ({ ...prev, universityId: null }));
+                        }}
+                        disabled={isLoading}
+                      />
+                      {validationErrors.universityId && (
+                        <div className="custom-validation-tooltip">
+                          <span className="tooltip-arrow"></span>
+                          <span className="tooltip-icon">!</span>
+                          {validationErrors.universityId}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Password Field */}
+                    <div className="input-with-icon-stacked" style={{ position: "relative" }}>
+                      <span className="mail-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                      </span>
+                      <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          if (validationErrors.password) setValidationErrors(prev => ({ ...prev, password: null }));
+                        }}
+                        disabled={isLoading}
+                      />
+                      {validationErrors.password && (
+                        <div className="custom-validation-tooltip">
+                          <span className="tooltip-arrow"></span>
+                          <span className="tooltip-icon">!</span>
+                          {validationErrors.password}
+                        </div>
+                      )}
+                    </div>
+
+                    {errorMsg && <div className="login-error-msg">{errorMsg}</div>}
+
+                    {/* Wide Login Button with Circular Arrow */}
+                    <button type="submit" className="hero-login-btn" disabled={isLoading}>
+                      {isLoading ? "Authenticating..." : "Login"}
+                      {!isLoading && (
+                        <span className="circle-arrow-icon">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                          </svg>
+                        </span>
+                      )}
+                    </button>
+                  </form>
                 </div>
-                <button className="invite-btn-demo">
-                  Sign in <span className="btn-arrow">→</span>
-                </button>
-              </div>
+              )}
             </div>
           </div>
-
           {/* INFINITE LOGO CAROUSEL */}
-          <div className="logo-carousel-mask">
+          <div className="logo-carousel-mask" >
             <div className="logo-carousel-slow-wrapper">
               <div className="logo-carousel-track">
                 {/* First Set */}
