@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./Home.css";
 import heroVideo from "./assets/Videos/MU VIDEO LANDING PAGE.mp4";
 
@@ -22,7 +23,7 @@ const Home = () => {
             <a href="#internships">Internships</a>
             <a href="#resume">Resume</a>
             <a href="#chatbot">Chatbot</a>
-            <a href="#scheduler">Scheduler</a>
+            <Link to="/schedule">Scheduler</Link>
           </div>
 
           <div className="nav-group-center">
