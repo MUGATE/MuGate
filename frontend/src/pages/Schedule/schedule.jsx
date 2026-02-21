@@ -212,7 +212,7 @@ const Schedule = () => {
         <Link to="/">Home</Link>
         <Link to="/chatbot">Chatbot</Link>
         <Link to="/schedule" className="active">Scheduler</Link>
-        <a href="#resume-enhancer">Resume Enhancer</a>
+        <Link to="/resume-enhancer">Resume Enhancer</Link>
         <Link to="/internships">Internships</Link>
         <div className="nav-avatar">
           <img

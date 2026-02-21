@@ -25,7 +25,7 @@ const Home = () => {
         <nav className="hero-nav-notched">
           <div className="nav-group-left">
             <a href="#internships">Internships</a>
-            <a href="#resume">Resume</a>
+            <Link to="/resume-enhancer">Resume</Link>
             <a href="#chatbot">Chatbot</a>
             <Link to="/schedule">Scheduler</Link>
           </div>
