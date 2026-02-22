@@ -12,6 +12,7 @@ import {
   Lightbulb,
   Mic
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import './Chatbot.css';
 import LogoPath from './assets/images/Logo2.png';
 import FluidTrail from './FluidTrail';
@@ -41,22 +42,22 @@ const Chatbot = () => {
 
         {/* Main Nav */}
         <nav className="sidebar-nav">
-          <a href="#" className="nav-item">
+          <Link to="/" className="nav-item">
             <Home size={18} />
             <span>Home</span>
-          </a>
-          <a href="#" className="nav-item">
+          </Link>
+          <Link to="/internships" className="nav-item">
             <Compass size={18} />
-            <span>Explore</span>
-          </a>
-          <a href="#" className="nav-item">
+            <span>Internships</span>
+          </Link>
+          <Link to="/schedule" className="nav-item">
             <Library size={18} />
-            <span>Library</span>
-          </a>
-          <a href="#" className="nav-item">
+            <span>Scheduler</span>
+          </Link>
+          <Link to="/resume-enhancer" className="nav-item">
             <History size={18} />
-            <span>History</span>
-          </a>
+            <span>Resume Enhancer</span>
+          </Link>
         </nav>
 
         {/* Recents */}

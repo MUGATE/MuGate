@@ -57,8 +57,8 @@
 
 .sidebar-logo-wrapper {
     position: relative;
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
     flex-shrink: 0;
 }
 
@@ -98,8 +98,8 @@
 
 .sidebar-title {
     font-weight: 700;
-    font-size: 1.1rem;
-    color: #1a1a24;
+    font-size: 1.25rem;
+    color: #030049;
 }
 
 /* Search bar */

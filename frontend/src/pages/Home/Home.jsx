@@ -95,7 +95,7 @@ const Home = () => {
       <div className="hero-unified-frame">
         <nav className="hero-nav-notched">
           <div className="nav-group-left">
-            <Link to="/InternshipList">Internships</Link>
+            <Link to="/internships">Internships</Link>
             <Link to="/resume-enhancer">Resume</Link>
             <Link to="/chatbot">Chatbot</Link>
             <Link to="/schedule">Scheduler</Link>

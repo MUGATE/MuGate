@@ -10,8 +10,9 @@ import * as THREE from 'three';
 const EXTRUDE_DEPTH = 0.4;
 const LAYER_COUNT = 10;
 
-const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = true, isCenter = false }) => {
+const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = true, isCenter = false, forceWhiteBack = false }) => {
   const [texture, setTexture] = useState(null);
+  const [silhouetteTexture, setSilhouetteTexture] = useState(null);
   const groupRef = useRef();
   const reflectionRef = useRef();
 
@@ -74,31 +75,65 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
     canvas.height = SIZE;
     const ctx = canvas.getContext('2d');
 
-    const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`;
+    // Support both raw SVG strings and imported PNG/JPG image URLs
+    const isSvgString = svgContent.trim().startsWith('<svg');
+    const imageSrc = isSvgString
+      ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`
+      : svgContent;
+
     const img = new Image();
 
     img.onload = () => {
       if (cancelled) return;
+      // Ensure the image scales properly but retains its aspect ratio
       const w = img.naturalWidth || SIZE;
       const h = img.naturalHeight || SIZE;
-      const scale = Math.min(SIZE / w, SIZE / h) * 0.82;
-      const dx = (SIZE - w * scale) / 2;
-      const dy = (SIZE - h * scale) / 2;
+
+      let drawW, drawH;
+      const MAX_BOUND = SIZE * 0.65; // Make sizes universally smaller and more consistent
+
+      if (w > h) {
+        drawW = MAX_BOUND;
+        drawH = (h / w) * drawW;
+      } else {
+        drawH = MAX_BOUND;
+        drawW = (w / h) * drawH;
+      }
+
+      const dx = (SIZE - drawW) / 2;
+      const dy = (SIZE - drawH) / 2;
 
       ctx.clearRect(0, 0, SIZE, SIZE);
-      ctx.drawImage(img, dx, dy, w * scale, h * scale);
+      ctx.drawImage(img, dx, dy, drawW, drawH);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.needsUpdate = true;
       tex.colorSpace = THREE.SRGBColorSpace;
       setTexture(tex);
+
+      if (forceWhiteBack) {
+        // Create pure white silhouette for the depth layers
+        const silCanvas = document.createElement('canvas');
+        silCanvas.width = SIZE;
+        silCanvas.height = SIZE;
+        const sCtx = silCanvas.getContext('2d');
+        sCtx.drawImage(img, dx, dy, drawW, drawH);
+        sCtx.globalCompositeOperation = "source-in";
+        sCtx.fillStyle = "#ffffff";
+        sCtx.fillRect(0, 0, SIZE, SIZE);
+
+        const silTex = new THREE.CanvasTexture(silCanvas);
+        silTex.needsUpdate = true;
+        silTex.colorSpace = THREE.SRGBColorSpace;
+        setSilhouetteTexture(silTex);
+      }
     };
 
     img.onerror = () => {
       if (!cancelled) console.warn('[LogoPlane] SVG failed to load');
     };
 
-    img.src = dataUri;
+    img.src = imageSrc;
     return () => { cancelled = true; };
   }, [svgContent]);
 
@@ -258,7 +293,7 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
           >
             <planeGeometry args={planeArgs} />
             <meshBasicMaterial
-              map={texture}
+              map={(forceWhiteBack && silhouetteTexture) ? silhouetteTexture : texture}
               transparent
               alphaTest={0.15}
               side={THREE.DoubleSide}
@@ -275,7 +310,7 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
         >
           <planeGeometry args={planeArgs} />
           <meshBasicMaterial
-            map={texture}
+            map={(forceWhiteBack && silhouetteTexture) ? silhouetteTexture : texture}
             transparent
             alphaTest={0.15}
             side={THREE.FrontSide}
