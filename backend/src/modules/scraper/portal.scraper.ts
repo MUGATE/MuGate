@@ -25,7 +25,7 @@ export class PortalScraper {
             // Click submit button (often has type submit or just a button)
             await Promise.all([
                 page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 10000 }).catch(() => null), // Catch timeout in case it doesn't navigate on error
-                page.click('input[type="submit"], button[type="submit"], button')
+                page.click('button[onclick="submit_login()"], .form-actions button.btn-bricky, input[type="submit"]')
             ]);
 
             // Check if we are still on the login page. A successful login navigates to the dashboard.
@@ -64,57 +64,70 @@ export class PortalScraper {
             await page.fill('input[name="password"], input[type="password"]', password);
             await Promise.all([
                 page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 10000 }).catch(() => null),
-                page.click('input[type="submit"], button[type="submit"], button')
+                page.click('button[onclick="submit_login()"], .form-actions button.btn-bricky, input[type="submit"]')
             ]);
 
             // 2. Navigate to Course Offerings URL
             const offeringsUrl = `https://ums.mu.edu.lb/Student/list_offering.php?semester_idsemester=${semesterId}`;
             await page.goto(offeringsUrl, { waitUntil: "domcontentloaded" });
 
-            // 3. Extract data from the table
-            const courses = await page.evaluate((semesterId) => {
-                const rows = Array.from(document.querySelectorAll('tbody tr[role="row"]'));
-                const extracted: any[] = [];
+            // 2b. We will handle pagination by extracting the current page, and clicking 'Next' until disabled
+            const allCourses: any[] = [];
+            let hasNextPage = true;
+            let pageNum = 1;
 
-                rows.forEach(row => {
-                    const columns = row.querySelectorAll('td');
-                    if (columns.length >= 12) {
-                        // Extract based on the columns structure provided by the user
-                        const courseCode = columns[1].innerText.trim();
-                        const courseName = columns[2].innerText.trim();
-                        const section = columns[3].innerText.trim();
-                        const type = columns[4].innerText.trim();
-                        const credits = parseInt(columns[5].innerText.trim(), 10) || 0;
-                        const instructor = columns[6].innerText.trim();
-                        const schedule = columns[8].innerText.trim();
-                        const capacity = parseInt(columns[9].innerText.trim(), 10) || 0;
-                        const enrolled = parseInt(columns[10].innerText.trim(), 10) || 0;
-                        const room = columns[11].innerText.trim();
+            while (hasNextPage) {
+                // Wait for the table body to exist
+                await page.waitForSelector('tbody tr[role="row"]', { timeout: 10000 }).catch(() => null);
 
-                        // Only add valid looking courses
-                        if (courseCode && courseName) {
-                            extracted.push({
-                                courseCode,
-                                courseName,
-                                sectionNumber: section,
-                                type,
-                                credits,
-                                instructor,
-                                schedule,    // Format: "W 17:30:00->18:45:00\nM 17:30:00->18:45:00"
-                                capacity,
-                                enrolled,
-                                room,
-                                semesterId
-                            });
+                // Extract data from the current page
+                const pageCourses = await page.evaluate((semesterId) => {
+                    const rows = Array.from(document.querySelectorAll('tbody tr[role="row"]'));
+                    const extracted: any[] = [];
+
+                    rows.forEach(row => {
+                        const columns = row.querySelectorAll('td');
+                        if (columns.length >= 12) {
+                            const courseCode = columns[1]?.innerText.trim();
+                            const courseName = columns[2]?.innerText.trim();
+                            const section = columns[3]?.innerText.trim();
+                            const type = columns[4]?.innerText.trim();
+                            const credits = parseInt(columns[5]?.innerText.trim() || '0', 10) || 0;
+                            const instructor = columns[6]?.innerText.trim();
+                            const schedule = columns[8]?.innerText.trim();
+                            const capacity = parseInt(columns[9]?.innerText.trim() || '0', 10) || 0;
+                            const enrolled = parseInt(columns[10]?.innerText.trim() || '0', 10) || 0;
+                            const room = columns[11]?.innerText.trim();
+
+                            if (courseCode && courseName) {
+                                extracted.push({
+                                    courseCode, courseName, sectionNumber: section, type,
+                                    credits, instructor, schedule, capacity, enrolled, room, semesterId
+                                });
+                            }
                         }
-                    }
-                });
+                    });
+                    return extracted;
+                }, semesterId);
 
-                return extracted;
-            }, semesterId);
+                allCourses.push(...pageCourses);
+                logger.info(`Extracted ${pageCourses.length} courses from page ${pageNum}`);
 
-            logger.info(`Successfully extracted ${courses.length} course sections from portal.`);
-            return courses;
+                // Check if 'Next' button exists and is not disabled
+                // Often DataTables use .paginate_button.next, and add .disabled when at the end
+                const nextButton = await page.$('.paginate_button.next:not(.disabled), #datatable_next:not(.disabled), a.next:not(.disabled)');
+
+                if (nextButton) {
+                    await nextButton.click();
+                    pageNum++;
+                    await page.waitForTimeout(1500); // Wait for DataTables to re-render the next page
+                } else {
+                    hasNextPage = false;
+                }
+            }
+
+            logger.info(`Successfully extracted a total of ${allCourses.length} course sections from portal.`);
+            return allCourses;
 
         } catch (error: any) {
             logger.error(`Error extracting courses from portal: ${error.message}`);
@@ -141,7 +154,7 @@ export class PortalScraper {
             await page.fill('input[name="password"], input[type="password"]', password);
             await Promise.all([
                 page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 10000 }).catch(() => null),
-                page.click('input[type="submit"], button[type="submit"], button')
+                page.click('button[onclick="submit_login()"], .form-actions button.btn-bricky, input[type="submit"]')
             ]);
 
             // 2. Navigate to Academic History URL

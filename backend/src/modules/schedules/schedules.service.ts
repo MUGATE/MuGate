@@ -64,7 +64,7 @@ export class SchedulesService {
                 SELECT 
                     sch.id as scheduleId, sch.name as scheduleName, sch.score, sch.totalCredits, sch.createdAt,
                     c.id as courseId, c.courseCode, c.courseName, c.credits, sec.type as courseType,
-                    sec.id as sectionId, sec.sectionNumber, sec.instructor, sec.day, sec.startTime, sec.endTime
+                    sec.id as sectionId, sec.sectionNumber, sec.instructor, sec.day, sec.startTime, sec.endTime, sec.room
                 FROM Schedules sch
                 INNER JOIN ScheduleSections ss ON sch.id = ss.scheduleId
                 INNER JOIN CourseSections sec ON ss.sectionId = sec.id
@@ -100,7 +100,8 @@ export class SchedulesService {
                     instructor: row.instructor,
                     day: row.day,
                     startTime: row.startTime,
-                    endTime: row.endTime
+                    endTime: row.endTime,
+                    room: row.room
                 }
             });
         });

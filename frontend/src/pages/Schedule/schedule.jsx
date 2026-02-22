@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
 import { Link } from 'react-router-dom';
+import { Clock, CalendarDays, PartyPopper } from 'lucide-react';
 import './schedule.css';
 
 /* ── Data ── */
@@ -141,7 +142,7 @@ const Schedule = () => {
     }
     return {
       skip8am: false,
-      minimizeGaps: false,
+      twoDaysOnly: false,
       freeFridays: false,
       maxCredits: 17
     };
@@ -248,7 +249,7 @@ const Schedule = () => {
           excludeDays: preferences.freeFridays ? [4] : [], // Friday is 4 in 0-indexed mapped Days
           startTime: preferences.skip8am ? "9:00:00" : null,
           maxCredits: preferences.maxCredits,
-          minimizeGaps: preferences.minimizeGaps
+          twoDaysOnly: preferences.twoDaysOnly
         }
       };
 
@@ -419,7 +420,7 @@ const Schedule = () => {
 
           <div className="preference-item">
             <div className="preference-info">
-              <span className="preference-emoji">🕐</span>
+              <span className="preference-emoji" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Clock size={20} /></span>
               <div className="preference-text">
                 <h4>Skip 8 AM classes</h4>
                 <p>Avoid early mornings</p>
@@ -433,20 +434,20 @@ const Schedule = () => {
 
           <div className="preference-item">
             <div className="preference-info">
-              <span className="preference-emoji">🔗</span>
+              <span className="preference-emoji" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><CalendarDays size={20} /></span>
               <div className="preference-text">
-                <h4>Minimize gaps between courses</h4>
+                <h4>Two days only</h4>
               </div>
             </div>
             <ToggleSwitch
-              checked={preferences.minimizeGaps}
-              onChange={() => togglePref('minimizeGaps')}
+              checked={preferences.twoDaysOnly}
+              onChange={() => togglePref('twoDaysOnly')}
             />
           </div>
 
           <div className="preference-item">
             <div className="preference-info">
-              <span className="preference-emoji">🎉</span>
+              <span className="preference-emoji" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><PartyPopper size={20} /></span>
               <div className="preference-text">
                 <h4>Free Fridays</h4>
               </div>

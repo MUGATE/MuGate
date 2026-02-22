@@ -2,6 +2,8 @@ import { pool } from "../../core/database/connection";
 import { generateToken, TokenPayload } from "../../core/security/jwt.util";
 import { encrypt } from "../../core/security/encryption.util";
 import { PortalScraper } from "../scraper/portal.scraper";
+import { HistoryService } from "../history/history.service";
+import { logger } from "../../core/logger/logger";
 
 export class AuthService {
     /**
@@ -69,7 +71,15 @@ export class AuthService {
                 END
             `);
 
-        // 5. Generate and return MuGate JWT
+        // 5. Auto-scrape the student's academic history so the generator knows what they passed
+        try {
+            await HistoryService.syncStudentHistoryFromPortal(user.id);
+            logger.info(`Successfully synced academic history for user ${user.id} on login`);
+        } catch (historyErr: any) {
+            logger.warn(`Non-fatal: Failed to sync history on login for ${user.id}: ${historyErr.message}`);
+        }
+
+        // 6. Generate and return MuGate JWT
         const payload: TokenPayload = { userId: user.id, email: user.email };
         const token = generateToken(payload);
 

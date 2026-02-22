@@ -1,13 +1,11 @@
-import { pool } from "./src/core/database/connection";
-import { SchedulesService } from "./src/modules/schedules/schedules.service";
+import { pool, connectDB } from "./src/core/database/connection";
 
 async function run() {
-    await pool.connect();
+    await connectDB();
     try {
-        const userId = '87288CA2-B987-43EE-85BC-742F30D34F3B';
-        console.log("Testing GET schedules...");
-        const result = await SchedulesService.getSavedSchedules(userId);
-        console.log(JSON.stringify(result, null, 2));
+        const res = await pool.request().query("SELECT DISTINCT semester FROM Courses");
+        console.log("Semesters found in DB:");
+        console.log(res.recordset);
     } catch (e: any) {
         console.error("Crash: ", e.message);
     }

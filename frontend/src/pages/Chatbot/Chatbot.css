@@ -1,0 +1,524 @@
+/* Global resets and fonts apply from index.css, assuming Inter or similar */
+
+.chatbot-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    background-color: #f8fafb;
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow: hidden;
+    padding: 16px;
+    gap: 16px;
+}
+
+/* =========================================
+   Sidebar
+   ========================================= */
+.chatbot-sidebar {
+    position: relative;
+    width: 280px;
+    background-color: #fafcfe;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    flex-shrink: 0;
+    z-index: 10;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px #f1f3f4;
+    border: 1px solid rgba(0, 0, 0, 0.01);
+}
+
+/* Force content wrappers to rest ABOVE the fluid canvas */
+.chatbot-sidebar>*:not(canvas) {
+    position: relative;
+    z-index: 5;
+}
+
+.main-content-wrapper {
+    position: relative;
+    z-index: 5;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.mask-logo {
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+}
+
+.sidebar-logo-wrapper {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.sidebar-logo {
+    width: 100%;
+    height: 100%;
+    background-color: #030049;
+    /* Specified standard color */
+    position: relative;
+    overflow: hidden;
+}
+
+/* Shine effect requested by user */
+.shine-effect {
+    position: absolute;
+    top: -100%;
+    left: -100%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(to bottom right,
+            rgba(255, 255, 255, 0) 30%,
+            rgba(255, 255, 255, 0.6) 50%,
+            rgba(255, 255, 255, 0) 70%);
+    transform: rotate(45deg);
+    animation: shineAnimation 3s infinite linear;
+}
+
+@keyframes shineAnimation {
+    0% {
+        transform: translateY(-100%) translateX(-100%) rotate(45deg);
+    }
+
+    100% {
+        transform: translateY(100%) translateX(100%) rotate(45deg);
+    }
+}
+
+.sidebar-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #1a1a24;
+}
+
+/* Search bar */
+.sidebar-search {
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 24px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.sidebar-search .search-icon {
+    color: #999;
+    margin-right: 8px;
+}
+
+.sidebar-search input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.9rem;
+    width: 100%;
+    color: #333;
+}
+
+.sidebar-search input::placeholder {
+    color: #aaa;
+}
+
+.shortcut-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f4;
+    color: #888;
+    border-radius: 4px;
+    width: 20px;
+    height: 20px;
+}
+
+/* Nav Menu */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 32px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #666;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+    color: #111;
+}
+
+/* History */
+.sidebar-history-section {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 16px;
+}
+
+.sidebar-history-section::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-history-section::-webkit-scrollbar-thumb {
+    background: #e0e0e0;
+    border-radius: 4px;
+}
+
+.history-group-title {
+    font-size: 0.75rem;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.mt-4 {
+    margin-top: 24px;
+}
+
+.history-item {
+    display: block;
+    text-decoration: none;
+    color: #777;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    padding: 4px 8px;
+    margin-left: -8px;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+    /* Apply a fade out at the end of the text instead of hard ellipsis */
+    -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+    mask-image: linear-gradient(to right, black 80%, transparent 100%);
+}
+
+.history-item:hover {
+    color: #333;
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Profile */
+.sidebar-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin: 0 -12px;
+    /* Pull out to match padding */
+    border-radius: 8px;
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.sidebar-profile:hover {
+    background-color: #f9f9fc;
+}
+
+.profile-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.profile-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profile-email {
+    font-size: 0.75rem;
+    color: #999;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profile-action-icon {
+    color: #aaa;
+}
+
+/* =========================================
+   Main Area
+   ========================================= */
+.chatbot-main {
+    flex-grow: 1;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* e8e9f4 under chatbar and f1f7ee beside it. Let's make a beautiful fluid mesh gradient background */
+    background-color: #fafcfe;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px #f1f3f4;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.01);
+}
+
+.main-bg-mesh {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    /* Complex radial background for the soft pastel colors */
+    background:
+        radial-gradient(ellipse at 50% 90%, #e8e9f4 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, #f1f7ee 0%, transparent 50%),
+        radial-gradient(ellipse at 20% 80%, #f1f7ee 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 20%, #ffffff 0%, transparent 60%);
+    opacity: 0.8;
+}
+
+.main-content-wrapper {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 40px;
+    margin-top: -80px;
+    /* Slight lift */
+}
+
+/* Animated Gradient Logo */
+.center-logo-wrapper {
+    width: 140px;
+    height: 140px;
+    margin-bottom: 8px;
+}
+
+.center-logo {
+    width: 100%;
+    height: 100%;
+    /* 5157d9 from bottom-left, ffda94 middle/top-left, ffffff top-right */
+    background: linear-gradient(60deg, #5157d9 0%, #ffda94 45%, #ffffff 80%, #ffffff 100%);
+    /* Set size larger than 100% to allow for subtle panning */
+    background-size: 150% 150%;
+    /* Start at bottom-left corner */
+    background-position: 0% 100%;
+    animation: gentleLogoPulse 6s ease-in-out infinite alternate;
+}
+
+@keyframes gentleLogoPulse {
+    0% {
+        /* Bottom-left bias: #5157d9 is dominant */
+        background-position: 0% 100%;
+    }
+
+    100% {
+        /* Shift towards top/left to pull #5157d9 further up */
+        background-position: 20% 60%;
+    }
+}
+
+/* Greeting */
+.greeting-container {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.greeting-text {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2c2c31;
+    margin: 0;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+
+.greeting-subtext {
+    font-size: 2.5rem;
+    font-weight: 500;
+    color: #444;
+    margin: 0;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+
+.highlight-gradient {
+    background: linear-gradient(90deg, #5157d9, #ffda94, #5157d9);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+    animation: flowTextGradient 4s linear infinite;
+}
+
+@keyframes flowTextGradient {
+    to {
+        background-position: 200% center;
+    }
+}
+
+/* Input Box */
+.chatbox-wrapper {
+    width: 100%;
+    position: relative;
+}
+
+.chatbox-inner {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    padding: 16px 20px;
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.02),
+        0 1px 3px rgba(0, 0, 0, 0.03),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 180px;
+    /* Make the chatbox a bit taller vertically */
+}
+
+.chatbox-input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sparkle-icon {
+    color: #7b61ff;
+    flex-shrink: 0;
+}
+
+.chatbox-input {
+    flex-grow: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 1.05rem;
+    color: #333;
+}
+
+.chatbox-input::placeholder {
+    color: #909096;
+}
+
+/* Bottom Actions inside Chatbox */
+.chatbox-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chatbox-left-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background-color: #ffffff;
+    color: #666;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.action-btn:hover {
+    background-color: #f7f7f9;
+    color: #333;
+}
+
+.action-btn.icon-only {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+
+.action-btn.pill-btn {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 16px;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.chatbox-right-actions {
+    display: flex;
+}
+
+.mic-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background-color: #7b61ff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 8px rgba(123, 97, 255, 0.3);
+}
+
+.mic-btn:hover {
+    background-color: #6a4ff0;
+}
+
+.mic-btn:active {
+    transform: scale(0.95);
+}
+
+/* =========================================
+   Hover Glow Pointer Effect
+   ========================================= */
+.glow-panel {
+    position: relative;
+    /* overflow: hidden; Removed to let the canvas trail extend if needed, or kept if we want it isolated, let's keep it isolated on the container level soon */
+}

@@ -21,7 +21,7 @@ import './hero.css';
  *   ArrowLeft / ArrowRight → change activeIndex (wraps around)
  *   activeIndex → SceneEffect → Carousel3D → each CarouselItem lerps
  */
-const HeroSection = () => {
+const InternshipList = () => {
   const total = companyData.length;
   const [activeIndex, setActiveIndex] = useState(2); // Google (center)
 
@@ -90,4 +90,4 @@ const HeroSection = () => {
   );
 };
 
-export default HeroSection;
+export default InternshipList;

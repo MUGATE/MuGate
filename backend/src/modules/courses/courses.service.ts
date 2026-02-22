@@ -131,7 +131,6 @@ export class CoursesService {
                     `);
 
                 if (existingSection.recordset.length > 0) {
-                    // Update section times and instructor
                     await transaction.request()
                         .input("id", existingSection.recordset[0].id)
                         .input("instructor", course.instructor)
@@ -140,9 +139,10 @@ export class CoursesService {
                         .input("endTime", endTime)
                         .input("capacity", course.capacity)
                         .input("enrolled", course.enrolled)
+                        .input("room", course.room)
                         .query(`
                             UPDATE CourseSections 
-                            SET instructor = @instructor, day = @day, startTime = @startTime, endTime = @endTime, capacity = @capacity, enrolled = @enrolled
+                            SET instructor = @instructor, day = @day, startTime = @startTime, endTime = @endTime, capacity = @capacity, enrolled = @enrolled, room = @room
                             WHERE id = @id
                         `);
                 } else {
@@ -157,9 +157,10 @@ export class CoursesService {
                         .input("type", course.type || 'Lecture')
                         .input("capacity", course.capacity)
                         .input("enrolled", course.enrolled)
+                        .input("room", course.room)
                         .query(`
-                            INSERT INTO CourseSections (courseId, sectionNumber, instructor, day, startTime, endTime, type, capacity, enrolled)
-                            VALUES (@courseId, @sectionNumber, @instructor, @day, @startTime, @endTime, @type, @capacity, @enrolled)
+                            INSERT INTO CourseSections (courseId, sectionNumber, instructor, day, startTime, endTime, type, capacity, enrolled, room)
+                            VALUES (@courseId, @sectionNumber, @instructor, @day, @startTime, @endTime, @type, @capacity, @enrolled, @room)
                         `);
                 }
             }

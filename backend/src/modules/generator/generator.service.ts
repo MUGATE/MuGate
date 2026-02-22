@@ -1,6 +1,7 @@
 import { pool } from "../../core/database/connection";
 import { CS_CURRICULUM, CurriculumCourse } from "./curriculum";
 import { logger } from "../../core/logger/logger";
+import { HistoryService } from "../history/history.service";
 
 export class GeneratorService {
 
@@ -110,6 +111,21 @@ export class GeneratorService {
      * Main algorithm entry point: Generate optimal, conflict-free schedules
      */
     static async generateSchedules(userId: string, semesterId: number, preferences: any) {
+        // Step 0: Ensure the user has academic history scraped — if empty, scrape now
+        const historyCheck = await pool.request()
+            .input("userId", userId)
+            .query("SELECT COUNT(*) as cnt FROM AcademicHistory WHERE userId = @userId");
+
+        if (historyCheck.recordset[0].cnt === 0) {
+            logger.info(`No academic history found for user ${userId}, triggering auto-scrape...`);
+            try {
+                await HistoryService.syncStudentHistoryFromPortal(userId);
+                logger.info(`Successfully scraped history for user ${userId} before generation.`);
+            } catch (err: any) {
+                logger.warn(`Failed to auto-scrape history for ${userId}: ${err.message}`);
+            }
+        }
+
         // Step 1: Get what they *can* take
         const eligibleCourses = await this.getEligibleCourses(userId);
 
@@ -128,6 +144,11 @@ export class GeneratorService {
             electiveLimits[cat] = (electiveLimits[cat] || 0) + 1;
         }
 
+        logger.info(`Elective limits: ${JSON.stringify(electiveLimits)}`);
+        logger.info(`Eligible elective categories: ${JSON.stringify(electiveCategories)}`);
+        logger.info(`Eligible fixed courses: ${eligibleCodes.join(', ')}`);
+        logger.info(`Eligible placeholders: ${eligibleCourses.filter(c => c.isElectivePlaceholder).map(c => `${c.courseCode}(${c.category})`).join(', ')}`);
+
         logger.info(`Fetching available offerings for semester ${semesterId}...`);
 
         const offeringsResult = await pool.request()
@@ -135,7 +156,7 @@ export class GeneratorService {
             .query(`
                 SELECT 
                     c.id as courseId, c.courseCode, c.courseName, c.credits, c.department,
-                    s.id as sectionId, s.sectionNumber, s.instructor, s.day, s.startTime, s.endTime, s.type, s.capacity, s.enrolled
+                    s.id as sectionId, s.sectionNumber, s.instructor, s.day, s.startTime, s.endTime, s.type, s.capacity, s.enrolled, s.room
                 FROM Courses c
                 INNER JOIN CourseSections s ON c.id = s.courseId
                 WHERE c.semester = @semester
@@ -191,10 +212,24 @@ export class GeneratorService {
                 }
             }
 
-            if (!isEligible) return;
+            if (!isEligible) {
+                if (courseCodeNorm === 'MAT350') logger.info(`MAT350 dropped: not eligible. courseCodeNorm=${courseCodeNorm}`);
+                return;
+            }
 
             // Only consider sections with open seats
-            if (row.capacity > 0 && row.enrolled >= row.capacity) return;
+            if (row.capacity > 0 && row.enrolled >= row.capacity) {
+                if (courseCodeNorm === 'MAT350') logger.info(`MAT350 dropped: full. cap=${row.capacity}, enr=${row.enrolled}`);
+                return;
+            }
+
+            // Filter out A- rooms (annex building, not valid)
+            if (row.room && row.room.trim().toUpperCase().startsWith('A-')) {
+                if (courseCodeNorm === 'MAT350') logger.info(`MAT350 dropped: room A-. room=${row.room}`);
+                return;
+            }
+
+            if (courseCodeNorm === 'MAT350') logger.info(`MAT350 SURVIVED! Adding to availableCourses...`);
 
             if (!availableCoursesWithSections.has(courseCodeNorm)) {
                 availableCoursesWithSections.set(courseCodeNorm, {
@@ -214,7 +249,8 @@ export class GeneratorService {
                 day: row.day,
                 startTime: row.startTime,
                 endTime: row.endTime,
-                type: row.type
+                type: row.type,
+                room: row.room
             });
         });
 
@@ -222,28 +258,7 @@ export class GeneratorService {
         const coursesToSchedule = Array.from(availableCoursesWithSections.values());
 
         logger.info(`Found ${coursesToSchedule.length} available eligible courses with open sections.`);
-
-        // Step 3: Preference Filtering (Hard constraints)
-        // E.g., if preferences specify no days like "Sunday", we can filter those sections out now.
-        const filteredCoursesToSchedule: any[] = [];
-
-        for (const course of coursesToSchedule) {
-            const validSections = course.sections.filter((sec: any) => {
-                // If the user wants no classes on a specific day
-                if (preferences?.excludeDays && preferences.excludeDays.includes(sec.day)) return false;
-
-                // If the user wants no classes before a specific time
-                if (preferences?.startTime && sec.startTime < preferences.startTime) return false;
-
-                return true;
-            });
-
-            if (validSections.length > 0) {
-                // Keep the course only if it still has valid sections available
-                course.sections = validSections;
-                filteredCoursesToSchedule.push(course);
-            }
-        }
+        logger.info(`Courses to schedule keys: ${Array.from(availableCoursesWithSections.keys()).join(", ")}`);
 
         // --- Helper: Conflict Checker ---
         // SQL Server returns TIME as a string or Date obj depending on the driver, 
@@ -262,6 +277,30 @@ export class GeneratorService {
             }
             return 0;
         };
+
+        const filteredCoursesToSchedule: any[] = [];
+        const dayMap: Record<string, number> = { 'M': 0, 'T': 1, 'W': 2, 'TH': 3, 'F': 4, 'S': 5 };
+
+        for (const course of coursesToSchedule) {
+            const validSections = course.sections.filter((sec: any) => {
+                // If the user wants no classes on a specific day
+                if (preferences?.excludeDays && preferences.excludeDays.length > 0 && sec.day) {
+                    const secDays = sec.day.split(",");
+                    if (secDays.some((d: string) => preferences.excludeDays.includes(dayMap[d.trim().toUpperCase()]))) return false;
+                }
+
+                // If the user wants no classes before a specific time
+                if (preferences?.startTime && timeToMinutes(sec.startTime) < timeToMinutes(preferences.startTime)) return false;
+
+                return true;
+            });
+
+            if (validSections.length > 0) {
+                // Keep the course only if it still has valid sections available
+                course.sections = validSections;
+                filteredCoursesToSchedule.push(course);
+            }
+        }
 
         const hasTimeConflict = (currentSchedule: any[], newSection: any): boolean => {
             const newStart = timeToMinutes(newSection.startTime);
@@ -316,17 +355,19 @@ export class GeneratorService {
             // Branch 2: Try to take this course by iterating over its available sections
             if (currentCredits + course.credits <= MAX_CREDITS) {
                 // Check if this course is an elective that hit its limit
-                if (course.type !== 'Major' && course.type !== 'GER' && course.type !== 'Elective') {
-                    const catStr = course.type;
-                    if ((currentElectiveCounts[catStr] || 0) >= (electiveLimits[catStr] || 0)) {
+                const typeNorm = course.type.trim().toLowerCase();
+                const isElective = Object.keys(electiveLimits).includes(typeNorm);
+
+                if (isElective) {
+                    if ((currentElectiveCounts[typeNorm] || 0) >= (electiveLimits[typeNorm] || 0)) {
                         return; // Cannot add any more electives of this type
                     }
                 }
 
                 // If adding, increment the count for the next recursive call
                 const nextElectiveCounts = { ...currentElectiveCounts };
-                if (course.type !== 'Major' && course.type !== 'GER' && course.type !== 'Elective') {
-                    nextElectiveCounts[course.type] = (nextElectiveCounts[course.type] || 0) + 1;
+                if (isElective) {
+                    nextElectiveCounts[typeNorm] = (nextElectiveCounts[typeNorm] || 0) + 1;
                 }
 
                 for (const section of course.sections) {
@@ -391,11 +432,17 @@ export class GeneratorService {
             };
         });
 
+        // Strict Filter: Two Days Only
+        let finalSchedules = scoredSchedules;
+        if (preferences?.twoDaysOnly) {
+            finalSchedules = scoredSchedules.filter(s => s.daysOnCampus.length <= 2);
+        }
+
         // Sort by highest score first
-        scoredSchedules.sort((a, b) => b.score - a.score);
+        finalSchedules.sort((a, b) => b.score - a.score);
 
         // return top 20 distinct schedules
-        const topSchedules = scoredSchedules.slice(0, 20);
+        const topSchedules = finalSchedules.slice(0, 20);
 
         logger.info(`Generated ${generatedSchedules.length} valid combinations. Returning top ${topSchedules.length}.`);
 
