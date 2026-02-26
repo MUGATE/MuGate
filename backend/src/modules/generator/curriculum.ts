@@ -60,7 +60,7 @@ export const CS_CURRICULUM: CurriculumCourse[] = [
     { courseCode: "ELECTIVE_TECH_1", courseTitle: "Technical Elective 1", credits: 3, prerequisites: [], corequisites: [], type: 'Elective', category: "Technical Elective", isElectivePlaceholder: true, year: 3, semester: 1 },
 
     // --- Year 3 : Semester 2 ---
-    { courseCode: "CSC 450", courseTitle: "Operating Systems", credits: 3, prerequisites: ["COE 380"], corequisites: [], type: 'Major', year: 3, semester: 2 },
+    { courseCode: "CSC 450", courseTitle: "Operating Systems", credits: 3, prerequisites: [], corequisites: ["COE 380"], type: 'Major', year: 3, semester: 2 },
     { courseCode: "CSC 470", courseTitle: "Software Engineering", credits: 3, prerequisites: ["CSC 320"], corequisites: [], type: 'Major', year: 3, semester: 2 },
     { courseCode: "CSC 499", courseTitle: "Capstone Project", credits: 3, prerequisites: ["CSC 498"], corequisites: [], type: 'Major', year: 3, semester: 2 },
     { courseCode: "ELECTIVE_TECH_2", courseTitle: "Technical Elective 2", credits: 3, prerequisites: [], corequisites: [], type: 'Elective', category: "Technical Elective", isElectivePlaceholder: true, year: 3, semester: 2 },

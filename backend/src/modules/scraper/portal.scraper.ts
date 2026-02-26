@@ -71,60 +71,95 @@ export class PortalScraper {
             const offeringsUrl = `https://ums.mu.edu.lb/Student/list_offering.php?semester_idsemester=${semesterId}`;
             await page.goto(offeringsUrl, { waitUntil: "domcontentloaded" });
 
-            // 2b. We will handle pagination by extracting the current page, and clicking 'Next' until disabled
-            const allCourses: any[] = [];
-            let hasNextPage = true;
-            let pageNum = 1;
+            // 2a. The portal has TWO tables: Major courses (requires clicking "List") and Elective courses.
+            // Click the "List" button to load the Major courses table
+            try {
+                // Wait for the page to fully load
+                await page.waitForTimeout(2000);
 
-            while (hasNextPage) {
-                // Wait for the table body to exist
-                await page.waitForSelector('tbody tr[role="row"]', { timeout: 10000 }).catch(() => null);
-
-                // Extract data from the current page
-                const pageCourses = await page.evaluate((semesterId) => {
-                    const rows = Array.from(document.querySelectorAll('tbody tr[role="row"]'));
-                    const extracted: any[] = [];
-
-                    rows.forEach(row => {
-                        const columns = row.querySelectorAll('td');
-                        if (columns.length >= 12) {
-                            const courseCode = columns[1]?.innerText.trim();
-                            const courseName = columns[2]?.innerText.trim();
-                            const section = columns[3]?.innerText.trim();
-                            const type = columns[4]?.innerText.trim();
-                            const credits = parseInt(columns[5]?.innerText.trim() || '0', 10) || 0;
-                            const instructor = columns[6]?.innerText.trim();
-                            const schedule = columns[8]?.innerText.trim();
-                            const capacity = parseInt(columns[9]?.innerText.trim() || '0', 10) || 0;
-                            const enrolled = parseInt(columns[10]?.innerText.trim() || '0', 10) || 0;
-                            const room = columns[11]?.innerText.trim();
-
-                            if (courseCode && courseName) {
-                                extracted.push({
-                                    courseCode, courseName, sectionNumber: section, type,
-                                    credits, instructor, schedule, capacity, enrolled, room, semesterId
-                                });
-                            }
-                        }
-                    });
-                    return extracted;
-                }, semesterId);
-
-                allCourses.push(...pageCourses);
-                logger.info(`Extracted ${pageCourses.length} courses from page ${pageNum}`);
-
-                // Check if 'Next' button exists and is not disabled
-                // Often DataTables use .paginate_button.next, and add .disabled when at the end
-                const nextButton = await page.$('.paginate_button.next:not(.disabled), #datatable_next:not(.disabled), a.next:not(.disabled)');
-
-                if (nextButton) {
-                    await nextButton.click();
-                    pageNum++;
-                    await page.waitForTimeout(1500); // Wait for DataTables to re-render the next page
+                // Click the "List" button to load Major/filtered course offerings
+                const listButton = await page.$('button.btn:has-text("List"), input[type="submit"][value="List"], .btn-primary:has-text("List"), button:has-text("List")');
+                if (listButton) {
+                    await listButton.click();
+                    logger.info("Clicked 'List' button to load Major course offerings.");
+                    await page.waitForTimeout(3000); // Wait for the table to populate
                 } else {
-                    hasNextPage = false;
+                    logger.warn("Could not find 'List' button — Major courses table may not load.");
                 }
+            } catch (e: any) {
+                logger.warn(`Error clicking List button: ${e.message}`);
             }
+
+            // 2b. Set ALL DataTables on the page to show maximum entries
+            // The portal may have multiple tables, each with their own "show entries" dropdown
+            try {
+                const allDropdowns = await page.$$('.dataTables_length select');
+                logger.info(`Found ${allDropdowns.length} DataTables length dropdown(s) on the page.`);
+
+                for (let i = 0; i < allDropdowns.length; i++) {
+                    const dropdown = allDropdowns[i];
+                    const options = await dropdown.evaluate((sel: HTMLSelectElement) => {
+                        return Array.from(sel.options).map(o => ({ value: o.value, text: o.text }));
+                    });
+
+                    logger.info(`Dropdown ${i}: options = ${JSON.stringify(options)}`);
+
+                    // Find "All" or the largest numeric value
+                    const allOption = options.find(o => o.value === '-1' || o.text.toLowerCase() === 'all');
+                    const largestOption = options.reduce((max, o) => {
+                        const val = parseInt(o.value, 10);
+                        return !isNaN(val) && val > parseInt(max.value, 10) ? o : max;
+                    }, options[0]);
+
+                    const targetValue = allOption ? allOption.value : largestOption?.value;
+
+                    if (targetValue) {
+                        await dropdown.selectOption(targetValue);
+                        logger.info(`Set dropdown ${i} to show ${allOption ? 'ALL' : targetValue} entries.`);
+                    }
+                }
+
+                if (allDropdowns.length > 0) {
+                    // Wait for all tables to re-render
+                    await page.waitForTimeout(3000);
+                }
+            } catch (e: any) {
+                logger.warn(`Error setting DataTables length: ${e.message}`);
+            }
+
+
+            // 2c. Extract ALL courses from ALL tables on the page in a single pass
+            // Wait for table rows to exist (use 'tbody tr' not 'tbody tr[role=row]' — Major table is plain HTML, not DataTable)
+            await page.waitForSelector('tbody tr', { timeout: 10000 }).catch(() => null);
+
+            const allCourses = await page.evaluate((semesterId) => {
+                const rows = Array.from(document.querySelectorAll('tbody tr'));
+                const extracted: any[] = [];
+
+                rows.forEach(row => {
+                    const columns = row.querySelectorAll('td');
+                    if (columns.length >= 12) {
+                        const courseCode = columns[1]?.innerText.trim();
+                        const courseName = columns[2]?.innerText.trim();
+                        const section = columns[3]?.innerText.trim();
+                        const type = columns[4]?.innerText.trim();
+                        const credits = parseInt(columns[5]?.innerText.trim() || '0', 10) || 0;
+                        const instructor = columns[6]?.innerText.trim();
+                        const schedule = columns[8]?.innerText.trim();
+                        const capacity = parseInt(columns[9]?.innerText.trim() || '0', 10) || 0;
+                        const enrolled = parseInt(columns[10]?.innerText.trim() || '0', 10) || 0;
+                        const room = columns[11]?.innerText.trim();
+
+                        if (courseCode && courseName) {
+                            extracted.push({
+                                courseCode, courseName, sectionNumber: section, type,
+                                credits, instructor, schedule, capacity, enrolled, room, semesterId
+                            });
+                        }
+                    }
+                });
+                return extracted;
+            }, semesterId);
 
             logger.info(`Successfully extracted a total of ${allCourses.length} course sections from portal.`);
             return allCourses;

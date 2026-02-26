@@ -15,7 +15,7 @@ export class GeneratorService {
         // 1. Fetch academic history
         const historyResult = await pool.request()
             .input("userId", userId)
-            .query("SELECT courseCode, status, category FROM AcademicHistory WHERE userId = @userId AND status = 'Passed'");
+            .query("SELECT courseCode, status, category FROM AcademicHistory WHERE userId = @userId AND status IN ('Passed', 'Transferred')");
 
         // Helper function to normalize course codes (removes all spaces and capitalizes)
         const normalizeCode = (code: string) => code.replace(/\s+/g, '').toUpperCase();
@@ -89,7 +89,7 @@ export class GeneratorService {
             // If already passed, skip
             if (passedCourses.has(courseCodeNorm)) continue;
 
-            // Check prerequisites
+            // Check prerequisites (must be PASSED)
             let prereqsMet = true;
             for (const prereq of course.prerequisites) {
                 if (!passedCourses.has(normalizeCode(prereq))) {
@@ -103,15 +103,31 @@ export class GeneratorService {
             }
         }
 
-        logger.info(`Found ${eligibleCourses.length} eligible courses for user ${userId}`);
-        return eligibleCourses;
+        // Second pass: validate corequisites
+        // A corequisite is met if it is PASSED or is also in the eligible list (can be taken concurrently)
+        const eligibleCodes = new Set(eligibleCourses.map(c => normalizeCode(c.courseCode)));
+        const finalEligible = eligibleCourses.filter(course => {
+            if (!course.corequisites || course.corequisites.length === 0) return true;
+
+            for (const coreq of course.corequisites) {
+                const coreqNorm = normalizeCode(coreq);
+                if (!passedCourses.has(coreqNorm) && !eligibleCodes.has(coreqNorm)) {
+                    logger.info(`Excluding ${course.courseCode}: corequisite ${coreq} is neither passed nor eligible`);
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        logger.info(`Found ${finalEligible.length} eligible courses for user ${userId}`);
+        return finalEligible;
     }
 
     /**
      * Main algorithm entry point: Generate optimal, conflict-free schedules
      */
     static async generateSchedules(userId: string, semesterId: number, preferences: any) {
-        // Step 0: Ensure the user has academic history scraped — if empty, scrape now
+        // Step 0a: Ensure the user has academic history scraped — if empty, scrape now
         const historyCheck = await pool.request()
             .input("userId", userId)
             .query("SELECT COUNT(*) as cnt FROM AcademicHistory WHERE userId = @userId");
@@ -124,6 +140,16 @@ export class GeneratorService {
             } catch (err: any) {
                 logger.warn(`Failed to auto-scrape history for ${userId}: ${err.message}`);
             }
+        }
+
+        // Step 0b: Auto-sync courses from portal to ensure the latest offerings are in the DB
+        try {
+            logger.info(`Auto-syncing courses for semester ${semesterId} before generation...`);
+            const { CoursesService } = require("../courses/courses.service");
+            await CoursesService.syncCoursesFromPortal(userId, semesterId);
+            logger.info(`Course sync completed for semester ${semesterId}.`);
+        } catch (err: any) {
+            logger.warn(`Course auto-sync failed (using existing DB data): ${err.message}`);
         }
 
         // Step 1: Get what they *can* take
@@ -140,8 +166,16 @@ export class GeneratorService {
             .map(c => c.category!.trim().toLowerCase());
 
         const electiveLimits: Record<string, number> = {};
+        const freeElectiveLimits: Record<string, number> = {}; // Only free slots (no allowedCodes)
         for (const cat of electiveCategories) {
             electiveLimits[cat] = (electiveLimits[cat] || 0) + 1;
+        }
+        // Count free slots — placeholders without allowedCodes
+        for (const placeholder of eligibleCourses.filter(c => c.isElectivePlaceholder && c.category)) {
+            const cat = placeholder.category!.trim().toLowerCase();
+            if (!placeholder.allowedCodes) {
+                freeElectiveLimits[cat] = (freeElectiveLimits[cat] || 0) + 1;
+            }
         }
 
         logger.info(`Elective limits: ${JSON.stringify(electiveLimits)}`);
@@ -190,25 +224,34 @@ export class GeneratorService {
                 if (matchingPlaceholders.length > 0) {
                     // Check if *any* of the open placeholders will accept this course
                     let acceptedByAnyPlaceholder = false;
+                    let isFreeSlotOnly = false;
                     for (const placeholder of matchingPlaceholders) {
-                        if (!placeholder.allowedCodes) {
-                            // This placeholder accepts ANY course in the category
-                            acceptedByAnyPlaceholder = true;
-                            break;
-                        } else {
+                        if (placeholder.allowedCodes) {
                             // This placeholder only accepts specific codes
                             const normalizedAllowed = placeholder.allowedCodes.map(code => code.replace(/\s+/g, '').toUpperCase());
                             if (normalizedAllowed.includes(courseCodeNorm)) {
                                 acceptedByAnyPlaceholder = true;
+                                isFreeSlotOnly = false; // Matches a restricted slot — not limited by free count
+                                break;
+                            }
+                        }
+                    }
+                    // If not accepted by any restricted placeholder, check free slots
+                    if (!acceptedByAnyPlaceholder) {
+                        for (const placeholder of matchingPlaceholders) {
+                            if (!placeholder.allowedCodes) {
+                                acceptedByAnyPlaceholder = true;
+                                isFreeSlotOnly = true; // Can only fill a free slot
                                 break;
                             }
                         }
                     }
 
-                    if (!acceptedByAnyPlaceholder) return; // Blocked because it doesn't fit the allowedCodes of any open slot
+                    if (!acceptedByAnyPlaceholder) return; // Blocked
 
                     isEligible = true;
-                    matchingType = categoryRaw;
+                    // Tag free-slot-only electives with a special suffix so the backtracker can enforce free limits
+                    matchingType = isFreeSlotOnly ? categoryRaw + ':free' : categoryRaw;
                 }
             }
 
@@ -224,8 +267,9 @@ export class GeneratorService {
             }
 
             // Filter out A- rooms (annex building, not valid)
-            if (row.room && row.room.trim().toUpperCase().startsWith('A-')) {
-                if (courseCodeNorm === 'MAT350') logger.info(`MAT350 dropped: room A-. room=${row.room}`);
+            // Also filter out null/empty/TBA rooms — these are A- building sections with unassigned rooms
+            const roomVal = row.room ? row.room.trim() : '';
+            if (!roomVal || roomVal.toUpperCase() === 'TBA' || roomVal.toUpperCase() === 'T B A' || roomVal.toUpperCase().startsWith('A-')) {
                 return;
             }
 
@@ -356,18 +400,29 @@ export class GeneratorService {
             if (currentCredits + course.credits <= MAX_CREDITS) {
                 // Check if this course is an elective that hit its limit
                 const typeNorm = course.type.trim().toLowerCase();
-                const isElective = Object.keys(electiveLimits).includes(typeNorm);
+                const baseCat = typeNorm.replace(':free', '');
+                const isElective = Object.keys(electiveLimits).includes(baseCat);
 
                 if (isElective) {
-                    if ((currentElectiveCounts[typeNorm] || 0) >= (electiveLimits[typeNorm] || 0)) {
-                        return; // Cannot add any more electives of this type
+                    // Check overall category limit
+                    if ((currentElectiveCounts[baseCat] || 0) >= (electiveLimits[baseCat] || 0)) {
+                        return; // Cannot add any more electives of this category
+                    }
+                    // Check free-slot limit (courses that don't match restricted allowedCodes)
+                    if (typeNorm.endsWith(':free')) {
+                        if ((currentElectiveCounts[typeNorm] || 0) >= (freeElectiveLimits[baseCat] || 0)) {
+                            return; // Cannot add more free-slot electives of this category
+                        }
                     }
                 }
 
                 // If adding, increment the count for the next recursive call
                 const nextElectiveCounts = { ...currentElectiveCounts };
                 if (isElective) {
-                    nextElectiveCounts[typeNorm] = (nextElectiveCounts[typeNorm] || 0) + 1;
+                    nextElectiveCounts[baseCat] = (nextElectiveCounts[baseCat] || 0) + 1;
+                    if (typeNorm.endsWith(':free')) {
+                        nextElectiveCounts[typeNorm] = (nextElectiveCounts[typeNorm] || 0) + 1;
+                    }
                 }
 
                 for (const section of course.sections) {
@@ -386,11 +441,12 @@ export class GeneratorService {
         logger.info("Running backtracking engine...");
         backtrack(0, [], 0, {});
 
-        // Step 5: Scoring (Prioritize Majors > Credits > Compactness)
+        // Step 5: Scoring (Prioritize Majors > Course Count > Credits > Compactness)
         const scoredSchedules = generatedSchedules.map(schedule => {
             let score = 0;
             let majorCredits = 0;
             let totalCredits = 0;
+            let courseCount = schedule.length;
             let daysOnCampus = new Set<string>();
 
             schedule.forEach((item: any) => {
@@ -406,6 +462,13 @@ export class GeneratorService {
                     score += (item.course.credits * 10);
                 } else {
                     score += (item.course.credits * 5); // Still good to take electives
+                }
+
+                // Bonus per course — rewards 0-credit courses (e.g., Capstone Project Proposal)
+                // that contribute academic progress even without credits
+                score += 8;
+                if (item.course.credits === 0) {
+                    score += 15; // Extra incentive: 0-credit courses are still valuable for progress
                 }
             });
 
