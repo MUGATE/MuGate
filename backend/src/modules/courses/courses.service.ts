@@ -51,7 +51,9 @@ export class CoursesService {
         try {
             for (const course of coursesData) {
                 // Completely skip any sections assigned to invalid rooms starting with 'A-' (e.g. A-120)
-                if (course.room && course.room.trim().toUpperCase().startsWith('A-')) {
+                // Also skip sections with no room assigned (null/empty/TBA) — these are typically A- building sections
+                const roomVal = course.room ? course.room.trim() : '';
+                if (!roomVal || roomVal.toUpperCase() === 'TBA' || roomVal.toUpperCase() === 'T B A' || roomVal.toUpperCase().startsWith('A-')) {
                     continue;
                 }
 

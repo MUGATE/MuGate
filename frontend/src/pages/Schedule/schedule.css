@@ -1,76 +1,30 @@
 /* ===== Schedule Page ===== */
 .schedule-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #eaf0fa 0%, #f0f3fb 25%, #fdf8f0 50%, #f5f0fa 75%, #eef5f5 100%);
+  background-color: #f8fafb;
   padding-bottom: 60px;
   position: relative;
   overflow: hidden;
 }
 
 /* ===== Background Gradient Mesh Overlays ===== */
-.bg-mesh-1 {
-  position: absolute;
-  top: -120px;
-  left: -100px;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(168, 198, 255, 0.28) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-.bg-mesh-2 {
-  position: absolute;
-  top: 40%;
-  right: -80px;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(255, 210, 160, 0.2) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
+.bg-mesh-1,
+.bg-mesh-2,
 .bg-mesh-3 {
-  position: absolute;
-  bottom: -100px;
-  left: 30%;
-  width: 550px;
-  height: 550px;
-  background: radial-gradient(circle, rgba(200, 170, 255, 0.18) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 /* ===== Decorative Sparkles ===== */
 .sparkle {
-  position: absolute;
-  color: #c9a94e;
-  pointer-events: none;
-  z-index: 1;
-  animation: sparkle-pulse 4s ease-in-out infinite alternate;
-}
-.sparkle-1 { top: 100px; left: 60px; font-size: 28px; opacity: 0.45; animation-delay: 0s; }
-.sparkle-2 { top: 140px; right: 50px; font-size: 18px; opacity: 0.35; animation-delay: 1s; }
-.sparkle-3 { bottom: 120px; right: 80px; font-size: 24px; opacity: 0.4; animation-delay: 2s; }
-.sparkle-4 { top: 50%; left: 30px; font-size: 16px; opacity: 0.3; animation-delay: 0.5s; }
-.sparkle-5 { top: 30%; right: 120px; font-size: 20px; opacity: 0.25; animation-delay: 1.5s; }
-.sparkle-6 { bottom: 60px; left: 45%; font-size: 22px; opacity: 0.35; animation-delay: 3s; }
-
-@keyframes sparkle-pulse {
-  0% { opacity: 0.2; transform: scale(0.9); }
-  100% { opacity: 0.55; transform: scale(1.1); }
+  display: none;
 }
 
 /* ===== Glass Card Base (Glassmorphism) ===== */
 .glass-card {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.07),
-    0 2px 6px rgba(255, 255, 255, 0.45) inset,
-    0 0 0 0.5px rgba(255, 255, 255, 0.3),
-    0 0 60px rgba(255, 255, 255, 0.08);
+  background-color: #fafcfe;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px #f1f3f4;
+  border: 1px solid rgba(0, 0, 0, 0.01);
   position: relative;
   z-index: 2;
 }
@@ -98,10 +52,12 @@
   transition: all 0.25s ease;
   letter-spacing: 0.01em;
 }
+
 .schedule-navbar a:hover {
   color: #1a6bdb;
   background: rgba(26, 107, 219, 0.08);
 }
+
 .schedule-navbar a.active {
   color: #1a6bdb;
   background: rgba(26, 107, 219, 0.1);
@@ -118,6 +74,7 @@
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
+
 .schedule-navbar .nav-avatar img {
   width: 100%;
   height: 100%;
@@ -127,20 +84,18 @@
 /* ===== Main Layout ===== */
 .schedule-layout {
   display: flex;
-  gap: 24px;
-  padding: 30px 40px 0;
+  gap: 16px;
+  padding: 16px 0 0;
+  margin: 0 140px;
   align-items: flex-start;
-  justify-content: center;
-  max-width: 1440px;
-  margin: 0 auto;
   position: relative;
   z-index: 2;
 }
 
 /* ===== Preferences Panel ===== */
 .preferences-panel {
-  width: 280px;
-  min-width: 260px;
+  width: 320px;
+  min-width: 300px;
   padding: 28px 24px;
   display: flex;
   flex-direction: column;
@@ -178,6 +133,7 @@
   padding: 14px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
+
 .preference-item:last-of-type {
   border-bottom: none;
 }
@@ -245,11 +201,11 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
   background: linear-gradient(135deg, #4a90d9, #5ba0e8);
 }
 
-.toggle-switch input:checked + .toggle-slider::before {
+.toggle-switch input:checked+.toggle-slider::before {
   transform: translateX(22px);
 }
 
@@ -268,10 +224,12 @@
   transition: all 0.3s;
   box-shadow: 0 4px 16px rgba(72, 198, 160, 0.25);
 }
+
 .generate-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 24px rgba(72, 198, 160, 0.35);
 }
+
 .generate-btn:active {
   transform: translateY(0);
 }
@@ -279,8 +237,7 @@
 /* ===== Schedule Grid ===== */
 .schedule-grid-wrapper {
   flex: 1;
-  min-width: 500px;
-  max-width: 650px;
+  min-width: 0;
   padding: 24px;
   overflow: hidden;
   min-height: 420px;
@@ -298,10 +255,12 @@
   gap: 14px;
   opacity: 0.6;
 }
+
 .schedule-placeholder .placeholder-icon {
   font-size: 48px;
   filter: grayscale(0.3);
 }
+
 .schedule-placeholder p {
   font-size: 16px;
   font-weight: 500;
@@ -315,6 +274,7 @@
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -337,6 +297,7 @@
   text-align: center;
   width: calc((100% - 70px) / 5);
 }
+
 .schedule-grid thead th:first-child {
   width: 70px;
 }
@@ -380,6 +341,7 @@
   flex-direction: column;
   justify-content: center;
 }
+
 .course-block:hover {
   transform: scale(1.02);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -417,14 +379,17 @@
   background: rgba(186, 215, 247, 0.75);
   border-color: rgba(150, 190, 235, 0.4);
 }
+
 .course-block.color-green {
   background: rgba(186, 235, 208, 0.75);
   border-color: rgba(150, 215, 180, 0.4);
 }
+
 .course-block.color-yellow {
   background: rgba(250, 230, 180, 0.8);
   border-color: rgba(230, 210, 150, 0.4);
 }
+
 .course-block.color-peach {
   background: rgba(250, 218, 200, 0.8);
   border-color: rgba(235, 195, 175, 0.4);
@@ -432,13 +397,13 @@
 
 /* ===== Edit Instructors Panel (scrollable) ===== */
 .edit-panel {
-  width: 280px;
-  min-width: 260px;
+  width: 320px;
+  min-width: 300px;
   padding: 28px 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: calc(100vh - 140px);
+  overflow: visible;
 }
 
 .edit-panel h2 {
@@ -463,9 +428,11 @@
 .edit-panel-scroll::-webkit-scrollbar {
   width: 5px;
 }
+
 .edit-panel-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .edit-panel-scroll::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.12);
   border-radius: 10px;
@@ -498,6 +465,7 @@
   background-position: right 12px center;
   transition: border-color 0.2s;
 }
+
 .instructor-select:focus {
   outline: none;
   border-color: #4a90d9;
@@ -527,6 +495,7 @@
   cursor: pointer;
   transition: all 0.2s;
 }
+
 .regenerate-btn:hover {
   background: rgba(255, 255, 255, 0.8);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
@@ -544,6 +513,7 @@
   transition: all 0.3s;
   box-shadow: 0 4px 16px rgba(72, 198, 160, 0.3);
 }
+
 .confirm-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 24px rgba(72, 198, 160, 0.4);
@@ -556,17 +526,20 @@
     align-items: center;
     padding: 20px;
   }
+
   .preferences-panel,
   .edit-panel {
     width: 100%;
     max-width: 500px;
     max-height: none;
   }
+
   .schedule-grid-wrapper {
     min-width: auto;
     width: 100%;
     max-width: 700px;
   }
+
   .schedule-navbar {
     margin: 12px 20px 0;
   }
@@ -579,15 +552,18 @@
     margin: 8px 12px 0;
     flex-wrap: wrap;
   }
+
   .schedule-navbar a {
     font-size: 13px;
     padding: 6px 12px;
   }
+
   .schedule-actions {
     flex-direction: column;
     align-items: center;
     padding: 0 20px;
   }
+
   .regenerate-btn,
   .confirm-btn {
     width: 100%;
@@ -609,19 +585,20 @@
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-card {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow:
-    0 12px 48px rgba(0, 0, 0, 0.12),
-    0 2px 8px rgba(255, 255, 255, 0.4) inset;
+  background-color: #fafcfe;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px #f1f3f4;
+  border: 1px solid rgba(0, 0, 0, 0.01);
   padding: 28px 32px;
   min-width: 320px;
   max-width: 400px;
@@ -630,14 +607,32 @@
 }
 
 @keyframes modalSlideUp {
-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.modal-card.color-blue { border-left: 4px solid rgba(100, 160, 235, 0.7); }
-.modal-card.color-green { border-left: 4px solid rgba(100, 200, 150, 0.7); }
-.modal-card.color-yellow { border-left: 4px solid rgba(220, 190, 100, 0.7); }
-.modal-card.color-peach { border-left: 4px solid rgba(230, 160, 130, 0.7); }
+.modal-card.color-blue {
+  border-left: 4px solid rgba(100, 160, 235, 0.7);
+}
+
+.modal-card.color-green {
+  border-left: 4px solid rgba(100, 200, 150, 0.7);
+}
+
+.modal-card.color-yellow {
+  border-left: 4px solid rgba(220, 190, 100, 0.7);
+}
+
+.modal-card.color-peach {
+  border-left: 4px solid rgba(230, 160, 130, 0.7);
+}
 
 .modal-close {
   position: absolute;
@@ -652,6 +647,7 @@
   transition: color 0.2s;
   padding: 4px;
 }
+
 .modal-close:hover {
   color: #333;
 }
@@ -676,10 +672,22 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
-.modal-color-dot.bg-blue { background: rgba(100, 160, 235, 0.8); }
-.modal-color-dot.bg-green { background: rgba(100, 200, 150, 0.8); }
-.modal-color-dot.bg-yellow { background: rgba(220, 190, 100, 0.8); }
-.modal-color-dot.bg-peach { background: rgba(230, 160, 130, 0.8); }
+
+.modal-color-dot.bg-blue {
+  background: rgba(100, 160, 235, 0.8);
+}
+
+.modal-color-dot.bg-green {
+  background: rgba(100, 200, 150, 0.8);
+}
+
+.modal-color-dot.bg-yellow {
+  background: rgba(220, 190, 100, 0.8);
+}
+
+.modal-color-dot.bg-peach {
+  background: rgba(230, 160, 130, 0.8);
+}
 
 .modal-body {
   display: flex;

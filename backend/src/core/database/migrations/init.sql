@@ -73,9 +73,10 @@ CREATE TABLE CourseSections (
     day             NVARCHAR(20)     NOT NULL,       -- e.g. 'Sunday', 'Monday'
     startTime       TIME             NOT NULL,
     endTime         TIME             NOT NULL,
-    type            NVARCHAR(10)     NOT NULL,       -- 'Lecture' or 'Lab'
+    type            NVARCHAR(50)     NOT NULL,       -- 'Lecture' or 'Laboratory'
     capacity        INT              NOT NULL DEFAULT 0,
     enrolled        INT              NOT NULL DEFAULT 0,
+    room            NVARCHAR(50)     NULL,
 
     CONSTRAINT FK_CourseSections_Courses FOREIGN KEY (courseId) REFERENCES Courses(id) ON DELETE CASCADE
 );
@@ -96,6 +97,7 @@ CREATE TABLE AcademicHistory (
     status           NVARCHAR(20)     NOT NULL DEFAULT 'Passed', -- 'Passed', 'Registered', 'New'
     category         NVARCHAR(50)     NULL,           -- e.g. 'GER', 'Major'
     isElective       BIT              NOT NULL DEFAULT 0,
+    updatedAt        DATETIME2        NOT NULL DEFAULT GETDATE(),
 
     CONSTRAINT FK_AcademicHistory_Users FOREIGN KEY (userId) REFERENCES Users(id) ON DELETE CASCADE
 );

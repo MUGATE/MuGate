@@ -6,7 +6,7 @@ import './schedule.css';
 
 /* ── Data ── */
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const HOURS = Array.from({ length: 11 }, (_, i) => i + 8); // 8 AM – 6 PM
+const ALL_HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM – 9 PM (full range)
 
 // Helper to convert typical backend formats like "M,W" or "T,Th" to indices [0, 2]
 const parseDays = (dayString) => {
@@ -71,8 +71,8 @@ const ToggleSwitch = ({ checked, onChange }) => (
 /* ── Course Block (clean, no edit icon) ── */
 const ROW_HEIGHT = 59;   // CSS height 58px + 1px border = 59px
 
-const CourseBlock = ({ course, slot, onClick }) => {
-  const topOffset = (slot.startHour - 8) * ROW_HEIGHT;
+const CourseBlock = ({ course, slot, onClick, gridStartHour }) => {
+  const topOffset = (slot.startHour - gridStartHour) * ROW_HEIGHT;
   const blockHeight = slot.duration * ROW_HEIGHT;
 
   return (
@@ -353,6 +353,23 @@ const Schedule = () => {
     });
   });
 
+  // Compute dynamic hour range based on actual courses (with 1h padding, min 8AM-6PM)
+  let gridStartHour = 8;
+  let gridEndHour = 18; // default: 8 AM – 6 PM
+  if (courses.length > 0) {
+    let earliestHour = 24;
+    let latestHour = 0;
+    courses.forEach((course) => {
+      course.slots.forEach((slot) => {
+        if (slot.startHour != null && slot.startHour < earliestHour) earliestHour = slot.startHour;
+        if (slot.endHour != null && slot.endHour > latestHour) latestHour = slot.endHour;
+      });
+    });
+    if (earliestHour < 24) gridStartHour = Math.min(8, Math.floor(earliestHour));
+    if (latestHour > 0) gridEndHour = Math.max(18, Math.ceil(latestHour));
+  }
+  const HOURS = ALL_HOURS.filter(h => h >= gridStartHour && h < gridEndHour);
+
   /* ── Render ── */
   return (
     <div className="schedule-page">
@@ -548,13 +565,14 @@ const Schedule = () => {
                       <td>{formatHour(hour)}</td>
                       {DAYS.map((_, di) => (
                         <td key={di} style={{ position: 'relative' }}>
-                          {hour === 8 &&
+                          {hour === gridStartHour &&
                             slotsByDay[di].map(({ course, slot }) => (
                               <CourseBlock
                                 key={`${course.id}-${slot.day}-${slot.startHour}`}
                                 course={course}
                                 slot={slot}
                                 onClick={setSelectedCourse}
+                                gridStartHour={gridStartHour}
                               />
                             ))}
                         </td>

@@ -25,6 +25,7 @@ import BackgroundHalo from './BackgroundHalo';
 const CarouselItem = ({ index, activeIndex, company, onClick, total, timeRef }) => {
 
   const ref = useRef();
+  const prevDiffRef = useRef(null);
 
 
 
@@ -104,11 +105,14 @@ const CarouselItem = ({ index, activeIndex, company, onClick, total, timeRef }) 
 
     } else {
 
-      // Distant logos - no motion
+      // Hidden logos — parked just off-stage at the ±3 position
+      // so they smoothly lerp in when transitioning to ±2
 
-      tPos = new THREE.Vector3(diff * sp * 1.5, 0, -6);
+      const side = Math.sign(diff);
 
-      tRot = new THREE.Euler(0, 0, 0);
+      tPos = new THREE.Vector3(side * 3 * sp * 0.85, 0.05, -1.5);
+
+      tRot = new THREE.Euler(0, side * -0.19, 0);
 
       tScale = new THREE.Vector3(0, 0, 0);
 
@@ -116,11 +120,30 @@ const CarouselItem = ({ index, activeIndex, company, onClick, total, timeRef }) 
 
 
 
-    ref.current.position.lerp(tPos, t);
+    // Wrapping detection: diff changed by more than half the total
+    // means the card jumped across the circular array boundary
+    const prev = prevDiffRef.current;
+    const isWrapping = prev !== null && Math.abs(diff - prev) > Math.floor(total / 2);
 
-    ref.current.rotation.y = THREE.MathUtils.lerp(ref.current.rotation.y, tRot.y, t);
-
-    ref.current.scale.lerp(tScale, t);
+    if (isWrapping && Math.abs(diff) <= 2) {
+      // Wrapping INTO a visible position — snap to far off-screen
+      // on the entering side, then let the normal lerp slide it in
+      const side = diff > 0 ? 1 : (diff < 0 ? -1 : (prev > 0 ? -1 : 1));
+      ref.current.position.set(side * 3.5 * sp, tPos.y, tPos.z);
+      ref.current.rotation.y = tRot.y;
+      ref.current.scale.copy(tScale);
+    } else if (isWrapping) {
+      // Wrapping INTO a hidden position — snap directly to target
+      ref.current.position.copy(tPos);
+      ref.current.rotation.y = tRot.y;
+      ref.current.scale.copy(tScale);
+    } else {
+      // Normal lerp
+      ref.current.position.lerp(tPos, t);
+      ref.current.rotation.y = THREE.MathUtils.lerp(ref.current.rotation.y, tRot.y, t);
+      ref.current.scale.lerp(tScale, t);
+    }
+    prevDiffRef.current = diff;
 
   });
 
