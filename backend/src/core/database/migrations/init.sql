@@ -149,12 +149,60 @@ CREATE TABLE Sessions (
 GO
 
 -- ============================================
+-- 9. ChatSessions - AI chatbot sessions
+-- ============================================
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ChatSessions' AND xtype='U')
+CREATE TABLE ChatSessions (
+    id              UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    userId          UNIQUEIDENTIFIER NULL,           -- NULL if anonymous/public mode
+    title           NVARCHAR(255)    NULL,
+    isPinned        BIT              NOT NULL DEFAULT 0,
+    isActive        BIT              NOT NULL DEFAULT 1,
+    createdAt       DATETIME2        NOT NULL DEFAULT GETDATE(),
+    updatedAt       DATETIME2        NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_ChatSessions_Users FOREIGN KEY (userId) REFERENCES Users(id) ON DELETE CASCADE
+);
+GO
+
+-- ============================================
+-- 10. ChatMessages - Messages within a session
+-- ============================================
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ChatMessages' AND xtype='U')
+CREATE TABLE ChatMessages (
+    id              UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    sessionId       UNIQUEIDENTIFIER NOT NULL,
+    role            NVARCHAR(50)     NOT NULL,       -- 'user' or 'assistant' or 'system'
+    content         NVARCHAR(MAX)    NOT NULL,
+    tokensUsed      INT              NOT NULL DEFAULT 0,
+    createdAt       DATETIME2        NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_ChatMessages_ChatSessions FOREIGN KEY (sessionId) REFERENCES ChatSessions(id) ON DELETE CASCADE
+);
+GO
+
+-- ============================================
+-- 11. ChatAnalytics - Anonymized stats
+-- ============================================
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='ChatAnalytics' AND xtype='U')
+CREATE TABLE ChatAnalytics (
+    id              UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    questionCategory NVARCHAR(255)    NULL,
+    isFailed        BIT              NOT NULL DEFAULT 0,
+    responseTimeMs  INT              NOT NULL DEFAULT 0,
+    createdAt       DATETIME2        NOT NULL DEFAULT GETDATE()
+);
+GO
+
+-- ============================================
 -- Indexes for performance
 -- ============================================
 CREATE INDEX IX_AcademicHistory_UserId ON AcademicHistory(userId);
 CREATE INDEX IX_CourseSections_CourseId ON CourseSections(courseId);
 CREATE INDEX IX_Schedules_UserId ON Schedules(userId);
 CREATE INDEX IX_Sessions_UserId ON Sessions(userId);
+CREATE INDEX IX_ChatSessions_UserId ON ChatSessions(userId);
+CREATE INDEX IX_ChatMessages_SessionId ON ChatMessages(sessionId);
 GO
 
 PRINT '✅ MuGate database schema created successfully!';

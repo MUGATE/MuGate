@@ -5,10 +5,11 @@ import { errorMiddleware } from "./core/middleware/error.middleware";
 import { rateLimiter } from "./core/middleware/rateLimiter.middleware";
 import authRoutes from "./modules/auth/auth.routes";
 import historyRoutes from "./modules/history/history.routes";
-import coursesRoutes from "./modules/courses/courses.routes";
-import { generatorRoutes } from "./modules/generator/generator.routes";
-import schedulesRoutes from "./modules/schedules/schedules.routes";
-import { initCronJobs } from "./modules/sync/sync.cron";
+import coursesRoutes from "./modules/academic/courses/courses.routes";
+import { generatorRoutes } from "./modules/scheduling/generator/generator.routes";
+import schedulesRoutes from "./modules/academic/schedules/schedules.routes";
+import chatbotRoutes from "./modules/ai/chatbot/routes/chatbot.routes";
+import { initCronJobs } from "./modules/system/sync/sync.cron";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/api/history", historyRoutes);
 app.use("/api/courses", coursesRoutes);
 app.use("/api/generate", generatorRoutes);
 app.use("/api/schedules", schedulesRoutes);
+app.use("/api/chatbot", chatbotRoutes); // MuChat integration
 
 // Helper route for checking auth route in browser
 app.get("/api/auth/login", (req, res) => {

@@ -1,5 +1,5 @@
 import { HistoryRepository } from "./history.repository";
-import { PortalScraper } from "../scraper/portal.scraper";
+import { PortalScraper } from "../system/scraper/portal.scraper";
 import { pool } from "../../core/database/connection";
 import { decrypt } from "../../core/security/encryption.util";
 import { logger } from "../../core/logger/logger";
