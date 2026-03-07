@@ -11,8 +11,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/pdfkit": "^0.17.5",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
+    "docx": "^9.6.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
@@ -21,6 +23,7 @@
     "mssql": "^12.2.0",
     "node-cron": "^4.2.1",
     "open": "^11.0.0",
+    "pdfkit": "^0.17.2",
     "playwright": "^1.58.2"
   },
   "devDependencies": {

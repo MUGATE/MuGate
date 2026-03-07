@@ -295,7 +295,7 @@
   justify-content: flex-start;
   padding: 0;
   height: 100%;
-  border: 2px dashed rgba(99, 102, 241, 0.25);
+  border: 2px dashed rgba(26, 58, 107, 0.35);
   cursor: pointer;
   transition: all 0.3s ease;
   text-align: center;
@@ -330,7 +330,7 @@
   padding: 0 28px 24px;
 }
 .re-upload-area:hover {
-  border-color: rgba(99, 102, 241, 0.45);
+  border-color: rgba(26, 58, 107, 0.55);
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-2px);
   box-shadow:
@@ -338,10 +338,10 @@
     0 2px 6px rgba(255, 255, 255, 0.45) inset;
 }
 .re-upload-area.dragging {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.06);
+  border-color: #1a3a6b;
+  background: rgba(74, 144, 217, 0.06);
   box-shadow:
-    0 0 0 4px rgba(99, 102, 241, 0.1),
+    0 0 0 4px rgba(74, 144, 217, 0.1),
     0 12px 40px rgba(0, 0, 0, 0.08);
 }
 
@@ -371,17 +371,17 @@
   padding: 12px 32px;
   border-radius: 14px;
   border: none;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #4a90d9, #1a3a6b);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 18px rgba(26, 58, 107, 0.3);
 }
 .upload-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 24px rgba(26, 58, 107, 0.4);
 }
 
 /* ── Document Preview ── */
@@ -414,7 +414,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(99, 102, 241, 0.07);
+  background: rgba(74, 144, 217, 0.07);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -527,7 +527,7 @@
   width: 68px;
   height: 22px;
   border-radius: 11px;
-  background: rgba(99, 102, 241, 0.12);
+  background: rgba(74, 144, 217, 0.12);
 }
 .doc-pill-sm {
   width: 52px;
@@ -576,9 +576,10 @@
   width: 300px;
   min-width: 270px;
   flex-shrink: 0;
-  min-height: 0;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .re-chat-card {
@@ -604,7 +605,7 @@
 
 /* ── Messages ── */
 .chat-messages {
-  flex: 1;
+  flex: 1 1 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px 18px;
@@ -612,6 +613,7 @@
   flex-direction: column;
   gap: 14px;
   min-height: 0;
+  max-height: calc(100vh - 200px);
 }
 
 .chat-messages::-webkit-scrollbar {
@@ -630,6 +632,7 @@
   gap: 10px;
   align-items: flex-start;
   animation: re-fade-up 0.3s ease both;
+  flex-shrink: 0;
 }
 .chat-user {
   flex-direction: row-reverse;
@@ -639,7 +642,7 @@
   width: 30px;
   height: 30px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #4a90d9, #1a3a6b);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -666,7 +669,7 @@
   border-bottom-left-radius: 6px;
 }
 .user-text {
-  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  background: #4a90d9;
   color: #fff;
   border-bottom-right-radius: 6px;
 }
@@ -696,9 +699,9 @@
   color: #a0a8b8;
 }
 .chat-input:focus {
-  border-color: rgba(99, 102, 241, 0.35);
+  border-color: rgba(74, 144, 217, 0.35);
   background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.08);
 }
 
 .chat-send-btn {
@@ -706,7 +709,7 @@
   height: 40px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, #4a90d9, #1a3a6b);
   color: #fff;
   cursor: pointer;
   display: flex;
@@ -714,11 +717,11 @@
   justify-content: center;
   transition: all 0.25s ease;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 4px 12px rgba(26, 58, 107, 0.25);
 }
 .chat-send-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 6px 18px rgba(26, 58, 107, 0.35);
 }
 .chat-send-btn:disabled {
   opacity: 0.45;
@@ -772,6 +775,8 @@
   .re-right-col {
     width: 340px;
     min-width: 280px;
+    overflow: visible;
+    min-height: auto;
   }
 
   .re-upload-area {
@@ -781,6 +786,7 @@
   .re-chat-card {
     height: 450px;
     flex: none;
+    overflow: hidden;
   }
 }
 
@@ -836,6 +842,8 @@
   .re-right-col {
     width: 100%;
     min-width: unset;
+    overflow: visible;
+    min-height: auto;
   }
 
   .re-upload-area {
@@ -849,6 +857,7 @@
   .re-chat-card {
     height: 400px;
     flex: none;
+    overflow: hidden;
   }
 
   .preview-document {
@@ -858,4 +867,669 @@
   .ai-annotation {
     display: none;
   }
+}
+
+/* ===== Welcome & CV Type Modals ===== */
+.re-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(100, 120, 160, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.re-modal-overlay.show {
+  opacity: 1;
+}
+
+.re-modal-card {
+  width: 480px;
+  max-width: 92vw;
+  padding: 44px 40px 36px;
+  text-align: center;
+  position: relative;
+  overflow: visible;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid rgba(74, 144, 217, 0.15);
+  box-shadow: 0 20px 60px rgba(74, 144, 217, 0.12), 0 4px 16px rgba(0, 0, 0, 0.06);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform: scale(0.85) translateY(30px);
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+}
+.re-modal-card.show {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.re-modal-sparkle {
+  position: absolute;
+  color: #4a90d9;
+  pointer-events: none;
+  animation: re-sparkle-pulse 3s ease-in-out infinite alternate;
+}
+.re-modal-sparkle-1 { top: -8px; left: 30px; font-size: 22px; opacity: 0.4; }
+.re-modal-sparkle-2 { top: 20px; right: 24px; font-size: 16px; opacity: 0.3; animation-delay: 1s; }
+.re-modal-sparkle-3 { bottom: 16px; left: 50px; font-size: 18px; opacity: 0.35; animation-delay: 0.5s; }
+
+.re-modal-back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.5);
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.re-modal-back:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1a1a2e;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.re-modal-icon {
+  margin-bottom: 20px;
+}
+
+.re-modal-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e3a5f;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.re-modal-subtitle {
+  font-size: 14px;
+  color: #5a7494;
+  margin: 0 0 28px;
+  font-weight: 400;
+}
+
+.re-modal-options {
+  display: flex;
+  gap: 16px;
+}
+
+.re-modal-option-btn {
+  flex: 1;
+  padding: 24px 16px 20px;
+  border-radius: 18px;
+  border: 2px solid #e8edf5;
+  background: #f8fafd;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.re-modal-option-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(74, 144, 217, 0.12);
+}
+
+.re-modal-create:hover {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.06);
+}
+.re-modal-enhance:hover {
+  border-color: rgba(74, 144, 217, 0.35);
+  background: rgba(74, 144, 217, 0.06);
+}
+.re-modal-local:hover {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.04);
+}
+.re-modal-global:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.re-modal-btn-icon {
+  margin-bottom: 4px;
+}
+
+.re-modal-btn-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.re-modal-btn-desc {
+  font-size: 12px;
+  color: #6b83a0;
+  line-height: 1.4;
+}
+
+/* ===== CV Builder Layout ===== */
+.re-builder-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0 140px;
+  padding: 20px 0;
+  min-height: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.re-cv-builder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  min-height: 0;
+  overflow: hidden;
+  animation: re-fade-up 0.4s ease both;
+}
+
+.re-cv-builder-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 28px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+.re-cv-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.5);
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.re-cv-back-btn:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1a1a2e;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.re-cv-builder-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.re-cv-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+.re-cv-badge-local {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+.re-cv-badge-global {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.re-cv-builder-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 28px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.re-cv-builder-placeholder {
+  font-size: 16px;
+  color: #8890a4;
+  text-align: center;
+}
+
+/* ── Modal responsive ── */
+@media (max-width: 640px) {
+  .re-modal-card {
+    padding: 32px 24px 28px;
+  }
+  .re-modal-options {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .re-modal-title {
+    font-size: 20px;
+  }
+  .re-builder-layout {
+    margin: 0 12px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .re-builder-layout {
+    margin: 0 24px;
+  }
+}
+
+/* ===== CV Form Card ===== */
+.re-cv-form-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.cv-form-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid rgba(120, 140, 170, 0.12);
+}
+
+.cv-form-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4a90d9;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cv-form-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+}
+
+.cv-form-body::-webkit-scrollbar { width: 6px; }
+.cv-form-body::-webkit-scrollbar-track { background: transparent; }
+.cv-form-body::-webkit-scrollbar-thumb {
+  background: rgba(100, 130, 180, 0.2);
+  border-radius: 3px;
+}
+
+/* ── Section ── */
+.cv-form-section {
+  margin-bottom: 24px;
+}
+
+.cv-form-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6ea8fe;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(110, 168, 254, 0.15);
+}
+
+/* ── Field ── */
+.cv-field {
+  margin-bottom: 10px;
+}
+
+.cv-field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #5a8abf;
+  margin-bottom: 4px;
+  letter-spacing: 0.2px;
+}
+
+.cv-field-input,
+.cv-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(20, 30, 50, 0.5);
+  border: 1px solid rgba(100, 140, 200, 0.15);
+  border-radius: 10px;
+  color: #e0e8f0;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  box-sizing: border-box;
+  overflow: hidden;
+  resize: none;
+}
+
+.cv-field-input:focus,
+.cv-textarea:focus {
+  border-color: rgba(110, 168, 254, 0.5);
+  box-shadow: 0 0 0 3px rgba(110, 168, 254, 0.08);
+}
+
+.cv-field-input::placeholder,
+.cv-textarea::placeholder {
+  color: #5a6580;
+  font-size: 13px;
+}
+
+.cv-textarea {
+  min-height: 70px;
+}
+
+/* ── Row (two fields side by side) ── */
+.cv-field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.cv-field-row > .cv-field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Divider between repeated entries ── */
+.cv-form-divider {
+  height: 1px;
+  background: rgba(100, 140, 200, 0.1);
+  margin: 16px 0;
+}
+
+/* ── Add / Remove entry buttons ── */
+.cv-add-entry-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 16px;
+  margin-top: 10px;
+  border: 1.5px dashed rgba(74, 144, 217, 0.45);
+  border-radius: 10px;
+  background: rgba(74, 144, 217, 0.04);
+  color: #4a90d9;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.cv-add-entry-btn:hover {
+  background: rgba(74, 144, 217, 0.12);
+  border-color: #3a7bc8;
+}
+
+.cv-extra-entry-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.cv-remove-entry-btn {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(220, 53, 69, 0.08);
+  color: #dc3545;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.cv-remove-entry-btn:hover {
+  background: rgba(220, 53, 69, 0.18);
+}
+
+/* ── Responsive stacking for form rows ── */
+@media (max-width: 640px) {
+  .cv-field-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+/* ===== Download PDF Button ===== */
+.cv-download-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(100, 140, 200, 0.12);
+  display: flex;
+  justify-content: center;
+}
+
+.cv-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 36px;
+  background: linear-gradient(135deg, #4a90d9 0%, #357abd 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(74, 144, 217, 0.25);
+  letter-spacing: 0.3px;
+}
+
+.cv-download-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(74, 144, 217, 0.35);
+  background: linear-gradient(135deg, #5a9ee0 0%, #4088cc 100%);
+}
+
+.cv-download-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.cv-download-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.cv-download-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: cv-spin 0.7s linear infinite;
+}
+
+@keyframes cv-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== Download Modal Form ===== */
+.dl-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 4px;
+}
+
+.dl-modal-field {
+  text-align: left;
+}
+
+.dl-modal-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5a7494;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.dl-modal-input {
+  width: 100%;
+  padding: 11px 16px;
+  border: 2px solid #e0e7f1;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #1e3a5f;
+  background: #f8fafd;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.dl-modal-input:focus {
+  border-color: #4a90d9;
+}
+
+.dl-modal-input::placeholder {
+  color: #a0b4cc;
+}
+
+.dl-modal-formats {
+  display: flex;
+  gap: 12px;
+}
+
+.dl-format-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 12px;
+  border-radius: 14px;
+  border: 2px solid #e0e7f1;
+  background: #f8fafd;
+  color: #5a7494;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dl-format-btn:hover {
+  border-color: #b0c4de;
+  background: #eef4fc;
+}
+
+.dl-format-btn.active {
+  border-color: #4a90d9;
+  background: rgba(74, 144, 217, 0.08);
+  color: #4a90d9;
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.1);
+}
+
+.dl-modal-download {
+  margin-top: 4px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* ===== CV Preview (inline in center column) ===== */
+.cv-prev-document {
+  background: #fafcff;
+  border: 1px solid #e4ecf4;
+  border-radius: 14px;
+  padding: 28px 32px;
+  margin-bottom: 20px;
+}
+.cv-prev-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a2a3f;
+  text-align: center;
+  margin: 0 0 4px;
+}
+.cv-prev-contact {
+  text-align: center;
+  font-size: 12.5px;
+  color: #6a7d94;
+  margin-bottom: 18px;
+  word-break: break-word;
+}
+.cv-prev-heading {
+  font-size: 13px;
+  font-weight: 800;
+  color: #4a90d9;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid #4a90d9;
+  padding-bottom: 4px;
+  margin: 18px 0 8px;
+}
+.cv-prev-org-line {
+  font-size: 14px;
+  color: #1e3a5f;
+  margin-bottom: 2px;
+}
+.cv-prev-line {
+  font-size: 13.5px;
+  color: #3a4e66;
+  margin-bottom: 2px;
+}
+.cv-prev-label {
+  font-weight: 700;
+  color: #2d4059;
+}
+.cv-prev-body {
+  font-size: 13.5px;
+  color: #3a4e66;
+  margin: 4px 0 0;
+  line-height: 1.6;
+}
+.cv-prev-bullets {
+  margin: 4px 0 4px 18px;
+  padding: 0;
+  list-style: disc;
+}
+.cv-prev-bullets li {
+  font-size: 13.5px;
+  color: #3a4e66;
+  margin-bottom: 2px;
+  line-height: 1.5;
+}
+.cv-prev-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.cv-prev-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 28px;
+  border-radius: 14px;
+  border: 2px solid #e0e7f1;
+  background: #f8fafd;
+  color: #5a7494;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cv-prev-edit-btn:hover {
+  border-color: #b0c4de;
+  background: #eef4fc;
+}
+.cv-prev-confirm-btn {
+  padding: 12px 32px;
+  font-size: 15px;
 }

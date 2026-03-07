@@ -8,6 +8,7 @@ import historyRoutes from "./modules/history/history.routes";
 import coursesRoutes from "./modules/courses/courses.routes";
 import { generatorRoutes } from "./modules/generator/generator.routes";
 import schedulesRoutes from "./modules/schedules/schedules.routes";
+import resumeRoutes from "./modules/resume/resume.routes";
 import { initCronJobs } from "./modules/sync/sync.cron";
 
 const app = express();
@@ -22,6 +23,7 @@ app.use("/api/history", historyRoutes);
 app.use("/api/courses", coursesRoutes);
 app.use("/api/generate", generatorRoutes);
 app.use("/api/schedules", schedulesRoutes);
+app.use("/api/resume", resumeRoutes);
 
 // Helper route for checking auth route in browser
 app.get("/api/auth/login", (req, res) => {

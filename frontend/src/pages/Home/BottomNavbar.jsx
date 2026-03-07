@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import "./BottomNavbar.css";
 
 /**
@@ -20,16 +21,35 @@ const PAGE_BUTTON_TEXT = {
     7: null,        // Hidden
 };
 
+const PAGE_ROUTES = {
+    2: "/schedule",
+    3: "/resume-enhancer",
+    4: "/internships",
+    5: "/chatbot",
+    6: "/chatbot",
+};
+
 const TYPEWRITER_SPEED = 35; // ms per letter
+const PAGE_DEBOUNCE_MS = 150; // debounce rapid page flips during scroll
 
 const BottomNavbar = () => {
-    const [currentPage, setCurrentPage] = useState(1);
+    const navigate = useNavigate();
+    const [stablePage, setStablePage] = useState(1);
     const [buttonText, setButtonText] = useState("");
     const [isVisible, setIsVisible] = useState(false);
     const [isAnimatingText, setIsAnimatingText] = useState(false);
 
     const previousPageRef = useRef(1);
     const typewriterCancelRef = useRef(null);
+    const displayedTextRef = useRef(""); // tracks actual text on screen
+    const debounceTimerRef = useRef(null);
+    const ratioMapRef = useRef({}); // accumulated ratios across callbacks
+
+    // Keep displayedTextRef in sync
+    const setTextAndTrack = useCallback((text) => {
+        displayedTextRef.current = text;
+        setButtonText(text);
+    }, []);
 
     // ── Scroll-based page detection via IntersectionObserver ──
     useEffect(() => {
@@ -38,122 +58,136 @@ const BottomNavbar = () => {
 
         const observer = new IntersectionObserver(
             (entries) => {
-                // Find the entry with the largest intersection ratio
-                let bestEntry = null;
-                let bestRatio = 0;
-
+                // Accumulate ratios so we always compare all sections
                 entries.forEach((entry) => {
-                    if (entry.intersectionRatio > bestRatio) {
-                        bestRatio = entry.intersectionRatio;
-                        bestEntry = entry;
+                    const page = parseInt(entry.target.getAttribute("data-page"), 10);
+                    if (!isNaN(page)) {
+                        ratioMapRef.current[page] = entry.intersectionRatio;
                     }
                 });
 
-                if (bestEntry && bestRatio > 0.3) {
-                    const page = parseInt(bestEntry.target.getAttribute("data-page"), 10);
-                    if (!isNaN(page)) {
-                        setCurrentPage(page);
+                // Pick the section with the highest ratio
+                let bestPage = null;
+                let bestRatio = 0;
+                for (const [page, ratio] of Object.entries(ratioMapRef.current)) {
+                    if (ratio > bestRatio) {
+                        bestRatio = ratio;
+                        bestPage = parseInt(page, 10);
                     }
+                }
+
+                if (bestPage && bestRatio > 0.15) {
+                    // Debounce: wait for scroll to settle before committing
+                    clearTimeout(debounceTimerRef.current);
+                    debounceTimerRef.current = setTimeout(() => {
+                        setStablePage(bestPage);
+                    }, PAGE_DEBOUNCE_MS);
                 }
             },
             {
-                threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                threshold: [0, 0.2, 0.4, 0.6, 0.8, 1.0],
             }
         );
 
         sections.forEach((section) => observer.observe(section));
-        return () => observer.disconnect();
+        return () => {
+            observer.disconnect();
+            clearTimeout(debounceTimerRef.current);
+        };
     }, []);
 
-    // ── Typewriter animation helper ──
-    const typewriterTransition = useCallback(async (oldText, newText) => {
-        // Cancel any in-progress animation
+    // ── Cancel helper ──
+    const cancelTypewriter = useCallback(() => {
         if (typewriterCancelRef.current) {
             typewriterCancelRef.current.cancelled = true;
         }
+        setIsAnimatingText(false);
+    }, []);
+
+    // ── Typewriter animation helper ──
+    const typewriterTransition = useCallback((newText) => {
+        // Cancel any in-progress animation
+        cancelTypewriter();
+
+        const currentDisplayed = displayedTextRef.current;
+
+        // If already showing the target text, nothing to do
+        if (currentDisplayed === newText) {
+            return;
+        }
+
         const token = { cancelled: false };
         typewriterCancelRef.current = token;
-
         setIsAnimatingText(true);
 
         const delay = (ms) =>
             new Promise((resolve) => {
-                const id = setTimeout(resolve, ms);
-                // Store timeout for potential cleanup
-                token.timeoutId = id;
+                setTimeout(resolve, ms);
             });
 
-        // Phase 1: Delete old text
-        if (oldText) {
-            for (let i = oldText.length; i >= 0; i--) {
-                if (token.cancelled) return;
-                setButtonText(oldText.substring(0, i));
-                await delay(TYPEWRITER_SPEED);
+        (async () => {
+            // Phase 1: Delete current displayed text
+            if (currentDisplayed) {
+                for (let i = currentDisplayed.length; i >= 0; i--) {
+                    if (token.cancelled) return;
+                    setTextAndTrack(currentDisplayed.substring(0, i));
+                    await delay(TYPEWRITER_SPEED);
+                }
             }
-        }
 
-        // Phase 2: Type new text
-        if (newText) {
-            for (let i = 0; i <= newText.length; i++) {
-                if (token.cancelled) return;
-                setButtonText(newText.substring(0, i));
-                await delay(TYPEWRITER_SPEED);
+            // Phase 2: Type new text
+            if (newText) {
+                for (let i = 0; i <= newText.length; i++) {
+                    if (token.cancelled) return;
+                    setTextAndTrack(newText.substring(0, i));
+                    await delay(TYPEWRITER_SPEED);
+                }
             }
-        }
 
-        if (!token.cancelled) {
-            setIsAnimatingText(false);
-        }
-    }, []);
+            if (!token.cancelled) {
+                setIsAnimatingText(false);
+            }
+        })();
+    }, [cancelTypewriter, setTextAndTrack]);
 
     // ── React to page changes ──
     useEffect(() => {
         const prevPage = previousPageRef.current;
 
-        if (currentPage === prevPage) return;
+        if (stablePage === prevPage) return;
 
-        const shouldShow = currentPage >= 2 && currentPage <= 6;
+        const shouldShow = stablePage >= 2 && stablePage <= 6;
         const wasShown = prevPage >= 2 && prevPage <= 6;
 
         if (shouldShow) {
-            const newText = PAGE_BUTTON_TEXT[currentPage];
+            const newText = PAGE_BUTTON_TEXT[stablePage] || "";
 
             if (!wasShown) {
-                // Navbar appearing: just set text instantly, no typewriter
-                if (typewriterCancelRef.current) {
-                    typewriterCancelRef.current.cancelled = true;
-                }
-                setButtonText(newText || "");
-                setIsAnimatingText(false);
+                // Navbar appearing: set text instantly, no typewriter
+                cancelTypewriter();
+                setTextAndTrack(newText);
                 setIsVisible(true);
             } else {
                 // Navbar already visible: typewriter transition
-                const oldText = PAGE_BUTTON_TEXT[prevPage];
                 setIsVisible(true);
-                typewriterTransition(oldText || "", newText || "");
+                typewriterTransition(newText);
             }
         } else {
             // Hide navbar (page 1 or 7)
             setIsVisible(false);
-
-            // Cancel any running typewriter
-            if (typewriterCancelRef.current) {
-                typewriterCancelRef.current.cancelled = true;
-                setIsAnimatingText(false);
-            }
+            cancelTypewriter();
         }
 
-        previousPageRef.current = currentPage;
-    }, [currentPage, typewriterTransition]);
+        previousPageRef.current = stablePage;
+    }, [stablePage, typewriterTransition, cancelTypewriter, setTextAndTrack]);
 
     return (
         <div className={`bottom-navbar ${isVisible ? "visible" : ""}`}>
             <button
                 className={`bottom-navbar-btn ${isAnimatingText ? "typing" : ""}`}
                 onClick={() => {
-                    // Navigate based on current page text / action
-                    // For now, placeholder navigation
-                    console.log(`Bottom navbar clicked: ${buttonText}`);
+                    const route = PAGE_ROUTES[stablePage];
+                    if (route) navigate(route);
                 }}
             >
                 <span className="bottom-navbar-btn-text">{buttonText}</span>

@@ -111,10 +111,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 40px;
-    border-radius: 0 0 32px 32px;
+    padding: 0 36px;
+    border-radius: 0 0 28px 28px;
     min-width: 1200px;
-    height: 90px;
+    height: 68px;
     position: relative;
     top: 15px;
     /* 1px overlap with the 16px white frame to prevent zoom-level gaps */
@@ -209,7 +209,7 @@
 }
 
 .nav-demo-btn-solidroad {
-    background: #4ade80;
+    background: #2b5ea7;
     color: #ffffff;
     border: none;
     padding: 12px 28px;
@@ -225,7 +225,7 @@
 }
 
 .nav-demo-btn-solidroad:hover {
-    background: #22c55e;
+    background: #1a4a8a;
 }
 
 /* FULLSCREEN HERO VIDEO - SEALED INSIDE THE ROUNDED FRAME */
@@ -362,8 +362,8 @@
 
 /* WIDE LOGIN BUTTON */
 .hero-login-btn {
-    background: #fbbf24;
-    color: #000;
+    background: #2b5ea7;
+    color: #ffffff;
     border: none;
     padding: 16px 24px;
     border-radius: 10px;
@@ -380,12 +380,12 @@
 }
 
 .hero-login-btn:hover {
-    background: #f59e0b;
+    background: #1a4a8a;
     transform: translateY(-1px);
 }
 
 .hero-login-btn:disabled {
-    background: #fcd34d;
+    background: #3b6fb7;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -584,4 +584,107 @@
 
 .outro h2 {
     font-size: clamp(2.5rem, 4vw, 3.5rem);
+}
+
+/* ══════════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════════ */
+
+.home-footer {
+    width: 100%;
+    background: #1a4a8a;
+    color: #ffffff;
+    padding: 80px 80px 0;
+    font-family: "Matter", sans-serif;
+}
+
+.footer-inner {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 64px;
+    padding-bottom: 56px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.footer-logo {
+    height: 40px;
+    width: auto;
+    filter: brightness(0) invert(1);
+}
+
+.footer-brand-name {
+    font-family: "Montserrat", sans-serif;
+    font-weight: 900;
+    font-size: 2.4rem;
+    color: #ffffff;
+    letter-spacing: -0.015em;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.footer-tagline {
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.7;
+    max-width: 340px;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.footer-links-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.footer-links-heading {
+    font-family: "SolidroadCustom", sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 4px;
+}
+
+.footer-link {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 400;
+    transition: color 0.2s;
+    letter-spacing: -0.01em;
+}
+
+.footer-link:hover {
+    color: #ffffff;
+}
+
+.footer-bottom {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 28px 0;
+    text-align: center;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: -0.01em;
+}
+
+@media (max-width: 900px) {
+    .home-footer {
+        padding: 60px 32px 0;
+    }
+
+    .footer-inner {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
 }

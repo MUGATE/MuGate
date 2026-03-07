@@ -1,6 +1,6 @@
 const sql = require("mssql");
 const dbConfig = {
-    user: "FONIX", password: "***REMOVED***",
+    user: "JOUMAA", password: "***REMOVED***",
     server: "localhost", database: "MuGate",
     options: { encrypt: false, trustServerCertificate: true },
 };
