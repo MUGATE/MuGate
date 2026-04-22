@@ -17,6 +17,8 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import './Chatbot.css';
 import LogoPath from './assets/images/Logo2.png';
 import FluidTrail from './FluidTrail';
@@ -51,25 +53,25 @@ const Chatbot = () => {
     const init = async () => {
       setIsInitializing(true);
       try {
-        // Load existing sessions for logged-in users
-        if (token) {
-          const existingSessions = await chatbotApi.getSessions();
-          setSessions(existingSessions);
+        // Load existing sessions (works for both logged-in and anonymous users)
+        const existingSessions = await chatbotApi.getSessions();
+        setSessions(existingSessions);
 
-          // If there are existing sessions, load the most recent one
-          if (existingSessions.length > 0) {
-            const latest = existingSessions[0]; // Already sorted by updatedAt DESC
-            setActiveSessionId(latest.id);
-            await loadSessionMessages(latest.id);
-            setIsInitializing(false);
-            return;
-          }
+        // If there are existing sessions, load the most recent one
+        if (existingSessions.length > 0) {
+          const latest = existingSessions[0]; // Already sorted by updatedAt DESC
+          setActiveSessionId(latest.id);
+          await loadSessionMessages(latest.id);
+          setIsInitializing(false);
+          return;
         }
 
-        // No existing sessions (or public user) → create a new one
+        // No existing sessions → create a new one
         await handleNewSession();
       } catch (err) {
         console.error('Failed to initialize chat:', err);
+        // Fallback: create a new session
+        await handleNewSession();
       } finally {
         setIsInitializing(false);
       }
@@ -120,10 +122,8 @@ const Chatbot = () => {
       setGreeting('');
 
       // Refresh sessions list
-      if (token) {
-        const updatedSessions = await chatbotApi.getSessions();
-        setSessions(updatedSessions);
-      }
+      const updatedSessions = await chatbotApi.getSessions();
+      setSessions(updatedSessions);
     } catch (err) {
       console.error('Failed to create session:', err);
     }
@@ -150,10 +150,8 @@ const Chatbot = () => {
       setMessages(prev => [...prev, assistantMsg]);
 
       // Refresh sessions list to update sidebar titles/timestamps
-      if (token) {
-        const updatedSessions = await chatbotApi.getSessions();
-        setSessions(updatedSessions);
-      }
+      const updatedSessions = await chatbotApi.getSessions();
+      setSessions(updatedSessions);
     } catch (err) {
       const errorMsg = {
         role: 'assistant',
@@ -354,7 +352,11 @@ const Chatbot = () => {
                     </div>
                   )}
                   <div className="message-content">
-                    <p>{msg.content}</p>
+                    {msg.role === 'assistant' ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    ) : (
+                      <p>{msg.content}</p>
+                    )}
                   </div>
                 </div>
               ))}

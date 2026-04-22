@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { logger } from "../../../core/logger/logger";
 import { CoursesService } from "../../academic/courses/courses.service";
+import { ScraperService } from "../scraper/scraper.service";
 import fs from "fs";
 import path from "path";
 
@@ -29,17 +30,39 @@ const runCourseSync = async () => {
     }
 };
 
+// Function to handle knowledge base sync
+const runKnowledgeBaseSync = async () => {
+    logger.info("CRON: Starting automated knowledge base sync...");
+    try {
+        if (ScraperService.running) {
+            logger.warn("CRON: Scraper already running. Skipping knowledge base sync.");
+            return;
+        }
+
+        await ScraperService.incrementalSync(24); // Re-check pages older than 24 hours
+        logger.info("CRON: Knowledge base sync completed successfully.");
+    } catch (error: any) {
+        logger.error(`CRON: Knowledge base sync failed: ${error.message}`);
+    }
+};
+
 /**
  * Initializes the CRON jobs for the application
  */
 export const initCronJobs = () => {
     logger.info("Initializing background CRON jobs...");
 
-    // Schedule to run every 3 hours 
+    // Schedule course sync to run every 3 hours 
     // Format: "0 */3 * * *" -> minute 0, every 3rd hour
     cron.schedule("0 */3 * * *", () => {
         runCourseSync();
     });
 
-    logger.info("CRON jobs active: Course Sync (Every 3 hours).");
+    // Schedule knowledge base sync to run daily at 3:00 AM
+    // Format: "0 3 * * *" -> at 03:00 every day
+    cron.schedule("0 3 * * *", () => {
+        runKnowledgeBaseSync();
+    });
+
+    logger.info("CRON jobs active: Course Sync (Every 3 hours), Knowledge Base Sync (Daily at 3 AM).");
 };

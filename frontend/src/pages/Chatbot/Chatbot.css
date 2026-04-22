@@ -709,7 +709,59 @@
 }
 
 .message-content p {
-    margin: 0;
+    margin: 0 0 0.5em 0;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.message-content ul,
+.message-content ol {
+    margin: 0.4em 0;
+    padding-left: 1.4em;
+}
+
+.message-content li {
+    margin-bottom: 0.2em;
+}
+
+.message-content strong {
+    font-weight: 600;
+}
+
+.message-content code {
+    background: rgba(0, 0, 0, 0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.message-content pre {
+    background: rgba(0, 0, 0, 0.06);
+    padding: 10px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 0.5em 0;
+}
+
+.message-content pre code {
+    background: none;
+    padding: 0;
+}
+
+.message-content h1,
+.message-content h2,
+.message-content h3 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 0.6em 0 0.3em 0;
+}
+
+.message-content a {
+    color: #5157d9;
+    text-decoration: underline;
 }
 
 .message-bubble.user .message-content {

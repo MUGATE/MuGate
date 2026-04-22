@@ -28,7 +28,14 @@ export class ChatbotController {
             // @ts-ignore
             const user = req.user;
             if (!user) {
-                return res.status(200).json({ success: true, sessions: [] }); // Public users don't have stored sessions history in DB
+                // For anonymous users, check if session IDs were sent as query param
+                const idsParam = req.query.ids as string;
+                if (idsParam) {
+                    const sessionIds = idsParam.split(",").map(id => id.trim()).filter(Boolean);
+                    const sessions = await ChatbotMemoryService.getSessionsByIds(sessionIds);
+                    return res.status(200).json({ success: true, sessions });
+                }
+                return res.status(200).json({ success: true, sessions: [] });
             }
 
             const sessions = await ChatbotMemoryService.getSessions(user.userId);

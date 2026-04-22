@@ -110,7 +110,43 @@ export class ChatbotMemoryService {
             .input("sessionId", sessionId)
             .query("UPDATE ChatSessions SET updatedAt = GETDATE() WHERE id = @sessionId");
 
+        // Auto-title: if this is the first user message, update the session title
+        if (role === "user") {
+            try {
+                const msgCount = await pool.request()
+                    .input("sessionId", sessionId)
+                    .query("SELECT COUNT(*) as cnt FROM ChatMessages WHERE sessionId = @sessionId AND role = 'user'");
+                if (msgCount.recordset[0].cnt === 1) {
+                    // First user message — use it as the session title
+                    const title = content.length > 60 ? content.substring(0, 57) + "..." : content;
+                    await pool.request()
+                        .input("sessionId", sessionId)
+                        .input("title", title)
+                        .query("UPDATE ChatSessions SET title = @title WHERE id = @sessionId");
+                }
+            } catch { /* non-critical */ }
+        }
+
         return result.recordset[0];
+    }
+
+    /**
+     * Gets sessions by a list of IDs (for anonymous session recovery)
+     */
+    static async getSessionsByIds(sessionIds: string[]): Promise<ChatSession[]> {
+        if (!sessionIds || sessionIds.length === 0) return [];
+        // Build parameterized IN clause
+        const params: string[] = [];
+        const request = pool.request();
+        sessionIds.forEach((id, i) => {
+            const paramName = `id${i}`;
+            request.input(paramName, id);
+            params.push(`@${paramName}`);
+        });
+        const result = await request.query(
+            `SELECT * FROM ChatSessions WHERE id IN (${params.join(",")}) AND isActive = 1 ORDER BY isPinned DESC, updatedAt DESC`
+        );
+        return result.recordset;
     }
 
     /**
