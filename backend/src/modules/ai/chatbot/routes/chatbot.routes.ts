@@ -1,7 +1,14 @@
 import { Router } from "express";
+import multer from "multer";
 import { ChatbotController } from "../controllers/chatbot.controller";
 import { optionalAuthMiddleware } from "../../../../core/middleware/optionalAuth.middleware";
 import { authMiddleware } from "../../../../core/middleware/auth.middleware";
+
+// Multer config: store in memory (buffer), max 5MB
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }
+});
 
 const router = Router();
 
@@ -11,6 +18,7 @@ const router = Router();
 
 router.post("/sessions", optionalAuthMiddleware, ChatbotController.createSession);
 router.post("/message", optionalAuthMiddleware, ChatbotController.sendMessage);
+router.post("/upload", optionalAuthMiddleware, upload.single("file"), ChatbotController.uploadFile);
 
 // These could strictly require authMiddleware if public users aren't allowed to load/delete histories.
 // Based on current logic, public might not have persistence, so optional auth is okay. The controller checks `req.user`.

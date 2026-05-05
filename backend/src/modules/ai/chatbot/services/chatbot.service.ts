@@ -16,11 +16,12 @@ export class ChatbotService {
      * Main Orchestrator for handling an incoming chat message.
      * Implements RAG pipeline: classify → retrieve → generate.
      */
-    static async handleMessage(
+        static async handleMessage(
         sessionId: string,
         userId: string | null,
         messageContent: string,
-        userName?: string
+        userName?: string,
+        reasoning?: boolean
     ) {
         // 1. Content Moderation Check
         if (!isQuerySafe(messageContent)) {
@@ -72,7 +73,7 @@ export class ChatbotService {
             await ChatbotMemoryService.saveMessage(sessionId, "user", messageContent, 0);
 
             // 7. Generate AI Response with RAG-enhanced prompt
-            const systemPrompt = generateSystemPrompt(studentContext, ragContext, questionType);
+            const systemPrompt = generateSystemPrompt(studentContext, ragContext, questionType, reasoning);
 
             const startGenTime = Date.now();
             const aiResponse = await AiProvider.generateResponse(systemPrompt, history, messageContent);

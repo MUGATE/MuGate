@@ -3,6 +3,7 @@ import { ChatbotService } from "../services/chatbot.service";
 import { ChatbotMemoryService } from "../services/chatbot.memory.service";
 import { SendMessageDto } from "../dto/send-message.dto";
 import { CreateSessionDto } from "../dto/create-session.dto";
+import { FileUploadService } from "../files/file-upload.service";
 
 export class ChatbotController {
 
@@ -57,7 +58,7 @@ export class ChatbotController {
                 return res.status(400).json({ success: false, message: "sessionId and content are required." });
             }
 
-            const response = await ChatbotService.handleMessage(dto.sessionId, userId, dto.content, userName);
+            const response = await ChatbotService.handleMessage(dto.sessionId, userId, dto.content, userName, dto.reasoning);
 
             res.status(200).json({ success: true, ...response });
         } catch (error: any) {
@@ -90,6 +91,56 @@ export class ChatbotController {
             res.status(200).json({ success: true, data: stats });
         } catch (error: any) {
             res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
+    static async uploadFile(req: Request, res: Response) {
+        try {
+            // @ts-ignore
+            const user = req.user;
+            const userId = user ? user.userId : null;
+
+            const sessionId = req.body.sessionId;
+            const userPrompt = req.body.prompt || "";
+
+            if (!sessionId) {
+                return res.status(400).json({ success: false, message: "sessionId is required." });
+            }
+
+            // @ts-ignore - multer adds file to req
+            const file = req.file;
+            if (!file) {
+                return res.status(400).json({ success: false, message: "No file uploaded." });
+            }
+
+            // Process the file (validate, extract text / vision)
+            const uploadResult = await FileUploadService.processUploadedFile(
+                file.buffer,
+                file.originalname,
+                file.mimetype,
+                file.size
+            );
+
+            // Send extracted content to AI via handleFileUpload
+            const response = await ChatbotService.handleFileUpload(
+                sessionId,
+                userId,
+                uploadResult.extractedText || "[No text could be extracted from this file]",
+                uploadResult.fileName,
+                userPrompt || undefined
+            );
+
+            res.status(200).json({
+                success: true,
+                ...response,
+                attachment: {
+                    fileName: uploadResult.fileName,
+                    mimeType: uploadResult.mimeType,
+                    isImage: uploadResult.isImage
+                }
+            });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
         }
     }
 

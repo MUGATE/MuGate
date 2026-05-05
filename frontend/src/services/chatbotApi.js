@@ -64,12 +64,25 @@ export const getSessions = async () => {
     return data.sessions || [];
 };
 
-export const sendMessage = async (sessionId, content) => {
+export const sendMessage = async (sessionId, content, reasoning = false) => {
     const data = await apiFetch("/chatbot/message", {
         method: "POST",
-        body: JSON.stringify({ sessionId, content }),
+        body: JSON.stringify({ sessionId, content, reasoning }),
     });
     return data; // { success, text, tokensUsed }
+};
+
+export const uploadFile = async (sessionId, file, prompt = "") => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("sessionId", sessionId);
+    if (prompt) formData.append("prompt", prompt);
+
+    const data = await apiFetch("/chatbot/upload", {
+        method: "POST",
+        body: formData,
+    });
+    return data; // { success, text, tokensUsed, attachment }
 };
 
 export const deleteSession = async (sessionId) => {

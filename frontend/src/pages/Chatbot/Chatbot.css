@@ -504,6 +504,103 @@
     font-weight: 500;
 }
 
+/* Reasoning button active state */
+.action-btn.pill-btn.reasoning-active {
+    background-color: #5157d9;
+    color: #ffffff;
+    border-color: #5157d9;
+    box-shadow: 0 2px 8px rgba(81, 87, 217, 0.3);
+}
+
+.action-btn.pill-btn.reasoning-active:hover {
+    background-color: #4148c7;
+    color: #ffffff;
+}
+
+/* =========================================
+   Attachment Preview Chips
+   ========================================= */
+.attachment-preview-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 0 4px 0;
+}
+
+.attachment-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(81, 87, 217, 0.08);
+    border: 1px solid rgba(81, 87, 217, 0.15);
+    border-radius: 10px;
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    color: #5157d9;
+    max-width: 200px;
+}
+
+.attachment-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+}
+
+.attachment-remove {
+    background: transparent;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+
+.attachment-remove:hover {
+    color: #e74c3c;
+    background-color: rgba(231, 76, 60, 0.1);
+}
+
+/* =========================================
+   Message Attachment Badges (in sent messages)
+   ========================================= */
+.msg-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.msg-attachment-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.msg-attachment-badge svg {
+    opacity: 0.8;
+    flex-shrink: 0;
+}
+
+.msg-attachment-badge span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
 .chatbox-right-actions {
     display: flex;
 }
@@ -825,6 +922,48 @@
 
     40% {
         transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* =========================================
+   Thinking Indicator (Reasoning Mode)
+   ========================================= */
+.thinking-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    color: #5157d9;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.thinking-indicator .thinking-icon {
+    animation: thinkingPulse 1.5s ease-in-out infinite;
+    color: #5157d9;
+}
+
+.thinking-indicator span {
+    animation: thinkingFade 1.5s ease-in-out infinite;
+}
+
+@keyframes thinkingPulse {
+    0%, 100% {
+        opacity: 0.4;
+        transform: scale(0.9);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
+
+@keyframes thinkingFade {
+    0%, 100% {
+        opacity: 0.5;
+    }
+    50% {
         opacity: 1;
     }
 }

@@ -40,9 +40,9 @@ export class FileUploadService {
         if (isImage) {
             // Wait for user prompt to combine with vision later, 
             // or extract initial OCR text if no prompt given yet.
-            extractedText = await ImageVisionService.analyzeImage(safeFileName, mimeType);
+            extractedText = await ImageVisionService.analyzeImage(safeFileName, mimeType, buffer);
         } else {
-            extractedText = await FileParserService.extractText(safeFileName, mimeType);
+            extractedText = await FileParserService.extractText(safeFileName, mimeType, buffer);
         }
 
         return {

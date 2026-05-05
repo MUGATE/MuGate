@@ -14,7 +14,10 @@ import {
   Send,
   Plus,
   Trash2,
-  MessageSquare
+  MessageSquare,
+  X,
+  FileText,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -34,9 +37,12 @@ const Chatbot = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [greeting, setGreeting] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [reasoningEnabled, setReasoningEnabled] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState([]);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Derive user info from JWT in localStorage
   const token = localStorage.getItem('mugate_token');
@@ -129,19 +135,37 @@ const Chatbot = () => {
     }
   };
 
-  // ─── Send a message ─────────────────────────────────────
+    // ─── Send a message ─────────────────────────────────────
   const handleSendMessage = async () => {
     const text = inputText.trim();
-    if (!text || !activeSessionId || isLoading) return;
+    const hasFiles = attachedFiles.length > 0;
+    if ((!text && !hasFiles) || !activeSessionId || isLoading) return;
+
+        // Build user message with optional attachment metadata
+    const fileNames = attachedFiles.map(f => ({ name: f.name, type: f.type }));
+    const displayContent = text || (hasFiles ? '' : '');
 
     // Optimistic: add user message immediately
-    const userMsg = { role: 'user', content: text, createdAt: new Date().toISOString() };
+    const userMsg = {
+      role: 'user',
+      content: displayContent,
+      createdAt: new Date().toISOString(),
+      attachments: hasFiles ? fileNames : undefined
+    };
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
+    const filesToSend = [...attachedFiles];
+    setAttachedFiles([]);
     setIsLoading(true);
 
     try {
-      const response = await chatbotApi.sendMessage(activeSessionId, text);
+      let response;
+      if (hasFiles) {
+        // Upload first file with optional text prompt
+        response = await chatbotApi.uploadFile(activeSessionId, filesToSend[0], text || '');
+      } else {
+        response = await chatbotApi.sendMessage(activeSessionId, text, reasoningEnabled);
+      }
       const assistantMsg = {
         role: 'assistant',
         content: response.text,
@@ -163,6 +187,35 @@ const Chatbot = () => {
       setIsLoading(false);
       inputRef.current?.focus();
     }
+  };
+
+  // ─── File attachment handlers ───────────────────────────
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png', 'image/webp'];
+
+    const validFiles = files.filter(f => {
+      if (f.size > maxSize) {
+        alert(`File "${f.name}" exceeds 5MB limit.`);
+        return false;
+      }
+      if (!allowedTypes.includes(f.type)) {
+        alert(`File "${f.name}" is not supported. Use PDF, DOCX, or images.`);
+        return false;
+      }
+      return true;
+    });
+
+    setAttachedFiles(prev => [...prev, ...validFiles]);
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachedFile = (index) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   // ─── Key handler ────────────────────────────────────────
@@ -353,24 +406,43 @@ const Chatbot = () => {
           {(hasUserMessages || isInitializing) && (
             <div className="messages-container">
                                                         {displayMessages.map((msg, idx) => (
-                <div key={idx} className={`message-bubble ${msg.role}`}>
+                                <div key={idx} className={`message-bubble ${msg.role}`}>
                   <div className="message-content">
                     {msg.role === 'assistant' ? (
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                     ) : (
-                      <p>{msg.content}</p>
+                      <>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="msg-attachments">
+                            {msg.attachments.map((att, aidx) => (
+                              <div key={aidx} className="msg-attachment-badge">
+                                {att.type && att.type.startsWith('image/') ? <ImageIcon size={14} /> : <FileText size={14} />}
+                                <span>{att.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {msg.content && <p>{msg.content}</p>}
+                      </>
                     )}
                   </div>
                 </div>
               ))}
 
-              {/* Typing indicator */}
-                            {isLoading && (
+                            {/* Typing / Thinking indicator */}
+              {isLoading && (
                 <div className="message-bubble assistant">
                   <div className="message-content">
-                    <div className="typing-indicator">
-                      <span></span><span></span><span></span>
-                    </div>
+                    {reasoningEnabled ? (
+                      <div className="thinking-indicator">
+                        <Lightbulb size={16} className="thinking-icon" />
+                        <span>Thinking...</span>
+                      </div>
+                    ) : (
+                      <div className="typing-indicator">
+                        <span></span><span></span><span></span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -396,19 +468,49 @@ const Chatbot = () => {
                 />
               </div>
 
+              {/* Attachment preview chips */}
+              {attachedFiles.length > 0 && (
+                <div className="attachment-preview-row">
+                  {attachedFiles.map((file, idx) => (
+                    <div key={idx} className="attachment-chip">
+                      {file.type.startsWith('image/') ? <ImageIcon size={14} /> : <FileText size={14} />}
+                      <span className="attachment-name">{file.name.length > 20 ? file.name.slice(0, 17) + '...' : file.name}</span>
+                      <button className="attachment-remove" onClick={() => removeAttachedFile(idx)}>
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="chatbox-actions-row">
                 <div className="chatbox-left-actions">
-                  <button className="action-btn icon-only">
+                                    <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept=".pdf,.docx,image/jpeg,image/png,image/webp"
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    className="action-btn icon-only"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Attach file (PDF, DOCX, Image)"
+                  >
                     <Paperclip size={18} />
                   </button>
-                  <button className="action-btn pill-btn">
+                  <button
+                    className={`action-btn pill-btn${reasoningEnabled ? ' reasoning-active' : ''}`}
+                    onClick={() => setReasoningEnabled(prev => !prev)}
+                    title={reasoningEnabled ? 'Reasoning mode ON — click to disable' : 'Enable reasoning mode for detailed analysis'}
+                  >
                     <Lightbulb size={16} />
                     <span>Reasoning</span>
                   </button>
                 </div>
 
                 <div className="chatbox-right-actions">
-                  {inputText.trim() ? (
+                                    {(inputText.trim() || attachedFiles.length > 0) ? (
                     <button
                       className="send-btn"
                       onClick={handleSendMessage}

@@ -7,7 +7,8 @@ import { QuestionType } from "../services/classifier.service";
 export const generateSystemPrompt = (
     studentContext: string = "",
     ragContext: string = "",
-    questionType: QuestionType = QuestionType.UNIVERSITY_ACADEMIC
+    questionType: QuestionType = QuestionType.UNIVERSITY_ACADEMIC,
+    reasoning: boolean = false
 ): string => {
     const hasStudentContext = studentContext && studentContext.trim().length > 0 && !studentContext.includes("Context Error");
     const hasRagContext = ragContext && ragContext.trim().length > 0;
@@ -66,6 +67,27 @@ This question is about general studying or academic skills. You may use your gen
 
 `;
     }
+
+        // ─── Reasoning Mode (Chain-of-Thought) ─────────────
+        if (reasoning) {
+            prompt += `
+REASONING MODE ENABLED:
+The student has requested detailed reasoning. For this response:
+1. Think through the problem carefully before answering.
+2. Explain WHY, not just WHAT — provide clear justifications.
+3. Consider multiple angles or options when relevant.
+4. Clearly state any assumptions you're making.
+5. Provide a thorough, well-structured answer with actionable conclusions.
+
+CRITICAL OUTPUT RULE: Your response must contain ONLY the final answer. You MUST NOT include ANY internal reasoning, thinking process, or chain-of-thought text. Specifically:
+- Do NOT start with phrases like "The student is asking...", "Let me think...", "I need to consider...", "This is a question about..."
+- Do NOT include any meta-commentary about how you're approaching the question
+- Do NOT include any text that describes your thought process
+- Start your response directly with the answer content
+- If you catch yourself writing internal reasoning, DELETE it and start over with just the answer
+
+`;
+        }
 
     return prompt;
 };

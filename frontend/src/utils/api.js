@@ -1,9 +1,10 @@
 export const apiFetch = async (endpoint, options = {}) => {
     const token = localStorage.getItem("mugate_token");
 
-    // Set default headers
+        // Set default headers — skip Content-Type for FormData (browser sets it with boundary)
+    const isFormData = options.body instanceof FormData;
     const headers = {
-        "Content-Type": "application/json",
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         ...options.headers,
     };
 
