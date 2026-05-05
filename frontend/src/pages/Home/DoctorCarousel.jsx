@@ -139,13 +139,11 @@ const InstructorCarousel = (props) => {
             const { enteringIds, genuineExitCards, wrappingCards } =
                 computeAnimatedCards(activeIndex, newActive, clickedRight);
 
-            // Wrapping cards: real element → entry animation, ghost → exit animation
             const allEnteringIds = [
                 ...enteringIds,
                 ...wrappingCards.map((w) => w.id),
             ];
 
-            // Create ghost data for wrapping cards
             const ghostData = wrappingCards.map(({ id, fromOff }) => ({
                 id,
                 fromOff,
@@ -171,7 +169,7 @@ const InstructorCarousel = (props) => {
                 });
                 setGhosts([]);
                 isAnimating.current = false;
-            }, 850);
+            }, 820);
         },
         [activeIndex]
     );

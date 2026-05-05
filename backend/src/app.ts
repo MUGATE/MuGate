@@ -11,6 +11,7 @@ import schedulesRoutes from "./modules/academic/schedules/schedules.routes";
 import chatbotRoutes from "./modules/ai/chatbot/routes/chatbot.routes";
 import scraperRoutes from "./modules/system/scraper/scraper.routes";
 import { initCronJobs } from "./modules/system/sync/sync.cron";
+import resumeRoutes from "./modules/resume/resume.routes";
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use("/api/generate", generatorRoutes);
 app.use("/api/schedules", schedulesRoutes);
 app.use("/api/chatbot", chatbotRoutes);   // MuChat integration
 app.use("/api/scraper", scraperRoutes);   // Scraper & Knowledge Base
+app.use("/api/resume", resumeRoutes);
 
 // Helper route for checking auth route in browser
 app.get("/api/auth/login", (req, res) => {

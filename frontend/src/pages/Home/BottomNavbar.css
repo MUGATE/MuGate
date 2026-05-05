@@ -10,7 +10,7 @@
     left: 50%;
     width: auto;
     height: auto;
-    padding: 16px;
+    padding: 10px;
     background: #ffffff;
     display: flex;
     align-items: center;
@@ -53,46 +53,46 @@
     content: '';
     position: absolute;
     bottom: 0;
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
     background: transparent;
     pointer-events: none;
 }
 
 /* External curve — bottom left */
 .bottom-navbar::before {
-    left: -32px;
-    border-radius: 0 0 32px 0;
-    box-shadow: 16px 16px 0 16px #ffffff;
+    left: -24px;
+    border-radius: 0 0 24px 0;
+    box-shadow: 12px 12px 0 12px #ffffff;
 }
 
 /* External curve — bottom right */
 .bottom-navbar::after {
-    right: -32px;
-    border-radius: 0 0 0 32px;
-    box-shadow: -16px 16px 0 16px #ffffff;
+    right: -24px;
+    border-radius: 0 0 0 24px;
+    box-shadow: -12px 12px 0 12px #ffffff;
 }
 
 /* ── DARK BLUE BUTTON — Clean, no effects ── */
 
 .bottom-navbar-btn {
     font-family: "SolidroadCustom", sans-serif;
-    font-size: 1.3rem;
+    font-size: 1rem;
     font-weight: 700;
     color: #ffffff;
     letter-spacing: 0.02em;
-    padding: 17px 29px;
+    padding: 14px 36px;
     border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 14px;
+    border-radius: 12px;
     cursor: pointer;
     position: relative;
     z-index: 2;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 
-    /* Animated gradient — copied from carousel-generate-btn */
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    /* Animated gradient — blue like chatbot section */
+    background: linear-gradient(135deg, #2b5ea7 0%, #1a4a8a 50%, #3b6fb7 100%);
     background-size: 200% 200%;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -118,7 +118,7 @@
 
 /* Arrow rotates up on hover */
 .bottom-navbar-btn:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: linear-gradient(135deg, #2b5ea7 0%, #1a4a8a 50%, #3b6fb7 100%);
     background-size: 200% 200%;
     transform: none;
     box-shadow: none;
@@ -135,8 +135,8 @@
 /* ── ARROW IN CIRCLE ── */
 
 .bottom-navbar-arrow-circle {
-    width: 34px;
-    height: 34px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.25);
     display: flex;

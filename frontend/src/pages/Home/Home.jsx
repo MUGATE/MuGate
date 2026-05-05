@@ -5,6 +5,8 @@ import heroVideo from "./assets/Videos/MU VIDEO LANDING PAGE.mp4";
 import InstructorCarousel from "./DoctorCarousel";
 import ResumeAnalyzer from "./ResumeAnalyzer";
 import InternshipShowcase from "./InternshipShowcase";
+import ChatbotShowcase from "./ChatbotShowcase";
+import AboutSummary from "./AboutSummary";
 import BottomNavbar from "./BottomNavbar";
 
 import logo from "./assets/Images/Logo2.png";
@@ -279,37 +281,41 @@ const Home = () => {
       {/* SECTION 4 — INTERNSHIP SHOWCASE */}
       <InternshipShowcase data-page="4" />
 
-      {/* SECTION 5 — FEATURE */}
-      <Section id="feature3" data-page="5">
-        <h2 className="center-title">Built For Scale</h2>
-        <p className="center-text">
-          Optimized architecture that adapts and grows with your ambitions.
-        </p>
-      </Section>
+      {/* SECTION 5 — AI CHATBOT SHOWCASE */}
+      <ChatbotShowcase data-page="5" />
 
-      {/* SECTION 6 — FEATURE */}
-      <Section id="feature4" data-page="6">
-        <div className="split-layout">
-          <div className="text">
-            <h2>Designed With Intention</h2>
-            <p>
-              Every element crafted to balance elegance, clarity, and purpose.
+      {/* SECTION 6 — ABOUT SUMMARY */}
+      <AboutSummary data-page="6" />
+
+      {/* FOOTER */}
+      <footer className="home-footer" data-page="7">
+        <div className="footer-inner">
+          <div className="footer-brand">
+            <span className="footer-brand-name">MUGATE</span>
+            <p className="footer-tagline">
+              Your AI-powered university companion — unifying academic tools into one seamless experience.
             </p>
           </div>
-          <div className="visual-placeholder" />
-        </div>
-      </Section>
 
-      {/* SECTION 7 — OUTRO */}
-      <Section id="outro" className="outro" data-page="7">
-        <h2 className="outro-title">Ready To Experience It?</h2>
-        <button
-          className="primary-btn"
-          onClick={() => (window.location.href = "/internships")}
-        >
-          Get Started
-        </button>
-      </Section>
+          <div className="footer-links-group">
+            <h4 className="footer-links-heading">Platform</h4>
+            <Link to="/schedule" className="footer-link">Scheduler</Link>
+            <Link to="/internships" className="footer-link">Internships</Link>
+            <Link to="/resume-enhancer" className="footer-link">Resume Enhancer</Link>
+            <Link to="/chatbot" className="footer-link">AI Chatbot</Link>
+          </div>
+
+          <div className="footer-links-group">
+            <h4 className="footer-links-heading">Quick Links</h4>
+            <Link to="/" className="footer-link">Home</Link>
+            <a href="https://ums.mu.edu.lb" target="_blank" rel="noreferrer" className="footer-link">University Portal</a>
+          </div>
+        </div>
+
+        <div className="footer-bottom">
+          <span>© {new Date().getFullYear()} MuGate — Al Maaref University. All rights reserved.</span>
+        </div>
+      </footer>
 
       <BottomNavbar />
     </div>

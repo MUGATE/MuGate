@@ -80,6 +80,9 @@
         opacity 0.8s ease-in-out,
         filter 0.8s ease-in-out;
     transform-style: preserve-3d;
+    will-change: transform, opacity, filter;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 /* ── 7 POSITION CLASSES ──
@@ -232,6 +235,7 @@
     height: 100%;
     transform-style: preserve-3d;
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
 }
 
 .carousel-card-wrapper.flipped .carousel-card-inner {
@@ -270,6 +274,11 @@
     object-position: center bottom;
     background: rgba(200, 200, 210, 0.08);
     display: block;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
 /* Placeholder when no image is set — neutral frosted glass look */

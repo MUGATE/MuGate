@@ -89,8 +89,8 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: #ffffff;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+    background: linear-gradient(135deg, #2b5ea7 0%, #1a4a8a 100%);
+    box-shadow: 0 4px 12px rgba(43, 94, 167, 0.35);
     z-index: 10;
     white-space: nowrap;
 }
@@ -211,7 +211,7 @@
 }
 
 .resume-title-accent {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: linear-gradient(135deg, #2b5ea7 0%, #1a4a8a 50%, #3b6fb7 100%);
     background-size: 200% 200%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -269,7 +269,7 @@
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #2b5ea7, #1a4a8a);
     color: #ffffff;
     font-size: 0.65rem;
     font-weight: 700;
@@ -277,7 +277,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 2px 8px rgba(43, 94, 167, 0.3);
 }
 
 /* ── TRUST INDICATORS — Enhanced ── */
@@ -301,7 +301,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: 1.5rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #2b5ea7, #1a4a8a);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

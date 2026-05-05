@@ -69,7 +69,7 @@ const ToggleSwitch = ({ checked, onChange }) => (
 );
 
 /* ── Course Block (clean, no edit icon) ── */
-const ROW_HEIGHT = 59;   // CSS height 58px + 1px border = 59px
+const ROW_HEIGHT = 41;   // CSS height 40px + 1px border = 41px
 
 const CourseBlock = ({ course, slot, onClick, gridStartHour }) => {
   const topOffset = (slot.startHour - gridStartHour) * ROW_HEIGHT;
@@ -498,7 +498,7 @@ const Schedule = () => {
                       onClick={handlePrevSchedule}
                       disabled={currentIndex === 0}
                       style={{
-                        background: 'linear-gradient(135deg, #4a90d9, #a78bfa)',
+                        background: 'linear-gradient(135deg, #4a90d9, #1a3a6b)',
                         border: 'none',
                         color: '#fff',
                         cursor: currentIndex === 0 ? 'default' : 'pointer',
@@ -509,7 +509,7 @@ const Schedule = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         opacity: currentIndex === 0 ? 0.4 : 1,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        boxShadow: '0 2px 8px rgba(26, 58, 107, 0.2)'
                       }}
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
@@ -519,7 +519,7 @@ const Schedule = () => {
                       onClick={handleNextSchedule}
                       disabled={currentIndex === visibleCount - 1}
                       style={{
-                        background: 'linear-gradient(135deg, #4a90d9, #a78bfa)',
+                        background: 'linear-gradient(135deg, #4a90d9, #1a3a6b)',
                         border: 'none',
                         color: '#fff',
                         cursor: currentIndex === visibleCount - 1 ? 'default' : 'pointer',
@@ -530,7 +530,7 @@ const Schedule = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         opacity: currentIndex === visibleCount - 1 ? 0.4 : 1,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        boxShadow: '0 2px 8px rgba(26, 58, 107, 0.2)'
                       }}
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
@@ -590,7 +590,7 @@ const Schedule = () => {
           )}
         </div>
 
-        {/* Right — Edit Instructors (scrollable, flexible) */}
+        {/* Right — Registered Courses + Action Buttons */}
         <div className="edit-panel glass-card">
           <h2>Registered Courses</h2>
           <div className="edit-panel-scroll">
@@ -610,29 +610,30 @@ const Schedule = () => {
               </div>
             ))}
           </div>
+
+          {/* Action Buttons */}
+          {scheduleVisible && generatedSchedules.length > 0 && (
+            <div className="schedule-actions">
+              <button
+                className="regenerate-btn"
+                onClick={handleRegenerate}
+                disabled={visibleCount >= generatedSchedules.length}
+                style={{ opacity: visibleCount >= generatedSchedules.length ? 0.5 : 1 }}
+              >
+                Re-generate Schedule
+              </button>
+              <button
+                className="confirm-btn"
+                onClick={handleConfirmSchedule}
+                disabled={isLoading}
+              >
+                {isLoading ? "Saving..." : "Confirm & Save Selection"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── Bottom Action Buttons ── */}
-      {scheduleVisible && generatedSchedules.length > 0 && (
-        <div className="schedule-actions">
-          <button
-            className="regenerate-btn"
-            onClick={handleRegenerate}
-            disabled={visibleCount >= generatedSchedules.length}
-            style={{ opacity: visibleCount >= generatedSchedules.length ? 0.5 : 1 }}
-          >
-            Re-generate Schedule
-          </button>
-          <button
-            className="confirm-btn"
-            onClick={handleConfirmSchedule}
-            disabled={isLoading}
-          >
-            {isLoading ? "Saving..." : "Confirm & Save Selection"}
-          </button>
-        </div>
-      )}
       {/* Course Detail Modal */}
       <CourseModal course={selectedCourse} onClose={() => setSelectedCourse(null)} />
     </div>
