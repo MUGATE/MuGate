@@ -208,8 +208,16 @@ const Chatbot = () => {
     (s.title || 'New Chat').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Check if there are user messages (to decide greeting vs chat view)
+    // Check if there are user messages (to decide greeting vs chat view)
   const hasUserMessages = messages.some(m => m.role === 'user');
+
+  // Filter out assistant messages that appear before the first user message
+  // (these are auto-generated welcome messages from the backend)
+  const displayMessages = (() => {
+    const firstUserIdx = messages.findIndex(m => m.role === 'user');
+    if (firstUserIdx === -1) return messages; // No user messages yet — show all (won't be visible anyway)
+    return messages.slice(firstUserIdx); // Start from the first user message
+  })();
 
   // ─── Determine greeting text ───────────────────────────
   const getGreetingText = () => {
@@ -316,8 +324,8 @@ const Chatbot = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="chatbot-main">
-        <FluidTrail />
+            <main className={`chatbot-main${hasUserMessages ? ' has-messages' : ''}`}>
+        <FluidTrail scrollable />
         <div className="main-bg-mesh"></div>
 
         <div className="main-content-wrapper">
@@ -344,13 +352,8 @@ const Chatbot = () => {
           {/* ─── Messages View (after user sends first message) ─── */}
           {(hasUserMessages || isInitializing) && (
             <div className="messages-container">
-              {messages.map((msg, idx) => (
+                                                        {displayMessages.map((msg, idx) => (
                 <div key={idx} className={`message-bubble ${msg.role}`}>
-                  {msg.role === 'assistant' && (
-                    <div className="assistant-avatar">
-                      <div className="mini-logo mask-logo" style={{ WebkitMaskImage: `url(${LogoPath})`, maskImage: `url(${LogoPath})` }}></div>
-                    </div>
-                  )}
                   <div className="message-content">
                     {msg.role === 'assistant' ? (
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
@@ -362,11 +365,8 @@ const Chatbot = () => {
               ))}
 
               {/* Typing indicator */}
-              {isLoading && (
+                            {isLoading && (
                 <div className="message-bubble assistant">
-                  <div className="assistant-avatar">
-                    <div className="mini-logo mask-logo" style={{ WebkitMaskImage: `url(${LogoPath})`, maskImage: `url(${LogoPath})` }}></div>
-                  </div>
                   <div className="message-content">
                     <div className="typing-indicator">
                       <span></span><span></span><span></span>

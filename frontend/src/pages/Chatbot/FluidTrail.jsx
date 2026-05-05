@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-const FluidTrail = () => {
+const FluidTrail = ({ scrollable = false }) => {
     const canvasRef = useRef(null);
 
     useEffect(() => {
@@ -16,9 +16,9 @@ const FluidTrail = () => {
         canvas.height = height * dpr;
         ctx.scale(dpr, dpr);
 
-        const resize = () => {
-            width = parent.offsetWidth;
-            height = parent.offsetHeight;
+                const resize = () => {
+            width = parent.clientWidth;
+            height = parent.clientHeight;
             canvas.width = width * dpr;
             canvas.height = height * dpr;
             ctx.scale(dpr, dpr);
@@ -37,15 +37,15 @@ const FluidTrail = () => {
             trail.push({ x: pointer.x, y: pointer.y, dx: 0, dy: 0 });
         }
 
-        const updateMouse = (e) => {
-            const rect = canvas.getBoundingClientRect();
+                const updateMouse = (e) => {
+            const rect = parent.getBoundingClientRect();
             pointer.x = e.clientX - rect.left;
             pointer.y = e.clientY - rect.top;
         };
 
         const handleMouseEnter = (e) => {
             targetOpacity = 0.8; // Fade in max opacity
-            const rect = canvas.getBoundingClientRect();
+            const rect = parent.getBoundingClientRect();
             pointer.x = e.clientX - rect.left;
             pointer.y = e.clientY - rect.top;
 
@@ -142,7 +142,10 @@ const FluidTrail = () => {
         };
     }, []);
 
-    return <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />;
+    const style = scrollable
+        ? { position: 'sticky', top: 0, left: 0, width: '100%', height: '100vh', marginBottom: '-100vh', pointerEvents: 'none', zIndex: 0, flexShrink: 0 }
+        : { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 };
+    return <canvas ref={canvasRef} style={style} />;
 };
 
 export default FluidTrail;

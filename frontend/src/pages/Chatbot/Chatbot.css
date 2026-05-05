@@ -7,7 +7,7 @@
     background-color: #f8fafb;
     font-family: 'Inter', system-ui, sans-serif;
     overflow: hidden;
-    padding: 16px;
+    padding: 20px 16px 16px;
     gap: 16px;
 }
 
@@ -26,6 +26,7 @@
     border-radius: 20px;
     box-shadow: 0 4px 20px #f1f3f4;
     border: 1px solid rgba(0, 0, 0, 0.01);
+    overflow: hidden;
 }
 
 /* Force content wrappers to rest ABOVE the fluid canvas */
@@ -282,30 +283,44 @@
     flex-grow: 1;
     position: relative;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    /* e8e9f4 under chatbar and f1f7ee beside it. Let's make a beautiful fluid mesh gradient background */
+    flex-direction: column;
+    /* Colorful mesh gradient applied directly so it never breaks on scroll */
     background-color: #fafcfe;
+    background-image:
+        radial-gradient(ellipse at 50% 90%, #e8e9f4 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 80%, #f1f7ee 0%, transparent 50%),
+        radial-gradient(ellipse at 20% 80%, #f1f7ee 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 20%, #ffffff 0%, transparent 60%);
+    background-attachment: fixed;
     border-radius: 20px;
     box-shadow: 0 4px 20px #f1f3f4;
     overflow: hidden;
     border: 1px solid rgba(0, 0, 0, 0.01);
 }
 
+/* Enable scrolling only when messages are present */
+.chatbot-main.has-messages {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Scrollbar styling — only visible when has-messages */
+.chatbot-main.has-messages::-webkit-scrollbar {
+    width: 5px;
+}
+
+.chatbot-main.has-messages::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+}
+
+.chatbot-main.has-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+/* .main-bg-mesh is now unused — gradient lives on .chatbot-main directly */
 .main-bg-mesh {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    /* Complex radial background for the soft pastel colors */
-    background:
-        radial-gradient(ellipse at 50% 90%, #e8e9f4 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 80%, #f1f7ee 0%, transparent 50%),
-        radial-gradient(ellipse at 20% 80%, #f1f7ee 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 20%, #ffffff 0%, transparent 60%);
-    opacity: 0.8;
+    display: none;
 }
 
 .main-content-wrapper {
@@ -315,17 +330,19 @@
     max-width: 800px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 0 40px;
-    margin-top: -80px;
-    /* Slight lift */
+        align-items: center;
+    justify-content: center;
+        padding: 0 40px;
+    padding-bottom: 0;
+    flex-grow: 1;
+    margin: 40px auto 0 auto;
 }
 
 /* Animated Gradient Logo */
 .center-logo-wrapper {
     width: 140px;
     height: 140px;
-    margin-bottom: 8px;
+        margin-bottom: 8px;
 }
 
 .center-logo {
@@ -413,8 +430,7 @@
     flex-direction: column;
     justify-content: space-between;
     gap: 16px;
-    min-height: 180px;
-    /* Make the chatbox a bit taller vertically */
+        min-height: auto;
 }
 
 .chatbox-input-row {
@@ -629,26 +645,11 @@
 .messages-container {
     width: 100%;
     flex-grow: 1;
-    overflow-y: auto;
     padding: 20px 0 16px;
     display: flex;
     flex-direction: column;
     gap: 20px;
     margin-bottom: 16px;
-    max-height: calc(100vh - 300px);
-}
-
-.messages-container::-webkit-scrollbar {
-    width: 5px;
-}
-
-.messages-container::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.08);
-    border-radius: 10px;
-}
-
-.messages-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.15);
 }
 
 /* =========================================
@@ -681,6 +682,7 @@
 
 .message-bubble.assistant {
     align-self: flex-start;
+    max-width: 100%;
 }
 
 .assistant-avatar {
@@ -767,18 +769,19 @@
 .message-bubble.user .message-content {
     background: linear-gradient(135deg, #5157d9 0%, #6a4ff0 100%);
     color: #ffffff;
-    border-bottom-right-radius: 6px;
+    border-radius: 18px;
     box-shadow: 0 2px 12px rgba(81, 87, 217, 0.2);
 }
 
 .message-bubble.assistant .message-content {
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     color: #333;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    border-bottom-left-radius: 6px;
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.03);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
 }
 
 /* =========================================
@@ -860,12 +863,17 @@
 /* =========================================
    Main Content with messages mode
    ========================================= */
-.chatbot-main .main-content-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 100%;
-    padding-top: 40px;
+.chatbot-main.has-messages .main-content-wrapper {
+    justify-content: flex-start;
+    padding-top: 20px;
     padding-bottom: 30px;
-    margin-top: 0;
+    margin: 0 auto;
+}
+
+/* Sticky input box at bottom */
+.chatbox-wrapper {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    padding-bottom: 8px;
 }
