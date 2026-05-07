@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Search,
   Command,
@@ -39,18 +39,26 @@ const Chatbot = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [reasoningEnabled, setReasoningEnabled] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
+    const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const recordingTimerRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const recognitionRef = useRef(null);
 
-  // Derive user info from JWT in localStorage
+    // Derive user info from JWT in localStorage
   const token = localStorage.getItem('mugate_token');
   let userName = null;
   if (token) {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      userName = payload.name || payload.email?.split('@')[0] || null;
+      // Prefer the student's real name from the JWT, skip generic "Student 123" fallback names
+      const rawName = payload.name || null;
+      const isGenericName = rawName && /^Student \d+$/i.test(rawName);
+      userName = (!rawName || isGenericName) ? (payload.email?.split('@')[0] || null) : rawName;
     } catch { /* ignore */ }
   }
 
@@ -216,6 +224,106 @@ const Chatbot = () => {
 
   const removeAttachedFile = (index) => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // ─── Voice recording (Web Speech API) ──────────────────
+  const handleVoiceRecord = useCallback(() => {
+    // If already recording, stop it
+    if (isRecording && recognitionRef.current) {
+      recognitionRef.current.stop();
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+
+    recognitionRef.current = recognition;
+
+        recognition.onstart = () => {
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      if (transcript.trim()) {
+        setInputText(transcript);
+        // Auto-send after a short delay so user sees the text
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+      recognitionRef.current = null;
+      if (event.error === 'not-allowed') {
+        alert('Microphone access denied. Please allow microphone permissions.');
+      }
+    };
+
+        recognition.onend = () => {
+      setIsRecording(false);
+      recognitionRef.current = null;
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    };
+
+    recognition.start();
+  }, [isRecording]);
+
+    // Cleanup recognition and timer on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Format seconds as M:SS
+  const formatRecordingTime = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+    // ─── Enhance prompt via AI ─────────────────────────────
+  const handleEnhancePrompt = async () => {
+    const text = inputText.trim();
+    if (!text || isEnhancing || isLoading) return;
+
+    setIsEnhancing(true);
+    try {
+      const result = await chatbotApi.enhancePrompt(text);
+      if (result.success && result.enhancedPrompt) {
+        setInputText(result.enhancedPrompt);
+      }
+    } catch (err) {
+      console.error('Failed to enhance prompt:', err);
+    } finally {
+      setIsEnhancing(false);
+      inputRef.current?.focus();
+    }
   };
 
   // ─── Key handler ────────────────────────────────────────
@@ -454,8 +562,15 @@ const Chatbot = () => {
           {/* Input Box */}
           <div className="chatbox-wrapper">
             <div className="chatbox-inner">
-              <div className="chatbox-input-row">
-                <Sparkles size={18} className="sparkle-icon" />
+                            <div className="chatbox-input-row">
+                <button
+                  className={`enhance-prompt-btn${isEnhancing ? ' enhancing' : ''}${!inputText.trim() ? ' disabled' : ''}`}
+                  onClick={handleEnhancePrompt}
+                  disabled={!inputText.trim() || isEnhancing || isLoading}
+                  title={inputText.trim() ? 'Enhance prompt with AI' : 'Type a prompt first to enhance it'}
+                >
+                  <Sparkles size={18} />
+                </button>
                 <input
                   ref={inputRef}
                   type="text"
@@ -483,48 +598,85 @@ const Chatbot = () => {
                 </div>
               )}
 
-              <div className="chatbox-actions-row">
-                <div className="chatbox-left-actions">
-                                    <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    accept=".pdf,.docx,image/jpeg,image/png,image/webp"
-                    style={{ display: 'none' }}
-                  />
+                            {/* Recording overlay bar — shows above normal actions when recording */}
+              {isRecording && (
+                <div className="recording-bar">
+                  <div className="recording-bar-left">
+                    <div className="recording-dot-wrapper">
+                      <span className="recording-dot"></span>
+                      <span className="recording-dot-ring"></span>
+                    </div>
+                    <span className="recording-label">Recording</span>
+                    <span className="recording-timer">{formatRecordingTime(recordingSeconds)}</span>
+                  </div>
+                  <div className="recording-bar-center">
+                    <div className="waveform-bars">
+                      <span></span><span></span><span></span><span></span><span></span>
+                      <span></span><span></span><span></span><span></span><span></span>
+                      <span></span><span></span><span></span><span></span><span></span>
+                      <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                  </div>
                   <button
-                    className="action-btn icon-only"
-                    onClick={() => fileInputRef.current?.click()}
-                    title="Attach file (PDF, DOCX, Image)"
+                    className="recording-stop-btn"
+                    onClick={handleVoiceRecord}
+                    title="Stop recording"
                   >
-                    <Paperclip size={18} />
-                  </button>
-                  <button
-                    className={`action-btn pill-btn${reasoningEnabled ? ' reasoning-active' : ''}`}
-                    onClick={() => setReasoningEnabled(prev => !prev)}
-                    title={reasoningEnabled ? 'Reasoning mode ON — click to disable' : 'Enable reasoning mode for detailed analysis'}
-                  >
-                    <Lightbulb size={16} />
-                    <span>Reasoning</span>
+                    <Mic size={16} />
+                    <span>Stop</span>
                   </button>
                 </div>
+              )}
 
-                <div className="chatbox-right-actions">
-                                    {(inputText.trim() || attachedFiles.length > 0) ? (
+              {/* Normal actions row — hidden while recording */}
+              {!isRecording && (
+                <div className="chatbox-actions-row">
+                  <div className="chatbox-left-actions">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      accept=".pdf,.docx,image/jpeg,image/png,image/webp"
+                      style={{ display: 'none' }}
+                    />
                     <button
-                      className="send-btn"
-                      onClick={handleSendMessage}
-                      disabled={isLoading}
+                      className="action-btn icon-only"
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Attach file (PDF, DOCX, Image)"
                     >
-                      <Send size={20} />
+                      <Paperclip size={18} />
                     </button>
-                  ) : (
-                    <button className="mic-btn">
-                      <Mic size={20} />
+                    <button
+                      className={`action-btn pill-btn${reasoningEnabled ? ' reasoning-active' : ''}`}
+                      onClick={() => setReasoningEnabled(prev => !prev)}
+                      title={reasoningEnabled ? 'Reasoning mode ON — click to disable' : 'Enable reasoning mode for detailed analysis'}
+                    >
+                      <Lightbulb size={16} />
+                      <span>Reasoning</span>
                     </button>
-                  )}
+                  </div>
+
+                  <div className="chatbox-right-actions">
+                    {(inputText.trim() || attachedFiles.length > 0) ? (
+                      <button
+                        className="send-btn"
+                        onClick={handleSendMessage}
+                        disabled={isLoading}
+                      >
+                        <Send size={20} />
+                      </button>
+                    ) : (
+                      <button
+                        className="mic-btn"
+                        onClick={handleVoiceRecord}
+                        title="Start voice input"
+                      >
+                        <Mic size={20} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 

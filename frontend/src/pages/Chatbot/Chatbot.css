@@ -382,6 +382,10 @@
     margin: 0;
     letter-spacing: -0.5px;
     line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .greeting-subtext {
@@ -437,6 +441,66 @@
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+/* =========================================
+   Enhance Prompt Button (Sparkles icon)
+   ========================================= */
+.enhance-prompt-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #7b61ff;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.enhance-prompt-btn:hover:not(.disabled):not(.enhancing) {
+    background-color: rgba(123, 97, 255, 0.1);
+    color: #5a3fd6;
+    transform: scale(1.1);
+}
+
+.enhance-prompt-btn:active:not(.disabled):not(.enhancing) {
+    transform: scale(0.95);
+}
+
+.enhance-prompt-btn.disabled {
+    color: #ccc;
+    cursor: default;
+    opacity: 0.5;
+}
+
+.enhance-prompt-btn.enhancing {
+    color: #7b61ff;
+    cursor: wait;
+    animation: enhanceSpin 1s linear infinite;
+}
+
+.enhance-prompt-btn.enhancing::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    border-top-color: #7b61ff;
+    animation: enhanceRing 0.8s linear infinite;
+}
+
+@keyframes enhanceSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes enhanceRing {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .sparkle-icon {
@@ -696,8 +760,11 @@
     color: #555;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
+    text-overflow: clip;
     flex-grow: 1;
+    min-width: 0;
+    mask-image: linear-gradient(to right, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
 }
 
 .session-item.active .session-title {
@@ -1015,4 +1082,254 @@
     bottom: 0;
     z-index: 10;
     padding-bottom: 8px;
+}
+
+/* =========================================
+   Recording Bar (full-width overlay inside chatbox)
+   ========================================= */
+.recording-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 4px 0;
+    animation: recordingBarSlideIn 0.3s ease-out;
+}
+
+@keyframes recordingBarSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.recording-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Pulsing red dot */
+.recording-dot-wrapper {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.recording-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ef4444;
+    position: relative;
+    z-index: 2;
+    animation: recordingDotPulse 1.5s ease-in-out infinite;
+}
+
+.recording-dot-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1.5px solid #ef4444;
+    opacity: 0;
+    animation: recordingRingExpand 1.5s ease-out infinite;
+}
+
+@keyframes recordingDotPulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(0.85);
+    }
+}
+
+@keyframes recordingRingExpand {
+    0% {
+        width: 8px;
+        height: 8px;
+        opacity: 0.6;
+    }
+    100% {
+        width: 22px;
+        height: 22px;
+        opacity: 0;
+    }
+}
+
+.recording-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #ef4444;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+/* Timer with modern look */
+.recording-timer {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #555;
+    font-variant-numeric: tabular-nums;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 3px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    min-width: 48px;
+    text-align: center;
+}
+
+/* Waveform bars — center section */
+.recording-bar-center {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0 8px;
+}
+
+.waveform-bars {
+    display: flex;
+    align-items: center;
+    gap: 2.5px;
+    height: 28px;
+}
+
+.waveform-bars span {
+    display: block;
+    width: 3px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #7b61ff 0%, #5157d9 100%);
+    animation: waveformBounce 1.2s ease-in-out infinite;
+    min-height: 4px;
+}
+
+/* Stagger the 20 bars with varied heights and delays */
+.waveform-bars span:nth-child(1)  { animation-delay: 0.00s; height: 6px; }
+.waveform-bars span:nth-child(2)  { animation-delay: 0.05s; height: 10px; }
+.waveform-bars span:nth-child(3)  { animation-delay: 0.10s; height: 16px; }
+.waveform-bars span:nth-child(4)  { animation-delay: 0.15s; height: 22px; }
+.waveform-bars span:nth-child(5)  { animation-delay: 0.20s; height: 14px; }
+.waveform-bars span:nth-child(6)  { animation-delay: 0.25s; height: 26px; }
+.waveform-bars span:nth-child(7)  { animation-delay: 0.30s; height: 18px; }
+.waveform-bars span:nth-child(8)  { animation-delay: 0.35s; height: 10px; }
+.waveform-bars span:nth-child(9)  { animation-delay: 0.40s; height: 20px; }
+.waveform-bars span:nth-child(10) { animation-delay: 0.45s; height: 28px; }
+.waveform-bars span:nth-child(11) { animation-delay: 0.50s; height: 14px; }
+.waveform-bars span:nth-child(12) { animation-delay: 0.55s; height: 8px; }
+.waveform-bars span:nth-child(13) { animation-delay: 0.60s; height: 22px; }
+.waveform-bars span:nth-child(14) { animation-delay: 0.65s; height: 16px; }
+.waveform-bars span:nth-child(15) { animation-delay: 0.70s; height: 26px; }
+.waveform-bars span:nth-child(16) { animation-delay: 0.75s; height: 12px; }
+.waveform-bars span:nth-child(17) { animation-delay: 0.80s; height: 20px; }
+.waveform-bars span:nth-child(18) { animation-delay: 0.85s; height: 8px; }
+.waveform-bars span:nth-child(19) { animation-delay: 0.90s; height: 14px; }
+.waveform-bars span:nth-child(20) { animation-delay: 0.95s; height: 6px; }
+
+@keyframes waveformBounce {
+    0%, 100% {
+        transform: scaleY(0.3);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+}
+
+/* Stop recording button */
+.recording-stop-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.recording-stop-btn:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    box-shadow: 0 3px 12px rgba(239, 68, 68, 0.4);
+    transform: translateY(-1px);
+}
+
+.recording-stop-btn:active {
+    transform: scale(0.97) translateY(0);
+}
+
+/* Mic button recording state (kept for the pulse ring) */
+.mic-btn.recording {
+    background-color: #ef4444;
+    box-shadow: 0 2px 12px rgba(239, 68, 68, 0.4);
+    animation: micBtnPulse 2s ease-in-out infinite;
+}
+
+.mic-btn.recording:hover {
+    background-color: #dc2626;
+}
+
+@keyframes micBtnPulse {
+    0%, 100% {
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    }
+    50% {
+        box-shadow: 0 2px 20px rgba(239, 68, 68, 0.6);
+    }
+}
+
+/* Recording pulse ring on mic button */
+.recording-pulse {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    border: 2px solid #ef4444;
+    animation: pulseRingExpand 1.5s ease-out infinite;
+    pointer-events: none;
+}
+
+@keyframes pulseRingExpand {
+    0% {
+        width: 100%;
+        height: 100%;
+        opacity: 0.8;
+    }
+    100% {
+        width: 160%;
+        height: 160%;
+        opacity: 0;
+    }
+}
+
+/* Ensure mic-btn has position:relative for the pulse overlay */
+.mic-btn {
+    position: relative;
+    overflow: visible;
 }

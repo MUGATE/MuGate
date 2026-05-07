@@ -1,6 +1,8 @@
 import { pool } from "../../../../core/database/connection";
 import { ChatSession } from "../models/chat-session.model";
 import { ChatMessage } from "../models/chat-message.model";
+import { AiProvider } from "../ai/ai.provider";
+import { logger } from "../../../../core/logger/logger";
 
 const MAX_SESSIONS_PER_USER = 5;
 
@@ -110,19 +112,15 @@ export class ChatbotMemoryService {
             .input("sessionId", sessionId)
             .query("UPDATE ChatSessions SET updatedAt = GETDATE() WHERE id = @sessionId");
 
-        // Auto-title: if this is the first user message, update the session title
+                // Auto-title: if this is the first user message, generate a short AI title
         if (role === "user") {
             try {
                 const msgCount = await pool.request()
                     .input("sessionId", sessionId)
                     .query("SELECT COUNT(*) as cnt FROM ChatMessages WHERE sessionId = @sessionId AND role = 'user'");
                 if (msgCount.recordset[0].cnt === 1) {
-                    // First user message — use it as the session title
-                    const title = content.length > 60 ? content.substring(0, 57) + "..." : content;
-                    await pool.request()
-                        .input("sessionId", sessionId)
-                        .input("title", title)
-                        .query("UPDATE ChatSessions SET title = @title WHERE id = @sessionId");
+                    // First user message — generate AI title asynchronously (fire-and-forget)
+                    this.generateSessionTitle(sessionId, content).catch(() => {});
                 }
             } catch { /* non-critical */ }
         }
@@ -149,7 +147,7 @@ export class ChatbotMemoryService {
         return result.recordset;
     }
 
-    /**
+        /**
      * Deletes (soft deletes) a session
      */
     static async deleteSession(sessionId: string): Promise<void> {
@@ -158,5 +156,66 @@ export class ChatbotMemoryService {
         await pool.request()
             .input("sessionId", sessionId)
             .query("DELETE FROM ChatSessions WHERE id = @sessionId");
+    }
+
+    /**
+     * Generates a short AI-powered title for a session based on the first user message.
+     * Runs asynchronously (fire-and-forget) so it doesn't block the chat response.
+     */
+    private static async generateSessionTitle(sessionId: string, firstMessage: string): Promise<void> {
+        try {
+                        const systemPrompt = `Generate a very short title (3-5 words) that summarizes the topic of this chat message. Rules:
+- Return ONLY the title text, nothing else
+- No quotes, no punctuation at the end, no prefixes
+- MUST be exactly 3 to 5 words — never fewer than 3
+- Capitalize like a title (Title Case)
+- Be specific and descriptive
+- NEVER use ellipsis (...) or cut off words
+- Examples: "Course Registration Help", "Calculate My GPA", "Exam Schedule Query", "Transfer Credits Info", "Thesis Submission Deadline"`;
+
+            const result = await AiProvider.generateResponse(systemPrompt, [], firstMessage);
+
+            // Clean the title: remove quotes, extra whitespace, trailing punctuation
+            let title = result.text
+                .trim()
+                .replace(/^["'`]+|["'`]+$/g, "")
+                .replace(/[.!?]+$/, "")
+                .trim();
+
+                        // Validate: must have at least 3 words, max 40 chars, no ellipsis
+            const wordCount = title.split(/\s+/).filter(Boolean).length;
+            if (!title || title.length < 2 || title.length > 40 || wordCount < 3 || title.includes("...")) {
+                // Fallback: extract first 3-5 complete words from message
+                title = this.extractShortTitle(firstMessage);
+            }
+
+            await pool.request()
+                .input("sessionId", sessionId)
+                .input("title", title)
+                .query("UPDATE ChatSessions SET title = @title WHERE id = @sessionId");
+
+            logger.info(`Session ${sessionId} auto-titled: "${title}"`);
+        } catch (error: any) {
+                        // Fallback: extract first few complete words if AI fails
+            logger.warn(`Failed to generate AI title for session ${sessionId}: ${error.message}`);
+            try {
+                const fallbackTitle = this.extractShortTitle(firstMessage);
+                await pool.request()
+                    .input("sessionId", sessionId)
+                    .input("title", fallbackTitle)
+                    .query("UPDATE ChatSessions SET title = @title WHERE id = @sessionId");
+                        } catch { /* non-critical */ }
+        }
+    }
+
+    /**
+     * Extracts the first 3-5 complete words from a message as a fallback title.
+     * Never cuts off mid-word or uses ellipsis.
+     */
+    private static extractShortTitle(message: string): string {
+        const words = message.trim().split(/\s+/).filter(Boolean);
+        if (words.length <= 5) return words.join(" ");
+        // Take first 4 words — always complete, no "..."
+        return words.slice(0, 4).join(" ");
     }
 }

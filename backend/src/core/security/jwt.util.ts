@@ -7,6 +7,7 @@ const JWT_SECRET: jwt.Secret = env.jwtSecret || "fallback-secret";
 export interface TokenPayload {
     userId: string;
     email: string;
+    name?: string;
 }
 
 export const generateToken = (payload: TokenPayload): string => {

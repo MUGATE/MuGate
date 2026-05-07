@@ -31,4 +31,7 @@ router.get("/analytics", authMiddleware, ChatbotController.getAnalytics);
 // Load message history for a specific session
 router.get("/sessions/:sessionId/messages", optionalAuthMiddleware, ChatbotController.getSessionMessages);
 
+// Enhance prompt using AI
+router.post("/enhance-prompt", optionalAuthMiddleware, ChatbotController.enhancePrompt);
+
 export default router;

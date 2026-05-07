@@ -4,7 +4,11 @@ import { logger } from "../../../core/logger/logger";
 export class PortalScraper {
     private static LOGIN_URL = "https://ums.mu.edu.lb/Admin/login.php";
 
-    static async verifyCredentials(universityId: string, password: string): Promise<boolean> {
+        /**
+     * Verifies credentials against the MU Portal.
+     * Returns { valid: false } on failure, or { valid: true, studentName } on success.
+     */
+    static async verifyCredentials(universityId: string, password: string): Promise<{ valid: boolean; studentName?: string }> {
         logger.info(`Attempting portal login verification for ID: ${universityId}`);
 
         let browser;
@@ -33,15 +37,66 @@ export class PortalScraper {
 
             if (url.toLowerCase().includes("login.php")) {
                 logger.warn(`Login failed for ID: ${universityId}`);
-                return false;
+                return { valid: false };
+            }
+
+            // Try to scrape the student name from the portal dashboard
+            let studentName: string | undefined;
+            try {
+                // Common patterns for student name on university portals:
+                // - A welcome message like "Welcome, Student Name"
+                // - A navbar/header element with the student name
+                // - A profile section with the name
+                const nameSelectors = [
+                    '.user-name', '.student-name', '.profile-name',
+                    '.navbar-text', '.user-info', '.welcome-msg',
+                    'span.username', '.header-username',
+                    '.user-display-name', '#user-name',
+                    '.nav-username', '.top-menu .username'
+                ];
+
+                for (const selector of nameSelectors) {
+                    const el = await page.$(selector);
+                    if (el) {
+                        const text = await el.innerText();
+                        if (text && text.trim() && !text.trim().match(/^\d+$/)) {
+                            studentName = text.trim();
+                            break;
+                        }
+                    }
+                }
+
+                // Fallback: look for any element containing a welcome/greeting pattern
+                if (!studentName) {
+                    const welcomeText = await page.evaluate(() => {
+                        // Search for text like "Welcome, Name" or "Hello, Name" in the page
+                        const body = document.body.innerText;
+                        const welcomeMatch = body.match(/(?:Welcome|Hello|Hi)[,:]?\s+([A-Za-z\s]{3,50})/i);
+                        if (welcomeMatch && welcomeMatch[1]) {
+                            const name = welcomeMatch[1].trim();
+                            // Make sure it's not just a number (ID)
+                            if (!name.match(/^\d+$/)) return name;
+                        }
+                        return null;
+                    });
+                    if (welcomeText) studentName = welcomeText;
+                }
+
+                if (studentName) {
+                    logger.info(`Scraped student name: "${studentName}" for ID: ${universityId}`);
+                } else {
+                    logger.info(`Could not find student name on portal dashboard for ID: ${universityId}`);
+                }
+            } catch (nameErr: any) {
+                logger.warn(`Non-fatal: Failed to scrape student name: ${nameErr.message}`);
             }
 
             logger.info(`Login successful for ID: ${universityId}`);
-            return true;
+            return { valid: true, studentName };
 
         } catch (error: any) {
             logger.error(`Error during portal scraping: ${error.message}`);
-            return false;
+            return { valid: false };
         } finally {
             if (browser) {
                 await browser.close();

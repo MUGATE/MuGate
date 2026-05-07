@@ -4,6 +4,7 @@ import { ChatbotMemoryService } from "../services/chatbot.memory.service";
 import { SendMessageDto } from "../dto/send-message.dto";
 import { CreateSessionDto } from "../dto/create-session.dto";
 import { FileUploadService } from "../files/file-upload.service";
+import { AiProvider } from "../ai/ai.provider";
 
 export class ChatbotController {
 
@@ -138,6 +139,37 @@ export class ChatbotController {
                     mimeType: uploadResult.mimeType,
                     isImage: uploadResult.isImage
                 }
+            });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    static async enhancePrompt(req: Request, res: Response) {
+        try {
+            const { prompt } = req.body;
+            if (!prompt || !prompt.trim()) {
+                return res.status(400).json({ success: false, message: "prompt is required." });
+            }
+
+            const systemPrompt = `You are a prompt enhancement assistant. Your ONLY job is to rewrite the user's prompt to be clearer, more detailed, and more effective for an AI assistant to answer.
+
+Rules:
+- Return ONLY the enhanced prompt text, nothing else
+- Do NOT answer the prompt itself
+- Do NOT add prefixes like "Enhanced:" or "Here's the improved version:"
+- Keep the same intent and meaning
+- Make it more specific, well-structured, and detailed
+- If the prompt is already good, make minor improvements
+- Keep a similar length — don't make it excessively long
+- Preserve the user's language (if they write in Spanish, enhance in Spanish)`;
+
+            const result = await AiProvider.generateResponse(systemPrompt, [], prompt.trim());
+
+            res.status(200).json({
+                success: true,
+                enhancedPrompt: result.text.trim(),
+                tokensUsed: result.tokensUsed
             });
         } catch (error: any) {
             res.status(400).json({ success: false, message: error.message });

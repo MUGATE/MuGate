@@ -85,6 +85,14 @@ export const uploadFile = async (sessionId, file, prompt = "") => {
     return data; // { success, text, tokensUsed, attachment }
 };
 
+export const enhancePrompt = async (prompt) => {
+    const data = await apiFetch("/chatbot/enhance-prompt", {
+        method: "POST",
+        body: JSON.stringify({ prompt }),
+    });
+    return data; // { success, enhancedPrompt, tokensUsed }
+};
+
 export const deleteSession = async (sessionId) => {
     const data = await apiFetch(`/chatbot/sessions/${sessionId}`, {
         method: "DELETE",

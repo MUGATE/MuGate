@@ -15,12 +15,14 @@ export class AuthService {
      * @param password The student's MU portal password
      */
     static async login(universityId: string, password: string) {
-        // 1. Verify credentials against the actual University Portal
-        const isValidOnPortal = await PortalScraper.verifyCredentials(universityId, password);
+                // 1. Verify credentials against the actual University Portal and scrape student name
+        const portalResult = await PortalScraper.verifyCredentials(universityId, password);
 
-        if (!isValidOnPortal) {
+        if (!portalResult.valid) {
             throw new Error("Invalid university ID or password. Authentication failed at MU Portal.");
         }
+
+        const scrapedName = portalResult.studentName;
 
         // 2. Portal login successful. Check if user exists in our local database.
         let userResult = await pool.request()
@@ -35,10 +37,10 @@ export class AuthService {
             // We use a random placeholder for password hash since they login via SSO
             const placeholderHash = "SSO_PORTAL_AUTH";
 
-            const insertResult = await pool.request()
+                        const insertResult = await pool.request()
                 .input("email", defaultEmail)
                 .input("passwordHash", placeholderHash)
-                .input("name", `Student ${universityId}`) // We might update this later if we scrape the actual name
+                .input("name", scrapedName || `Student ${universityId}`)
                 .input("universityId", universityId)
                 .query(`
                     INSERT INTO Users (email, passwordHash, name, universityId)
@@ -47,6 +49,16 @@ export class AuthService {
                 `);
 
             user = insertResult.recordset[0];
+        }
+
+        // 3b. Update the user's name if we scraped a real name from the portal
+        if (scrapedName && user.name !== scrapedName) {
+            await pool.request()
+                .input("userId", user.id)
+                .input("name", scrapedName)
+                .query("UPDATE Users SET name = @name WHERE id = @userId");
+            user.name = scrapedName;
+            logger.info(`Updated user name to "${scrapedName}" for user ${user.id}`);
         }
 
         // 4. Upsert encrypted credentials so the background scraper can use them later
@@ -80,7 +92,7 @@ export class AuthService {
         }
 
         // 6. Generate and return MuGate JWT
-        const payload: TokenPayload = { userId: user.id, email: user.email };
+        const payload: TokenPayload = { userId: user.id, email: user.email, name: user.name };
         const token = generateToken(payload);
 
         return {
