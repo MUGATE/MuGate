@@ -12,6 +12,8 @@ import chatbotRoutes from "./modules/ai/chatbot/routes/chatbot.routes";
 import scraperRoutes from "./modules/system/scraper/scraper.routes";
 import { initCronJobs } from "./modules/system/sync/sync.cron";
 import resumeRoutes from "./modules/resume/resume.routes";
+import internshipRoutes from "./modules/internships/internship.routes";
+import { InternshipRepository } from "./modules/internships/internship.repository";
 
 const app = express();
 
@@ -28,6 +30,7 @@ app.use("/api/schedules", schedulesRoutes);
 app.use("/api/chatbot", chatbotRoutes);   // MuChat integration
 app.use("/api/scraper", scraperRoutes);   // Scraper & Knowledge Base
 app.use("/api/resume", resumeRoutes);
+app.use("/api/internships", internshipRoutes); // Internship reviews
 
 // Helper route for checking auth route in browser
 app.get("/api/auth/login", (req, res) => {
@@ -51,6 +54,9 @@ app.get("/test-db", async (req, res) => {
 
 // Global Error Handler (must be the last middleware)
 app.use(errorMiddleware);
+
+// Ensure InternshipReviews table exists
+InternshipRepository.ensureTable();
 
 // Initialize background CRON jobs
 initCronJobs();

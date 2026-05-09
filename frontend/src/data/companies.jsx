@@ -30,10 +30,7 @@ export const companyData = [
         email: "careers@touch.com.lb",
         phone: "+961 3 799 799",
         website: "www.touch.com.lb",
-        ratings: [
-            { user: "Ali H.", rating: 5, feedback: "Great learning environment and supportive team.", date: "2023-08-15" },
-            { user: "Sara M.", rating: 4, feedback: "Good exposure to telecom operations.", date: "2023-07-20" }
-        ]
+                ratings: []
     },
     {
         id: 2,
@@ -47,10 +44,7 @@ export const companyData = [
         email: "hello@youbee.ai",
         phone: "+1 (415) 555-0198",
         website: "www.youbee.ai",
-        ratings: [
-            { user: "Omar K.", rating: 5, feedback: "Amazing AI projects, challenging but very rewarding.", date: "2023-09-01" },
-            { user: "Nour F.", rating: 5, feedback: "Incredible mentorship in machine learning.", date: "2023-08-10" }
-        ]
+                ratings: []
     },
     {
         id: 1,
@@ -64,10 +58,7 @@ export const companyData = [
         email: "hr@whish.money",
         phone: "+961 1 202 303",
         website: "www.whish.money",
-        ratings: [
-            { user: "Jad T.", rating: 4, feedback: "Fast-paced fintech experience, learned a lot.", date: "2023-06-15" },
-            { user: "Lara Y.", rating: 5, feedback: "Great culture and modern tech stack.", date: "2023-07-05" }
-        ]
+                ratings: []
     },
     {
         id: 4,
@@ -81,10 +72,7 @@ export const companyData = [
         email: "careers@xpertbotacademy.com",
         phone: "+961 70 123 456",
         website: "www.xpertbotacademy.com",
-        ratings: [
-            { user: "Ramy E.", rating: 4, feedback: "Excellent hands-on robotics and software integration.", date: "2023-05-22" },
-            { user: "Maya Z.", rating: 3, feedback: "Interesting projects but management could be better.", date: "2023-04-10" }
-        ]
+                ratings: []
     },
     {
         id: 5,
@@ -97,10 +85,7 @@ export const companyData = [
         email: "jobs@ids.com.lb",
         phone: "+961 1 859 101",
         website: "www.ids.com.lb",
-        ratings: [
-            { user: "Tarek B.", rating: 5, feedback: "Strong enterprise architecture and data intelligence focus.", date: "2023-08-05" },
-            { user: "Zeina A.", rating: 4, feedback: "Good solid grounding in consulting practices.", date: "2023-06-30" }
-        ]
+                ratings: []
     },
     {
         id: 6,
@@ -114,10 +99,7 @@ export const companyData = [
         email: "contact@42beirut.com",
         phone: "+961 1 000 000",
         website: "www.42beirut.com",
-        ratings: [
-            { user: "Karim S.", rating: 5, feedback: "Innovative peer-to-peer coding, fantastic community.", date: "2023-09-15" },
-            { user: "Dana H.", rating: 5, feedback: "The best place to truly learn how to learn.", date: "2023-09-05" }
-        ]
+                ratings: []
         },
     {
         id: 7,
@@ -130,10 +112,7 @@ export const companyData = [
         email: "info@almaaref.edu.lb",
         phone: "+961 1 300 400",
         website: "www.almaaref.edu.lb",
-        ratings: [
-            { user: "Hassan R.", rating: 4, feedback: "Great educational resources and supportive staff.", date: "2023-07-12" },
-            { user: "Rana K.", rating: 4, feedback: "Solid academic foundation with practical approach.", date: "2023-06-18" }
-        ]
+                ratings: []
     },
     {
         id: 8,
@@ -146,10 +125,7 @@ export const companyData = [
         email: "hello@brainkets.com",
         phone: "+961 1 456 789",
         website: "www.brainkets.com",
-        ratings: [
-            { user: "Ahmad L.", rating: 5, feedback: "Incredible creative environment, learned modern web tech.", date: "2023-08-20" },
-            { user: "Dina S.", rating: 4, feedback: "Great team culture and hands-on project experience.", date: "2023-07-15" }
-        ]
+                ratings: []
     },
     {
         id: 9,
@@ -162,10 +138,7 @@ export const companyData = [
         email: "careers@dynasoft.com.lb",
         phone: "+961 1 567 890",
         website: "www.dynasoft.com.lb",
-        ratings: [
-            { user: "Fadi M.", rating: 4, feedback: "Solid enterprise software experience with real clients.", date: "2023-09-10" },
-            { user: "Layla B.", rating: 3, feedback: "Good technical learning but fast-paced deadlines.", date: "2023-08-25" }
-        ]
+                ratings: []
     },
     {
         id: 10,
@@ -178,10 +151,7 @@ export const companyData = [
         email: "info@ektidar.com",
         phone: "+961 1 678 901",
         website: "www.ektidar.com",
-        ratings: [
-            { user: "Sami W.", rating: 5, feedback: "Excellent mentorship and cutting-edge projects.", date: "2023-09-18" },
-            { user: "Nadia T.", rating: 4, feedback: "Great exposure to digital transformation strategies.", date: "2023-08-30" }
-        ]
+                ratings: []
     },
     {
         id: 11,
@@ -195,10 +165,7 @@ export const companyData = [
         email: "contact@neruos.com",
         phone: "+961 1 789 012",
         website: "www.neruos.com",
-        ratings: [
-            { user: "Khaled A.", rating: 5, feedback: "Fascinating AI healthcare projects, very innovative team.", date: "2023-09-22" },
-            { user: "Mira J.", rating: 5, feedback: "Best internship for anyone interested in AI and health tech.", date: "2023-09-12" }
-        ]
+                ratings: []
     },
     {
         id: 12,
@@ -211,10 +178,7 @@ export const companyData = [
         email: "info@semicolon.academy",
         phone: "+961 1 890 123",
         website: "www.semicolon.academy",
-        ratings: [
-            { user: "Youssef D.", rating: 5, feedback: "Intensive and rewarding bootcamp experience.", date: "2023-08-18" },
-            { user: "Rita N.", rating: 4, feedback: "Great community and practical coding skills.", date: "2023-07-28" }
-        ]
+                ratings: []
     },
     {
         id: 13,
@@ -227,10 +191,7 @@ export const companyData = [
         email: "hr@softavia.com",
         phone: "+961 1 901 234",
         website: "www.softavia.com",
-        ratings: [
-            { user: "Bilal H.", rating: 4, feedback: "Great hands-on development with real-world projects.", date: "2023-09-05" },
-            { user: "Hala F.", rating: 4, feedback: "Supportive team and good work-life balance.", date: "2023-08-15" }
-        ]
+                ratings: []
     },
     {
         id: 14,
@@ -244,10 +205,7 @@ export const companyData = [
         email: "careers@vanrise.com",
         phone: "+961 1 012 345",
         website: "www.vanrise.com",
-        ratings: [
-            { user: "Wael G.", rating: 5, feedback: "Top-tier telecom experience with enterprise-grade systems.", date: "2023-09-20" },
-            { user: "Lina M.", rating: 4, feedback: "Challenging but very educational environment.", date: "2023-08-22" }
-        ]
+                ratings: []
     }
 ];
 
