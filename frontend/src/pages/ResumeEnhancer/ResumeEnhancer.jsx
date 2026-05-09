@@ -551,6 +551,18 @@ const ResumeEnhancer = () => {
       <span className="re-sparkle re-sparkle-4">✦</span>
       <span className="re-sparkle re-sparkle-5">✧</span>
 
+                        {/* ── Navbar (always visible, sits above modal overlay) ── */}
+      <nav className="re-navbar">
+        <Link to="/">Home</Link>
+        <Link to="/chatbot">Chatbot</Link>
+        <Link to="/schedule">Scheduler</Link>
+        <Link to="/resume-enhancer" className="active">Resume Enhancer</Link>
+        <Link to="/internships">Internships</Link>
+        <div className="re-nav-avatar">
+          <img src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68" alt="Profile" />
+        </div>
+      </nav>
+
       {/* ── Modals ── */}
       {mode === 'welcome' && <WelcomeModal onChoose={handleWelcomeChoice} />}
       {mode === 'cvType' && <CVTypeModal onChoose={handleCVTypeChoice} onBack={() => setMode('welcome')} />}
@@ -558,16 +570,6 @@ const ResumeEnhancer = () => {
       {/* ── Local CV Builder ── */}
       {mode === 'local' && (
         <>
-          <nav className="re-navbar re-glass">
-            <Link to="/">Home</Link>
-            <Link to="/chatbot">Chatbot</Link>
-            <Link to="/schedule">Scheduler</Link>
-            <Link to="/resume-enhancer" className="active">Resume Enhancer</Link>
-            <Link to="/internships">Internships</Link>
-            <div className="re-nav-avatar">
-              <img src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68" alt="Profile" />
-            </div>
-          </nav>
           <div className="re-layout">
             {/* LEFT */}
             <div className="re-left-col">
@@ -811,19 +813,9 @@ const ResumeEnhancer = () => {
         </>
       )}
 
-      {/* ── Global CV Builder ── */}
+            {/* ── Global CV Builder ── */}
       {mode === 'global' && (
         <>
-          <nav className="re-navbar re-glass">
-            <Link to="/">Home</Link>
-            <Link to="/chatbot">Chatbot</Link>
-            <Link to="/schedule">Scheduler</Link>
-            <Link to="/resume-enhancer" className="active">Resume Enhancer</Link>
-            <Link to="/internships">Internships</Link>
-            <div className="re-nav-avatar">
-              <img src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68" alt="Profile" />
-            </div>
-          </nav>
           <div className="re-layout">
             {/* LEFT */}
             <div className="re-left-col">
@@ -1073,24 +1065,9 @@ const ResumeEnhancer = () => {
         </>
       )}
 
-      {/* ── Enhance Mode (original page) ── */}
+            {/* ── Enhance Mode (original page) ── */}
       {mode === 'enhance' && (
         <>
-          {/* ── Navbar ── */}
-          <nav className="re-navbar re-glass">
-            <Link to="/">Home</Link>
-            <Link to="/chatbot">Chatbot</Link>
-            <Link to="/schedule">Scheduler</Link>
-            <Link to="/resume-enhancer" className="active">Resume Enhancer</Link>
-            <Link to="/internships">Internships</Link>
-            <div className="re-nav-avatar">
-              <img
-                src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68"
-                alt="Profile"
-              />
-            </div>
-          </nav>
-
       {/* ── Three-column Layout ── */}
       <div className="re-layout">
         {/* ─── LEFT COLUMN ─── */}
