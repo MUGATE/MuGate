@@ -150,9 +150,12 @@ export class ChatbotMemoryService {
         /**
      * Deletes (soft deletes) a session
      */
-    static async deleteSession(sessionId: string): Promise<void> {
-        // We actually hard delete here based on strict requirements or soft delete if prefered.
-        // We will hard delete cascading over chat messages.
+        static async deleteSession(sessionId: string): Promise<void> {
+        // Hard delete: remove messages first, then the session
+        await pool.request()
+            .input("sessionId", sessionId)
+            .query("DELETE FROM ChatMessages WHERE sessionId = @sessionId");
+
         await pool.request()
             .input("sessionId", sessionId)
             .query("DELETE FROM ChatSessions WHERE id = @sessionId");

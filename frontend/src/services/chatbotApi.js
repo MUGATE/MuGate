@@ -93,6 +93,14 @@ export const enhancePrompt = async (prompt) => {
     return data; // { success, enhancedPrompt, tokensUsed }
 };
 
+export const getSessionMessages = async (sessionId) => {
+    const data = await apiFetch(`/chatbot/sessions/${sessionId}/messages`);
+    if (data.success && data.messages) {
+        return data.messages;
+    }
+    return [];
+};
+
 export const deleteSession = async (sessionId) => {
     const data = await apiFetch(`/chatbot/sessions/${sessionId}`, {
         method: "DELETE",

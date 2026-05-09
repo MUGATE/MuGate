@@ -155,12 +155,13 @@ const CarouselItem = ({ index, activeIndex, company, onClick, total, timeRef }) 
 
       {/* Main Logo */}
 
-      <LogoPlane
+            <LogoPlane
         svgContent={company.svgString}
         showReflection={diff !== 0}
         isCenter={diff === 0}
         color={company.colors?.[0] || "#ffffff"}
         forceWhiteBack={company.forceWhiteBack}
+        forceBlackBack={company.forceBlackBack}
       />
 
 

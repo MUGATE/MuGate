@@ -23,13 +23,14 @@ export class ChatbotService {
         userName?: string,
         reasoning?: boolean
     ) {
-        // 1. Content Moderation Check
+                // 1. Content Moderation Check
         if (!isQuerySafe(messageContent)) {
+            const refusalText = "I cannot fulfill this request. My rules restrict me from discussing political debates, religious topics, or university gossip.";
+            // Save both messages to DB so history is preserved
+            await ChatbotMemoryService.saveMessage(sessionId, "user", messageContent, 0);
+            await ChatbotMemoryService.saveMessage(sessionId, "assistant", refusalText, 0);
             ChatbotAnalyticsService.logQuery("RESTRICTED_TOPIC", true, 0);
-            return {
-                text: "I cannot fulfill this request. My rules restrict me from discussing political debates, religious topics, or university gossip.",
-                tokensUsed: 0
-            };
+            return { text: refusalText, tokensUsed: 0 };
         }
 
         try {

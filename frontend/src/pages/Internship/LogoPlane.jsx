@@ -10,7 +10,7 @@ import * as THREE from 'three';
 const EXTRUDE_DEPTH = 0.4;
 const LAYER_COUNT = 10;
 
-const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = true, isCenter = false, forceWhiteBack = false }) => {
+const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = true, isCenter = false, forceWhiteBack = false, forceBlackBack = false }) => {
   const [texture, setTexture] = useState(null);
   const [silhouetteTexture, setSilhouetteTexture] = useState(null);
   const groupRef = useRef();
@@ -111,15 +111,15 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
       tex.colorSpace = THREE.SRGBColorSpace;
       setTexture(tex);
 
-      if (forceWhiteBack) {
-        // Create pure white silhouette for the depth layers
+            if (forceWhiteBack || forceBlackBack) {
+        // Create silhouette for the depth layers (white or black)
         const silCanvas = document.createElement('canvas');
         silCanvas.width = SIZE;
         silCanvas.height = SIZE;
         const sCtx = silCanvas.getContext('2d');
         sCtx.drawImage(img, dx, dy, drawW, drawH);
         sCtx.globalCompositeOperation = "source-in";
-        sCtx.fillStyle = "#ffffff";
+        sCtx.fillStyle = forceBlackBack ? "#000000" : "#ffffff";
         sCtx.fillRect(0, 0, SIZE, SIZE);
 
         const silTex = new THREE.CanvasTexture(silCanvas);
@@ -293,7 +293,7 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
           >
             <planeGeometry args={planeArgs} />
             <meshBasicMaterial
-              map={(forceWhiteBack && silhouetteTexture) ? silhouetteTexture : texture}
+                            map={((forceWhiteBack || forceBlackBack) && silhouetteTexture) ? silhouetteTexture : texture}
               transparent
               alphaTest={0.15}
               side={THREE.DoubleSide}
@@ -310,7 +310,7 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
         >
           <planeGeometry args={planeArgs} />
           <meshBasicMaterial
-            map={(forceWhiteBack && silhouetteTexture) ? silhouetteTexture : texture}
+                        map={((forceWhiteBack || forceBlackBack) && silhouetteTexture) ? silhouetteTexture : texture}
             transparent
             alphaTest={0.15}
             side={THREE.FrontSide}

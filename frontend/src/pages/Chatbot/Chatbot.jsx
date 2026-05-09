@@ -98,27 +98,21 @@ const Chatbot = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ─── Load messages for a session ────────────────────────
+    // ─── Load messages for a session ────────────────────────
   const loadSessionMessages = async (sessionId) => {
     try {
-      // We fetch messages by creating a lightweight endpoint or 
-      // re-use the session history from memory service.
-      // For now, sessions come with their welcome message from createSession.
-      // Messages will accumulate in local state as user interacts.
-      // On session switch, we can call the backend to get history.
-
-      // Using apiFetch directly for the history endpoint
-      const { apiFetch } = await import('../../utils/api');
-      const data = await apiFetch(`/chatbot/sessions/${sessionId}/messages`);
-      if (data.success && data.messages) {
-        setMessages(data.messages.map(m => ({
+      const msgs = await chatbotApi.getSessionMessages(sessionId);
+      if (msgs && msgs.length > 0) {
+        setMessages(msgs.map(m => ({
           role: m.role,
           content: m.content,
           createdAt: m.createdAt
         })));
+      } else {
+        setMessages([]);
       }
-    } catch {
-      // If history endpoint doesn't exist yet, just clear messages
+    } catch (err) {
+      console.error('Failed to load session messages:', err);
       setMessages([]);
     }
   };

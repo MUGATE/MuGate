@@ -12,12 +12,12 @@ export const optionalAuthMiddleware = (req: AuthRequest, res: Response, next: Ne
 
     const token = authHeader.split(" ")[1];
 
-    try {
+        try {
         const decoded = verifyToken(token);
         (req as any).user = decoded; // Attach user info if valid
+        next();
     } catch (err) {
-        // Token provided but invalid. We still proceed as public, OR we can fail. Let's proceed as public.
+        // Token was provided but is expired/invalid — reject so frontend can auto-logout
+        return res.status(401).json({ message: "Token expired or invalid. Please login again." });
     }
-
-    next();
 };
