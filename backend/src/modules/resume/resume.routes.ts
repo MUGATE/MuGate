@@ -1,7 +1,9 @@
 import { Router } from "express";
-import { generateResumePdf, generateResumeDocx } from "./resume.service";
+import multer from "multer";
+import { generateResumePdf, generateResumeDocx, editResumeDocument } from "./resume.service";
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.post("/generate", async (req, res) => {
   try {
@@ -38,4 +40,35 @@ router.post("/generate", async (req, res) => {
   }
 });
 
+/**
+ * POST /api/resume/edit
+ * Allows AI to edit an uploaded resume document.
+ * Accepts: file (PDF/DOCX), instructions (string of edits to apply)
+ * Returns: modified file buffer
+ */
+router.post("/edit", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "File is required" });
+    }
+    const instructions = req.body.instructions || "";
+    if (!instructions.trim()) {
+      return res.status(400).json({ success: false, message: "Edit instructions are required" });
+    }
+
+    const modifiedBuffer = await editResumeDocument(req.file, instructions);
+
+    res.set({
+      "Content-Type": req.file.mimetype,
+      "Content-Disposition": `attachment; filename="modified_${req.file.originalname}"`,
+      "Content-Length": modifiedBuffer.length.toString(),
+    });
+    res.send(modifiedBuffer);
+  } catch (err: any) {
+    console.error("Document edit error:", err);
+    res.status(500).json({ success: false, message: `Failed to edit document: ${err.message}` });
+  }
+});
+
 export default router;
+

@@ -1,6 +1,5 @@
 import PDFDocument from "pdfkit";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, TabStopPosition, TabStopType } from "docx";
-
 /* ── Helpers ── */
 const MARGIN = 54;
 const PAGE_W = 612; // Letter width
@@ -495,3 +494,667 @@ export async function generateResumeDocx(format: "local" | "global", formData: R
 
   return Buffer.from(await Packer.toBuffer(doc));
 }
+
+/* ══════════════════════════════════════════════
+   AI DOCUMENT EDITING
+   ══════════════════════════════════════════════ */
+
+/**
+ * Applies AI-specified edits to an uploaded resume document.
+ * For DOCX: uses mammoth to convert to HTML, applies text replacements, converts back.
+ * For PDF: extracts text, applies replacements, returns a new PDF with modified text.
+ *
+ * This is a pragmatic approach — for full formatting preservation,
+ * a more advanced solution would be needed, but this handles common edits
+ * like email/phone changes, section updates, etc.
+ */
+export async function editResumeDocument(
+  file: Express.Multer.File,
+  instructions: string
+): Promise<Buffer> {
+  const ext = file.originalname.toLowerCase().split(".").pop();
+
+  if (ext === "docx" || file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    return editDocx(file.buffer, instructions);
+  } else if (ext === "pdf" || file.mimetype === "application/pdf") {
+    return editPdf(file.buffer, instructions);
+  } else {
+    throw new Error(`Unsupported file type: ${ext}. Only PDF and DOCX are supported.`);
+  }
+}
+
+/**
+ * Parse edit instructions in the format:
+ * "change [old text] to [new text]" or "replace [old] with [new]"
+ * Also supports: "update email to new@email.com"
+ */
+function parseInstructions(instructions: string): Array<{ from: string; to: string }> {
+  const edits: Array<{ from: string; to: string }> = [];
+
+  // Pattern 1: "change X to Y" or "replace X with Y"
+  const changeRegex = /(?:change|replace|update)\s+"([^"]+)"\s+(?:to|with)\s+"([^"]+)"/gi;
+  let match;
+  while ((match = changeRegex.exec(instructions)) !== null) {
+    edits.push({ from: match[1].trim(), to: match[2].trim() });
+  }
+
+  // Pattern 2: "change X to Y" (without quotes)
+  const simpleRegex = /(?:change|replace|update)\s+([a-zA-Z0-9@._+\-]+)\s+(?:to|with)\s+([a-zA-Z0-9@._+\-]+)/gi;
+  while ((match = simpleRegex.exec(instructions)) !== null) {
+    // Avoid duplicates with quoted matches
+    const from = match[1].trim();
+    const to = match[2].trim();
+    if (!edits.some(e => e.from === from)) {
+      edits.push({ from, to });
+    }
+  }
+
+  return edits;
+}
+
+async function editDocx(buffer: Buffer, instructions: string): Promise<Buffer> {
+  const mammoth = await import("mammoth");
+
+  // Convert to HTML (preserves formatting)
+  const result = await mammoth.convertToHtml({ buffer });
+  let html = result.value;
+
+  // Parse and apply edits
+  const edits = parseInstructions(instructions);
+
+  for (const edit of edits) {
+    // Escape special regex characters in the search string
+    const escapedFrom = edit.from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    html = html.replace(new RegExp(escapedFrom, "gi"), edit.to);
+  }
+
+  // Convert HTML back to DOCX preserving formatting (bold, italic, headings, lists)
+  const { Document: DocxDoc, Packer: DocxPacker, Paragraph: DocxParagraph, TextRun: DocxTextRun, HeadingLevel: DocxHeadingLevel, AlignmentType: DocxAlignmentType } = await import("docx");
+
+  const paragraphs = htmlToDocxParagraphs(html);
+  const newDoc = new DocxDoc({
+    sections: [{
+      properties: {
+        page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } },
+      },
+      children: paragraphs,
+    }],
+  });
+
+  return Buffer.from(await DocxPacker.toBuffer(newDoc));
+}
+
+/**
+ * Parse HTML (from mammoth) into docx-compatible paragraphs, preserving formatting.
+ * Handles: h1-h6, p, strong/b, em/i, u, a, ul/ol/li, br, tables
+ */
+function htmlToDocxParagraphs(html: string): Paragraph[] {
+  const { Paragraph, TextRun, HeadingLevel, AlignmentType } = require("docx");
+  const paragraphs: any[] = [];
+
+  // Split HTML into block-level elements
+  const blockRegex = /<(h[1-6]|p|ul|ol|li|blockquote|div|table|tr|td|th|pre)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi;
+  const textParts = html.split(blockRegex);
+
+  // Also handle bare text lines (between block elements)
+  const lines = html.replace(/<br\s*\/?>/gi, "\n").split("\n");
+
+  // Process block elements from the matched groups
+  let lastIndex = 0;
+  let match;
+
+  // Reset regex
+  blockRegex.lastIndex = 0;
+
+  const blocks: Array<{ type: string; content: string }> = [];
+
+  while ((match = blockRegex.exec(html)) !== null) {
+    const type = match[1].toLowerCase();
+    const content = match[2];
+    blocks.push({ type, content });
+  }
+
+  // If no block elements found, treat entire content as paragraphs
+  if (blocks.length === 0) {
+    // Split by double newlines for paragraph breaks
+    const textLines = html.replace(/<[^>]*>/g, "").split(/\n\s*\n/);
+    for (const line of textLines) {
+      const trimmed = line.trim();
+      if (trimmed) {
+        paragraphs.push(createFormattedParagraph(trimmed));
+      }
+    }
+    return paragraphs;
+  }
+
+  // Process each block
+  let inList = false;
+  let listType: "bullet" | "number" = "bullet";
+
+  for (const block of blocks) {
+    if (block.type === "ul" || block.type === "ol") {
+      listType = block.type === "ol" ? "number" : "bullet";
+      inList = true;
+
+      // Extract li items from within the list
+      const liRegex = /<li(?:\s[^>]*)?>([\s\S]*?)<\/li>/gi;
+      let liMatch;
+      while ((liMatch = liRegex.exec(block.content)) !== null) {
+        const liContent = extractFormattedText(liMatch[1]);
+        paragraphs.push(
+          new Paragraph({
+            children: liContent,
+            bullet: listType === "bullet" ? { level: 0 } : undefined,
+            numbering: listType === "number" ? { reference: "default", level: 0 } : undefined,
+            spacing: { after: 40 },
+          })
+        );
+      }
+      inList = false;
+      continue;
+    }
+
+    if (block.type === "li") {
+      const liContent = extractFormattedText(block.content);
+      paragraphs.push(
+        new Paragraph({
+          children: liContent,
+          bullet: { level: 0 },
+          spacing: { after: 40 },
+        })
+      );
+      continue;
+    }
+
+    if (block.type === "h1" || block.type === "h2" || block.type === "h3") {
+      const headingLevel = block.type === "h1" ? HeadingLevel.HEADING_1 : block.type === "h2" ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3;
+      const headingContent = extractFormattedText(block.content);
+      paragraphs.push(
+        new Paragraph({
+          children: headingContent,
+          heading: headingLevel,
+          spacing: { before: 200, after: 80 },
+        })
+      );
+      continue;
+    }
+
+    if (block.type === "h4" || block.type === "h5" || block.type === "h6") {
+      const content = extractFormattedText(block.content);
+      paragraphs.push(
+        new Paragraph({
+          children: content.map((run: any) => {
+            // Make headings bold even if h4-h6
+            return new TextRun({
+              text: run.text,
+              bold: true,
+              size: block.type === "h4" ? "22" : "20",
+              font: "Calibri",
+            });
+          }),
+          spacing: { before: 120, after: 60 },
+        })
+      );
+      continue;
+    }
+
+    if (block.type === "p" || block.type === "div" || block.type === "blockquote") {
+      const pContent = extractFormattedText(block.content);
+      if (pContent.length > 0) {
+        paragraphs.push(
+          new Paragraph({
+            children: pContent,
+            spacing: { after: 60 },
+            indent: block.type === "blockquote" ? { left: 720 } : undefined,
+          })
+        );
+      }
+      continue;
+    }
+
+    if (block.type === "table") {
+      // For tables, extract rows and cells as simple text
+      const cellTexts: string[] = [];
+      const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+      let cellMatch;
+      while ((cellMatch = cellRegex.exec(block.content)) !== null) {
+        cellTexts.push(stripHtml(cellMatch[1]));
+      }
+      if (cellTexts.length > 0) {
+        paragraphs.push(
+          new Paragraph({
+            children: [new TextRun({ text: cellTexts.join(" | "), size: 20, font: "Calibri" })],
+            spacing: { after: 40 },
+          })
+        );
+      }
+      continue;
+    }
+  }
+
+  return paragraphs;
+}
+
+/**
+ * Extract formatted text runs from HTML content, preserving bold/italic/underline.
+ */
+function extractFormattedText(html: string): any[] {
+  const { TextRun } = require("docx");
+  const runs: any[] = [];
+
+  // Process inline elements: <strong>, <code>, <b>, <em>, <i>, <code>, <u>, <a>, <span>
+  // Split by inline tags
+  const inlineRegex = /<(strong|b|em|i|u|a|span|code)(?:\s[^>]*)?>([\s\S]*?)<\/(?:strong|b|em|i|u|a|span|code)>/gi;
+  let lastIdx = 0;
+  let match;
+
+  // Collect all text segments with their formatting
+  const segments: Array<{ text: string; bold?: boolean; italic?: boolean; underline?: boolean; link?: string }> = [];
+
+  // First, extract any text before the first tag
+  const allInlineMatches: Array<{ index: number; tag: string; content: string; full: string; bold: boolean; italic: boolean; underline: boolean; link: string }> = [];
+
+  while ((match = inlineRegex.exec(html)) !== null) {
+    const tag = match[1].toLowerCase();
+    const content = match[2];
+    allInlineMatches.push({
+      index: match.index,
+      tag,
+      content,
+      full: match[0],
+      bold: tag === "strong" || tag === "b",
+      italic: tag === "em" || tag === "i",
+      underline: tag === "u",
+      link: tag === "a" ? (match[0].match(/href="([^"]+)"/)?.[1] || "") : "",
+    });
+  }
+
+  // Build segments from inline matches and surrounding text
+  let cursor = 0;
+  for (const m of allInlineMatches) {
+    // Text before this tag
+    if (m.index > cursor) {
+      const beforeText = stripHtml(html.substring(cursor, m.index));
+      if (beforeText.trim()) {
+        segments.push({ text: beforeText });
+      }
+    }
+    segments.push({
+      text: stripHtml(m.content),
+      bold: m.bold,
+      italic: m.italic,
+      underline: m.underline,
+      link: m.link || undefined,
+    });
+    cursor = m.index + m.full.length;
+  }
+
+  // Remaining text after last tag
+  if (cursor < html.length) {
+    const remaining = stripHtml(html.substring(cursor));
+    if (remaining.trim()) {
+      segments.push({ text: remaining });
+    }
+  }
+
+  // If no inline tags found, just push the stripped text
+  if (segments.length === 0) {
+    const clean = stripHtml(html);
+    if (clean.trim()) {
+      segments.push({ text: clean });
+    }
+  }
+
+  // Create TextRun for each segment
+  for (const seg of segments) {
+    if (!seg.text.trim()) continue;
+    runs.push(
+      new TextRun({
+        text: seg.text,
+        bold: seg.bold || false,
+        italics: seg.italic || false,
+        underline: seg.underline ? { type: "single" } : undefined,
+        size: 20,
+        font: "Calibri",
+      })
+    );
+  }
+
+  return runs;
+}
+
+/**
+ * Strip HTML tags from text, decode entities
+ */
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+}
+
+/**
+ * Create a simple formatted paragraph from plain text
+ */
+function createFormattedParagraph(text: string): any {
+  const { Paragraph, TextRun } = require("docx");
+  return new Paragraph({
+    children: [new TextRun({ text, size: 20, font: "Calibri" })],
+    spacing: { after: 60 },
+  });
+}
+
+async function editPdf(buffer: Buffer, instructions: string): Promise<Buffer> {
+  // Strategy: Use Playwright (headless Chromium) to create a professional PDF
+  // that mimics a resume layout with proper fonts, spacing, and structure.
+  // Playwright generates PDFs with excellent formatting preservation.
+
+  // First, extract text to know what we're working with
+  const pdfParse = await import("pdf-parse");
+  const path = await import("path");
+  const { pathToFileURL } = await import("url");
+
+  try {
+    // Try to extract text for context about the document
+  const workerPath = path.default.join(
+    path.default.dirname(require.resolve("pdf-parse")),
+    "pdf.worker.mjs"
+  );
+
+    // pdf-parse v2 uses a different API:
+    // const parser = new pdfParse.default({ data: buffer, url: workerUrl, verbosity: 0 });
+    // But since worker may not be found, let's use a robust approach with try/catch
+
+    let text = "";
+    try {
+      // Use pdf-parse with the worker
+      const workerUrl = pathToFileURL(workerPath).href;
+      const parser = new (pdfParse as any).default({ data: buffer, url: workerUrl, verbosity: 0 });
+  const result = await parser.getText();
+      text = result?.text || "";
+    } catch {
+      try {
+        // Fallback for pdf-parse v1 API
+        const parser = new (pdfParse as any)(buffer);
+        const result = await parser.getText();
+        text = result?.text || "";
+      } catch {
+        // If all parsing fails, try getting text from buffer directly
+        text = buffer.toString("utf8").replace(/[^\x20-\x7E\n]/g, " ").substring(0, 5000);
+      }
+    }
+
+    // Apply edits to the text
+  const edits = parseInstructions(instructions);
+  for (const edit of edits) {
+    const escapedFrom = edit.from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    text = text.replace(new RegExp(escapedFrom, "gi"), edit.to);
+  }
+
+    // Generate a well-formatted PDF using Playwright
+    return await generateProfessionalPdf(text);
+  } catch (parseError) {
+    // If everything fails, try a simpler approach
+    console.error("PDF edit error, using fallback:", parseError);
+    return editPdfFallback(buffer, instructions);
+  }
+}
+
+/**
+ * Generate a professionally formatted PDF from text using Playwright
+ * This preserves the resume structure with proper fonts, formatting, and layout
+ */
+async function generateProfessionalPdf(text: string): Promise<Buffer> {
+  const { chromium } = await import("playwright");
+  const lines = text.split("\n").filter((l: string) => l.trim());
+
+  // Build an HTML resume that looks professional
+  let htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { margin: 0.75in; size: letter; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Calibri', 'Arial', 'Helvetica', sans-serif;
+    font-size: 11pt;
+    color: #1a1a1a;
+    line-height: 1.4;
+    padding: 0;
+  }
+  .resume-page {
+    max-width: 7.5in;
+    margin: 0 auto;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 12pt;
+  }
+  .header .name {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #000;
+    margin-bottom: 2pt;
+  }
+  .header .contact {
+    font-size: 9.5pt;
+    color: #444;
+  }
+  .section-title {
+    font-size: 11pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 10pt;
+    margin-bottom: 4pt;
+    border-bottom: 0.75pt solid #000;
+    padding-bottom: 2pt;
+  }
+  .bullet {
+    margin-left: 14pt;
+    font-size: 10pt;
+    padding-left: 8pt;
+    margin-bottom: 2pt;
+  }
+  .bullet::before {
+    content: "\\2022";
+    position: absolute;
+    margin-left: -14pt;
+  }
+  .skill-line { font-size: 10pt; margin-bottom: 1pt; }
+  .skill-label { font-weight: bold; }
+  p { margin-bottom: 4pt; font-size: 10pt; }
+  strong { font-weight: bold; }
+  em { font-style: italic; }
+</style>
+</head>
+<body>
+<div class="resume-page">`;
+
+  let headerClosed = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+      // Detect section headers
+    const isAllCaps = line === line.toUpperCase() && line.length < 50 && line.length > 3;
+    const isSectionTitle = isAllCaps || /^(education|experience|skills|objective|profile|projects|leadership|interests|summary|work|employment|certifications|languages)$/i.test(line);
+
+    if (!headerClosed && i < 3 && !isSectionTitle) {
+      // First few lines are likely header info
+      if (i === 0) {
+        htmlContent += `<div class="header"><div class="name">${escapeHtml(line)}</div>`;
+      } else {
+        htmlContent += `<div class="contact">${escapeHtml(line)}</div>`;
+      }
+      if (i === 2 || i === lines.length - 1) {
+        htmlContent += `</div>`;
+        headerClosed = true;
+    }
+      continue;
+}
+
+    if (!headerClosed) {
+      htmlContent += `</div>`;
+      headerClosed = true;
+    }
+
+    if (isSectionTitle) {
+      htmlContent += `<div class="section-title">${escapeHtml(line)}</div>`;
+      continue;
+    }
+
+    // Detect bullet points
+    if (line.startsWith("•") || line.startsWith("-") || line.startsWith("*") || line.startsWith("▪")) {
+      htmlContent += `<div class="bullet">${escapeHtml(line.replace(/^[•\-\*▪]\s*/, ""))}</div>`;
+      continue;
+    }
+
+    // Detect lines with ":" which are often label: value pairs
+    if (line.includes(":") && line.length < 80) {
+      const colonIdx = line.indexOf(":");
+      const label = line.substring(0, colonIdx).trim();
+      const value = line.substring(colonIdx + 1).trim();
+      htmlContent += `<div class="skill-line"><span class="skill-label">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`;
+      continue;
+    }
+
+    // Regular paragraph text
+    htmlContent += `<p>${escapeHtml(line)}</p>`;
+  }
+
+  if (!headerClosed) {
+    htmlContent += `</div>`;
+  }
+
+  htmlContent += `</div></body></html>`;
+
+  // Generate PDF using Playwright
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: "networkidle" });
+
+    const pdfBuffer = await page.pdf({
+      format: "Letter",
+      margin: { top: "0.75in", bottom: "0.75in", left: "0.75in", right: "0.75in" },
+      printBackground: true,
+      preferCSSPageSize: true,
+    });
+
+    return Buffer.from(pdfBuffer);
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
+ * Escape HTML special characters
+ */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
+ * Fallback PDF editor using PDFKit when Playwright is unavailable
+ * Uses improved formatting with proper resume structure detection
+ */
+async function editPdfFallback(buffer: Buffer, instructions: string): Promise<Buffer> {
+  const path = await import("path");
+  const { pathToFileURL } = await import("url");
+
+  // Try to extract text from PDF
+  let text = "";
+  try {
+    const pdfParse = await import("pdf-parse");
+  const workerPath = path.default.join(
+    path.default.dirname(require.resolve("pdf-parse")),
+    "pdf.worker.mjs"
+  );
+    const workerUrl = pathToFileURL(workerPath).href;
+    const parser = new (pdfParse as any).default({ data: buffer, url: workerUrl, verbosity: 0 });
+  const result = await parser.getText();
+    text = result?.text || "";
+  } catch {
+    // Fallback: try to get text directly from buffer
+    text = buffer.toString("utf8").replace(/[^\x20-\x7E\n]/g, " ").substring(0, 5000);
+  }
+
+  // Apply edits
+  const edits = parseInstructions(instructions);
+  for (const edit of edits) {
+    const escapedFrom = edit.from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    text = text.replace(new RegExp(escapedFrom, "gi"), edit.to);
+  }
+
+  // Create a new PDF with the edited text using PDFKit
+  const PDFDocument = (await import("pdfkit")).default;
+  const doc = new PDFDocument({
+    size: "LETTER",
+    margins: { top: 54, bottom: 54, left: 54, right: 54 },
+  });
+
+  const chunks: Buffer[] = [];
+  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+
+  return new Promise((resolve, reject) => {
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const lines = text.split("\n").filter(l => l.trim());
+    let inHeader = true;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.length === 0) {
+        doc.moveDown(0.3);
+        continue;
+      }
+
+      // Detect section headers
+      const isAllCaps = trimmed === trimmed.toUpperCase() && trimmed.length < 50 && trimmed.length > 3;
+      const isSectionTitle = isAllCaps || /^(education|experience|skills|objective|profile|projects|leadership|interests|summary|work|employment|certifications|languages)$/i.test(trimmed);
+
+      if (inHeader && !isSectionTitle && doc.y < 120) {
+        // Header area
+        continue;
+      }
+      inHeader = false;
+
+      if (isSectionTitle) {
+        doc.moveDown(0.3);
+        doc.font("Helvetica-Bold").fontSize(11).text(trimmed);
+        doc.moveDown(0.1);
+        const currentY = doc.y;
+        doc.moveTo(54, currentY).lineTo(558, currentY).lineWidth(0.75).strokeColor("#000000").stroke();
+        doc.moveDown(0.2);
+        doc.font("Helvetica").fontSize(10);
+      } else if (trimmed.startsWith("•") || trimmed.startsWith("-") || trimmed.startsWith("*")) {
+        // Bullet point
+        doc.font("Helvetica").fontSize(10);
+        doc.text(`•  ${trimmed.replace(/^[•\-\*]\s*/, "")}`, 66, doc.y, { width: 492 });
+      } else if (trimmed.includes(":") && trimmed.length < 80) {
+        // Label: value pair
+        const colonIdx = trimmed.indexOf(":");
+        const label = trimmed.substring(0, colonIdx).trim();
+        const value = trimmed.substring(colonIdx + 1).trim();
+        doc.font("Helvetica-Bold").fontSize(10).text(`${label}: `, 54, doc.y, { continued: true });
+        doc.font("Helvetica").fontSize(10).text(value);
+      } else {
+        doc.font("Helvetica").fontSize(10).text(trimmed, 54, doc.y, { width: 504 });
+      }
+    }
+
+    doc.end();
+  });
+}
+
