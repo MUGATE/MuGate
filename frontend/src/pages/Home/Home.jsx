@@ -6,6 +6,7 @@ import InstructorCarousel from "./DoctorCarousel";
 import ResumeAnalyzer from "./ResumeAnalyzer";
 import InternshipShowcase from "./InternshipShowcase";
 import ChatbotShowcase from "./ChatbotShowcase";
+import CapstoneShowcase from "./CapstoneShowcase";
 import AboutSummary from "./AboutSummary";
 import BottomNavbar from "./BottomNavbar";
 
@@ -282,14 +283,17 @@ const Home = () => {
       {/* SECTION 4 — INTERNSHIP SHOWCASE */}
       <InternshipShowcase data-page="4" />
 
-      {/* SECTION 5 — AI CHATBOT SHOWCASE */}
+            {/* SECTION 5 — AI CHATBOT SHOWCASE */}
       <ChatbotShowcase data-page="5" />
 
-      {/* SECTION 6 — ABOUT SUMMARY */}
-      <AboutSummary data-page="6" />
+      {/* SECTION 6 — CAPSTONE SHOWCASE */}
+      <CapstoneShowcase data-page="6" />
+
+      {/* SECTION 7 — ABOUT SUMMARY */}
+      <AboutSummary data-page="7" />
 
       {/* FOOTER */}
-      <footer className="home-footer" data-page="7">
+      <footer className="home-footer" data-page="8">
         <div className="footer-inner">
           <div className="footer-brand">
             <span className="footer-brand-name">MUGATE</span>

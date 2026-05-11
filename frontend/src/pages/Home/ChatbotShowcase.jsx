@@ -159,12 +159,12 @@ const AIChatbotFigure = () => {
                     fill="none" stroke="#a5b4fc" strokeWidth="2.5" strokeLinecap="round"
                 />
 
-                {/* Neck */}
-                <rect x="118" y="158" width="24" height="14" rx="4" fill="#818cf8" />
+                                {/* Neck — wider for better connection */}
+                <rect x="112" y="158" width="36" height="16" rx="4" fill="#818cf8" />
 
                 {/* Body */}
                 <rect
-                    x="65" y="170" width="130" height="100" rx="22" ry="22"
+                    x="65" y="174" width="130" height="98" rx="22" ry="22"
                     fill="url(#bodyGrad)" filter="url(#softShadow)"
                 />
 
@@ -180,33 +180,36 @@ const AIChatbotFigure = () => {
                 <line x1="105" y1="245" x2="155" y2="245" stroke="#a5b4fc" strokeWidth="1.5" opacity="0.2" />
                 <line x1="110" y1="255" x2="150" y2="255" stroke="#a5b4fc" strokeWidth="1.5" opacity="0.15" />
 
-                {/* Left arm — idle sway via CSS */}
-                <g className="arm-left">
-                    <rect
-                        x="38" y="180" width="22" height="60" rx="11"
-                        fill="#818cf8" filter="url(#softShadow)"
-                    />
-                    <circle cx="49" cy="248" r="11" fill="#a5b4fc" />
-                </g>
+                                {/* Ears — half on head, half sticking out for proper attachment */}
+                                <rect x="46" y="82" width="18" height="30" rx="5" fill="#818cf8" filter="url(#softShadow)" />
+                                <rect x="196" y="82" width="18" height="30" rx="5" fill="#818cf8" filter="url(#softShadow)" />
 
-                {/* Right arm — idle sway via CSS */}
-                <g className="arm-right">
-                    <rect
-                        x="200" y="180" width="22" height="60" rx="11"
-                        fill="#818cf8" filter="url(#softShadow)"
-                    />
-                    <circle cx="211" cy="248" r="11" fill="#a5b4fc" />
-                </g>
+                                {/* Left arm — attached to body side */}
+                                <g className="arm-left">
+                                    <rect
+                                        x="43" y="184" width="24" height="60" rx="12"
+                                        fill="#818cf8" filter="url(#softShadow)"
+                                    />
+                                    <circle cx="55" cy="250" r="12" fill="#a5b4fc" filter="url(#softShadow)" />
+                                </g>
 
-                {/* Ears */}
-                <rect x="48" y="82" width="14" height="30" rx="7" fill="#818cf8" />
-                <rect x="198" y="82" width="14" height="30" rx="7" fill="#818cf8" />
+                                {/* Right arm — attached to body side */}
+                                <g className="arm-right">
+                                    <rect
+                                        x="193" y="184" width="24" height="60" rx="12"
+                                        fill="#818cf8" filter="url(#softShadow)"
+                                    />
+                                    <circle cx="205" cy="250" r="12" fill="#a5b4fc" filter="url(#softShadow)" />
+                                </g>
+
+                                {/* Feet / Base — completes the robot shape */}
+                                <rect x="80" y="270" width="30" height="14" rx="6" fill="#a5b4fc" filter="url(#softShadow)" />
+                                <rect x="150" y="270" width="30" height="14" rx="6" fill="#a5b4fc" filter="url(#softShadow)" />
             </svg>
 
             {/* Floating chat bubbles */}
             <div className="chat-bubble chat-bubble-1">How can I help?</div>
-            <div className="chat-bubble chat-bubble-2">Ask me anything!</div>
-            <div className="chat-bubble chat-bubble-3">📚</div>
+                        <div className="chat-bubble chat-bubble-2">Ask me anything! 📚</div>
         </div>
     );
 };
