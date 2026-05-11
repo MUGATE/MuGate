@@ -410,12 +410,13 @@ const Schedule = () => {
       <span className="sparkle sparkle-6">✦</span>
 
       {/* ── Navbar ── */}
-      <nav className="schedule-navbar glass-card">
+            <nav className="schedule-navbar glass-card">
         <Link to="/">Home</Link>
+        <Link to="/internships">Internships</Link>
+        <Link to="/resume-enhancer">Resume</Link>
         <Link to="/chatbot">Chatbot</Link>
         <Link to="/schedule" className="active">Scheduler</Link>
-        <Link to="/resume-enhancer">Resume Enhancer</Link>
-        <Link to="/internships">Internships</Link>
+        <Link to="/capstone">Capstone</Link>
         <div className="nav-avatar">
           <img
             src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68"

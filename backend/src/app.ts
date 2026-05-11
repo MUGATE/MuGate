@@ -14,6 +14,9 @@ import { initCronJobs } from "./modules/system/sync/sync.cron";
 import resumeRoutes from "./modules/resume/resume.routes";
 import internshipRoutes from "./modules/internships/internship.routes";
 import { InternshipRepository } from "./modules/internships/internship.repository";
+import capstoneRoutes from "./modules/capstone/capstone.routes";
+import { CapstoneRepository } from "./modules/capstone/capstone.repository";
+import { CapstoneService } from "./modules/capstone/capstone.service";
 
 const app = express();
 
@@ -31,6 +34,7 @@ app.use("/api/chatbot", chatbotRoutes);   // MuChat integration
 app.use("/api/scraper", scraperRoutes);   // Scraper & Knowledge Base
 app.use("/api/resume", resumeRoutes);
 app.use("/api/internships", internshipRoutes); // Internship reviews
+app.use("/api/capstone", capstoneRoutes);       // Capstone partner matching & AI ideas
 
 // Helper route for checking auth route in browser
 app.get("/api/auth/login", (req, res) => {
@@ -57,6 +61,9 @@ app.use(errorMiddleware);
 
 // Ensure InternshipReviews table exists
 InternshipRepository.ensureTable();
+
+// Ensure Capstone tables exist and seed ideas
+CapstoneRepository.ensureTables().then(() => CapstoneService.seedIdeasIfEmpty());
 
 // Initialize background CRON jobs
 initCronJobs();

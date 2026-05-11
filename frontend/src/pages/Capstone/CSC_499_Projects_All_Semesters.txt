@@ -1,0 +1,586 @@
+CSC 499 PROJECTS - ALL SEMESTERS
+=================================
+
+
+── FALL 2022 ──────────────────────────────────────────────────────────────────
+
+ 1. Movies Community Website
+    A social platform where movie enthusiasts can discover, rate, and discuss films together.
+
+ 2. Flower Shop Website
+    An e-commerce site for a florist to showcase arrangements and accept online orders.
+
+ 3. TechHub: Computer Parts & Accessories Webstore
+    An online store for purchasing computer hardware components and peripherals.
+
+ 4. Designers Community Website
+    A collaborative hub for graphic and UI/UX designers to share portfolios and connect.
+
+ 5. VivaPain: Gym and Diet Application
+    A fitness app combining personalized workout plans with dietary tracking.
+
+ 6. Real-time Hand Detection and Gesture Recognition
+    A computer vision system that identifies hand gestures in real time using machine learning.
+
+ 7. Web Dentist Clinic
+    A clinic website for managing dental appointments and providing patient information online.
+
+ 8. Improving Patient Experience through Health Insurance Application
+    An app that simplifies health insurance navigation and claim processing for patients.
+
+ 9. Online PC Store
+    An e-commerce platform for buying and selling desktop computers and laptops.
+
+
+── SPRING 2023 ─────────────────────────────────────────────────────────────────
+
+ 1. Deriving Groundwater Major Ions from Electrical Conductivity Using AI
+    An AI-based research tool predicting water quality chemical composition from conductivity readings.
+
+ 2. Tutopia: A Tutoring Website
+    An online platform connecting students with qualified tutors for academic support.
+
+ 3. Point of Sale System
+    A retail POS system for managing sales transactions, inventory, and receipt generation.
+
+ 4. Traket: Vehicle Control System
+    A smart system for tracking and remotely monitoring vehicle status and location.
+
+ 5. IT Corporate Culture
+    A platform for documenting, sharing, and promoting healthy IT workplace culture.
+
+ 6. Al-Maaref University Assistant Chatbot
+    A conversational AI chatbot to answer student queries about MU services and information.
+
+ 7. Smart City Solutions
+    A platform integrating IoT and data analytics to improve urban infrastructure and services.
+
+ 8. MU Maintenance Management System
+    A system for submitting, tracking, and resolving facility maintenance requests at MU.
+
+ 9. Happy Bookers: An Online Book Store
+    An e-commerce website for purchasing books online with search and review features.
+
+10. Sworn Translator Document Generator Website
+    A web tool helping sworn translators produce formatted, legally compliant official documents.
+
+
+── FALL 2024 ────────────────────────────────────────────────────────────────────
+
+ 1. IPOTEK: Multi-Vendor Pharmacy E-Commerce Application
+    An online marketplace where multiple pharmacies can list and sell medications and health products.
+
+ 2. Security Guard
+    A security monitoring and access control system for premises and facilities.
+
+ 3. Smart Parking
+    An IoT-powered system that guides drivers to available parking spots in real time.
+
+ 4. Cedars Care
+    A healthcare management app for patient care, records, and appointment scheduling.
+
+ 5. Tech Life
+    A platform for technology lifestyle content, product reviews, and tech community engagement.
+
+ 6. MusclUranus
+    A fitness tracking app focused on muscle gain, workout logging, and progress analysis.
+
+ 7. Fillia Charity
+    A platform connecting donors with charitable causes and managing fundraising campaigns.
+
+ 8. Smart Labs
+    A system for managing university lab resources, equipment booking, and usage tracking.
+
+ 9. Dev Adventures
+    A gamified platform for learning programming through quests and coding challenges.
+
+10. Baqiyatul Allah Institute Management
+    A digital management system for an Islamic educational institute, covering students and schedules.
+
+11. Capstone Project Management
+    A web platform for tracking, evaluating, and managing university capstone projects.
+
+12. Fix Masters
+    A service marketplace connecting clients with repair and maintenance professionals.
+
+13. MU Labs: Unlocking Learning Potential
+    A lab management system to optimize scheduling and learning resources at MU.
+
+14. Rising Minds
+    An educational platform or tutoring app supporting student personal development.
+
+15. Grilled Taste
+    A food ordering or restaurant management system for a grill-themed eatery.
+
+16. Doctoleb
+    A healthcare appointment booking platform tailored for Lebanese doctors and patients.
+
+17. Real-Time Hand Detection and Gestures Recognition
+    A machine learning system for recognizing hand gestures through a camera feed.
+
+18. Zad Online Management System
+    A digital management system for an online food or retail business.
+
+19. Investigating Lung Cancer Detection Using AI
+    An AI-based tool for detecting lung cancer indicators in medical imaging data.
+
+20. Children Vax Tracker
+    A mobile app for parents to log, schedule, and receive reminders for children's vaccinations.
+
+21. SAWA Mobile Application
+    A community coordination or social activity app facilitating group collaboration.
+
+22. AI in Parkinson Disease Progression
+    A machine learning system monitoring symptoms to predict and track Parkinson's disease progression.
+
+23. ScanSage
+    A document scanning app with intelligent analysis and organization features.
+
+24. Car Service Hub
+    A platform for booking and managing car maintenance, repair, and inspection services.
+
+25. Point of Sale (POS) System
+    A retail management system for processing sales, managing inventory, and generating reports.
+
+26. Frozy Mobile
+    A mobile application for a frozen food or beverage brand, covering ordering and delivery.
+
+27. Student Portfolio – WebApp
+    A web application for students to build, showcase, and share academic and project portfolios.
+
+28. Farm It Together
+    A platform enabling communities to collaborate on shared farming initiatives and resources.
+
+29. SciServe: Link Between Academics and Investors
+    A platform that bridges scientific researchers with investors seeking to fund innovation.
+
+30. Medi-Sync Suit
+    A smart wearable that collects and synchronizes patient health data with medical systems.
+
+31. Shopping MU
+    An e-commerce or campus shopping platform tailored for MU students and community.
+
+32. Health Care System
+    A comprehensive platform for managing patient records, appointments, and medical data.
+
+33. Books World
+    An online bookstore and book community platform for discovery and purchase.
+
+34. Prescripto
+    A digital prescription management system enabling doctors to issue and patients to track prescriptions.
+
+35. CARMART
+    An online automotive marketplace for buying, selling, and comparing vehicles.
+
+36. BookLink: Community-Based Book-Sharing System
+    A platform where community members can lend and borrow physical books from each other.
+
+37. Warehouse Management System
+    A logistics system for tracking inventory, managing stock levels, and warehouse operations.
+
+38. PathWise
+    A career or academic guidance platform offering personalized roadmaps and mentorship.
+
+39. MuConnect
+    A social networking and communication platform for MU students and faculty.
+
+40. Green Haven: A Smart Platform for Plant Enthusiasts
+    A community platform for plant lovers to share care tips, trade plants, and track their gardens.
+
+41. School Bus Tracking
+    A real-time GPS tracking system for school buses with notifications for parents and staff.
+
+42. MU Project Repository
+    A searchable archive of past and current MU student capstone projects.
+
+43. MyCommerce
+    A personal e-commerce platform enabling individuals to set up their own online stores.
+
+
+── SPRING 2024 ──────────────────────────────────────────────────────────────────
+
+ 1. ML-Based Application for Prediction of Critical Illness in Children
+    A machine learning model predicting ICU admission risk in pediatric patients from clinical data.
+
+ 2. Easy Housing
+    A real estate platform simplifying the search, listing, and rental of residential properties.
+
+ 3. SAKAN Family Support
+    A social welfare app providing housing resources and support services for families.
+
+ 4. KarateMentor: Karate Progress Tracking Mobile App
+    An app for tracking karate students' belt progression, attendance, and training milestones.
+
+ 5. Aardhi Exhibition Management
+    A system for organizing and managing land or property exhibition events.
+
+ 6. MedLab: Streamlining Medical Laboratory Operations
+    A digital platform for managing lab test orders, results, and patient records efficiently.
+
+ 7. Carpool / Ride Sharing
+    A carpooling app that connects students and commuters heading in the same direction.
+
+ 8. Block B: A Horror Game Based in MU
+    A horror video game with narrative and gameplay set inside Al-Maaref University.
+
+ 9. Market Price Comparison
+    A tool that aggregates and compares product prices across multiple stores or vendors.
+
+10. Emergency and Hospital Connection System
+    A real-time platform linking emergency responders with the nearest available hospitals.
+
+11. Promo Fusion
+    A marketing tool for creating, scheduling, and analyzing promotional campaigns.
+
+12. MU-CPC Platform
+    A competitive programming platform hosting coding contests for MU students.
+
+13. PitchPal
+    A stadium and sports field booking web app for players and venue owners.
+
+14. FastBite: A Mobile Application for Food Ordering and Delivery
+    A food ordering and delivery app connecting customers with local restaurants.
+
+15. Rissalat Theater Website
+    A website for a theater to manage event schedules, ticket bookings, and audience information.
+
+16. Share the Meal
+    A food donation platform redistributing surplus food from businesses to those in need.
+
+17. GamePedia
+    An encyclopedia and community platform dedicated to video games and gaming culture.
+
+18. Effective Learning Environment Analysis
+    A research and analytics system assessing factors that influence learning quality in classrooms.
+
+19. VertuWell: A Platform for Online Medical Consultation
+    A telemedicine app allowing patients to consult licensed doctors remotely.
+
+20. Math Course Application
+    An interactive app for learning, practicing, and testing mathematical concepts.
+
+21. Online Auction
+    A web platform for hosting live auctions where users bid on listed items.
+
+
+── FALL 2025 ────────────────────────────────────────────────────────────────────
+
+ 1. Smart Greenhouse
+    An IoT-based greenhouse system automating climate control, irrigation, and crop monitoring.
+
+ 2. Tahajjad
+    An Islamic app providing reminders, guides, and timings for the night Tahajjud prayer.
+
+ 3. Crochet Crafts
+    A platform for crochet enthusiasts to learn techniques, share patterns, and sell handmade items.
+
+ 4. AURA
+    A personal wellness and health analytics platform for tracking mental and physical well-being.
+
+ 5. Swim Life Academy Management System
+    A management system for a swimming academy covering scheduling, attendance, and billing.
+
+ 6. Career Consultation Platform
+    A platform connecting job seekers with career counselors for professional guidance.
+
+ 7. Neuron Network – Education Platform
+    An AI-powered online learning platform tailored to individual student needs.
+
+ 8. Skills Spot
+    A marketplace for discovering, teaching, and learning a wide range of skills.
+
+ 9. ShopVerse
+    A multi-category e-commerce platform for diverse product shopping.
+
+10. Along The Way Home
+    A social or navigation app helping commuters find companions or share routes safely.
+
+11. LifeLink: Smart Blood, Organ & Surgical Donation Platform
+    A platform facilitating and coordinating blood, organ, and surgical material donations.
+
+12. Marsa
+    A maritime or port management system for logistics and vessel tracking.
+
+13. EdInsights
+    An analytics dashboard giving educators and students visibility into academic performance.
+
+14. Craftella
+    An online marketplace for artisans to sell handmade crafts and creative products.
+
+15. Sadah
+    A well-being app for tracking happiness levels and building positive daily habits.
+
+16. Smart Meeting Room
+    An IoT-enabled system for booking, managing, and optimizing meeting room usage.
+
+17. MedToHome Healthcare Services
+    A platform delivering home healthcare services by connecting patients with visiting professionals.
+
+18. Skill Swap
+    A community platform where users exchange skills and services instead of money.
+
+19. Mahdi's Mobile Library
+    A digital library app for accessing Islamic and educational books on mobile devices.
+
+20. Resilient UAV Navigation in GPS-Denied Environments
+    A research project developing drone navigation using alternative sensors when GPS is unavailable.
+
+21. Home-made Marketplace
+    An online marketplace for selling homemade food, crafts, and artisanal products.
+
+22. Pommunity: A Credit-Based Skill Sharing Community Platform
+    A community platform where members earn credits by sharing skills and spend them to learn others.
+
+23. Zaytuna
+    A platform celebrating Mediterranean heritage through olive oil culture and related products.
+
+24. Hijab Journey
+    A style guide and community app for modest fashion and hijab-wearing enthusiasts.
+
+25. Event Workforce
+    A platform for recruiting, scheduling, and managing staff for events and occasions.
+
+26. TaskFlow
+    A task and project management tool for teams to organize, assign, and track work.
+
+27. Nexus: A Unified Software Engineering Platform
+    An all-in-one platform for software development collaboration, documentation, and deployment.
+
+28. BookClub: An Intelligent Online Reading Community
+    An AI-enhanced reading community for discovering books and engaging in discussions.
+
+29. What's Cooking Today
+    A daily recipe suggestion and meal planning app based on available ingredients.
+
+30. Al Baqer Gemstone
+    An e-commerce website for browsing and purchasing gemstones and fine jewelry.
+
+31. VanGo
+    A van rental or shared transport booking platform for individuals and businesses.
+
+32. Planity
+    A personal productivity app for scheduling, goal setting, and daily planning.
+
+33. The Beiroutique Vision
+    An e-commerce platform showcasing Beirut-inspired fashion, accessories, and local brands.
+
+34. InternLeb
+    A job board and platform for discovering internship opportunities in Lebanon.
+
+35. ExpensTra: Your Financial Aid
+    A personal finance tracker for managing expenses, budgets, and financial goals.
+
+36. YallaService
+    An on-demand service marketplace for booking home, personal, and professional services.
+
+37. OpportuGrow
+    A platform connecting youth with career growth opportunities, training, and mentorship.
+
+38. AnarAva
+    A cultural or lifestyle platform themed around pomegranate heritage and products.
+
+39. ChickAid
+    An animal welfare or poultry farming management app for breeders and veterinarians.
+
+40. Nabd
+    A health monitoring app for tracking heart rate and vital signs.
+
+41. FitVerse
+    A fitness and wellness platform combining personalized workouts with community features.
+
+42. Teach Mate
+    An educational support tool for teachers to plan lessons and manage classroom activities.
+
+43. Sou2na
+    A local community marketplace for buying, selling, and trading goods.
+
+44. Smart School Management System
+    A comprehensive digital system managing all academic and administrative school operations.
+
+45. Uniconnect
+    A social networking platform for university students to connect, collaborate, and share resources.
+
+
+── SPRING 2025 ──────────────────────────────────────────────────────────────────
+
+ 1. Archiving Website
+    A digital platform for storing, categorizing, and retrieving archived documents and media.
+
+ 2. NeutriLife App
+    A nutrition tracking and healthy lifestyle management app with meal planning features.
+
+ 3. Hawzat Al-Imam Al-Hassan Al-Askari (AS) Management System
+    A comprehensive management system for an Islamic seminary covering students, courses, and administration.
+
+ 4. External Pentest
+    A cybersecurity framework or tool designed to conduct external penetration testing on systems.
+
+ 5. Code Forge: Automated Project Generator
+    A developer tool that auto-generates project scaffolding and boilerplate code from specifications.
+
+ 6. Business Web Suite
+    A comprehensive web platform enabling small businesses to manage their online operations.
+
+ 7. Greenity
+    A sustainability and environmental awareness platform promoting green habits and tracking impact.
+
+ 8. Paw: Endearing Treasure
+    A pet care app for managing pet health records, appointments, and daily care routines.
+
+ 9. Generic Point of Sale System
+    A flexible, adaptable POS solution designed to work across different retail business types.
+
+10. Attendify
+    An attendance tracking system for schools or organizations using digital check-in methods.
+
+11. Internet Service Provider Management System
+    A system for ISPs to manage customer subscriptions, billing, and technical support.
+
+12. Fixperts
+    A service platform for booking home repair and maintenance experts on demand.
+
+13. Healthy Bites
+    A meal planning and healthy eating app with nutrition information and recipe suggestions.
+
+14. Naturio Skincare Clinic
+    A platform for managing a skincare clinic, including appointments, treatments, and product sales.
+
+15. Sportify
+    A sports event management and facility booking platform for teams and individuals.
+
+16. One Hand
+    An accessibility application or assistive tool designed for users with upper-limb disabilities.
+
+17. Radiant Resilience
+    A mental health and self-empowerment platform offering wellness resources and exercises.
+
+18. MU Connect
+    A communication and networking platform for the Al-Maaref University community.
+
+19. Tareeq
+    A smart route planning and navigation application for daily commuters.
+
+20. Skincare Society
+    A community platform for skincare enthusiasts to share routines, reviews, and product tips.
+
+21. VeroCare: HealthCare
+    A digital healthcare platform for managing patient records, appointments, and medical consultations.
+
+22. Waad Company
+    A business management or CRM platform for handling customer relationships and operations.
+
+23. ع Laytane
+    A cultural or entertainment platform celebrating Lebanese heritage and lifestyle.
+
+24. Al Mahdi Scouts Value System
+    A platform for managing scouting activities, tracking values, and recording member achievements.
+
+25. LearnLink
+    An online learning platform connecting students with educational content and instructors.
+
+26. Cookingo
+    A cooking tutorial and recipe sharing platform with step-by-step guides.
+
+27. BloomingLand
+    A gardening and plant marketplace where users buy plants, tools, and share care advice.
+
+28. Guardian Grove
+    A child safety and parental monitoring application for tracking and protecting children online.
+
+29. IntelliGram
+    A smart social media analytics tool for managing and optimizing content performance.
+
+30. UniCity
+    A smart campus management platform integrating services for university students and staff.
+
+31. Code Temple Website
+    A programming community hub offering tutorials, coding challenges, and developer resources.
+
+32. Benchmarks for Evaluating Anomaly-Based Intrusion Detection Solutions
+    A cybersecurity research tool for benchmarking and comparing IDS performance against attack datasets.
+
+33. Skillhub
+    A freelance skills marketplace connecting professionals with clients seeking specific expertise.
+
+34. AL-SHAJARA AL-TAYEBA
+    An Islamic genealogy or knowledge tree platform for exploring scholarly lineages.
+
+35. Explore Lebanon
+    A travel and tourism guide platform showcasing Lebanese destinations, culture, and experiences.
+
+36. Stockify
+    A stock and inventory management platform for businesses to track supply levels.
+
+37. RenovAid
+    A renovation assistance platform connecting homeowners with verified contractors and designers.
+
+38. Voicera
+    A voice recording, transcription, and audio content management platform.
+
+39. ARCEMI
+    An augmented reality or architectural visualization tool for design and planning.
+
+40. Red Mango
+    A food ordering or restaurant management app for a dining brand.
+
+41. Khalil Outlet
+    An e-commerce platform for a brand's discounted or surplus inventory.
+
+42. Outlet 101
+    A discount retail platform aggregating outlet deals and off-price products.
+
+43. CarMart
+    An online car marketplace for listing, browsing, and purchasing vehicles.
+
+44. Marionette
+    A creative storytelling or puppet animation app for digital content creation.
+
+45. MamaPlate
+    A home-cooked meal ordering platform connecting home cooks with nearby customers.
+
+46. MediaLink
+    A media content management and sharing platform for publishers and creators.
+
+47. Ghasily
+    A laundry and dry-cleaning service management and booking application.
+
+48. Next Gen NPCs
+    An AI-driven system for creating intelligent, dynamic non-player characters in video games.
+
+49. Booknest
+    An online book discovery, review, and community platform for avid readers.
+
+50. Construction Contracting Company
+    A digital management system for a construction firm covering projects, billing, and contractors.
+
+51. Our Martyrs
+    A commemorative digital platform honoring and preserving the memory of Lebanese martyrs.
+
+52. Library Share
+    A library resource-sharing system for lending books across institutions or communities.
+
+53. PlantCare AI
+    An AI-powered app for diagnosing plant health issues and recommending care solutions.
+
+54. UMS
+    A University Management System for managing academic registrations, courses, and administration.
+
+55. Sharek
+    A community sharing or collaborative resource exchange platform.
+
+56. Tayseer
+    A platform for simplifying and facilitating administrative or bureaucratic processes.
+
+57. Rebuild Lebanon
+    A platform for coordinating reconstruction efforts, volunteers, and resources across Lebanon.
+
+58. Essentially
+    A marketplace for essential oils, wellness products, and natural lifestyle goods.
+
+59. Foodie
+    A food discovery, restaurant review, and dining recommendation application.
+
+
+=================================
+Total: 177 projects across 6 semesters
+=================================

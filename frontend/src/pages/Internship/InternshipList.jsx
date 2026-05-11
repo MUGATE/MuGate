@@ -227,9 +227,10 @@ const InternshipList = () => {
             Explore All
           </button>
         </div>
-        <div className="hero-nav-menu">
+                <div className="hero-nav-menu">
           <Link to="/schedule" className="hero-nav-link">Scheduler</Link>
           <Link to="/resume-enhancer" className="hero-nav-link">Resume Enhancer</Link>
+          <Link to="/capstone" className="hero-nav-link">Capstone</Link>
           <Link to="/chatbot" className="hero-nav-link">Chatbot</Link>
         </div>
       </nav>

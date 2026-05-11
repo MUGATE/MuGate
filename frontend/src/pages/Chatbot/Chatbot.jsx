@@ -6,6 +6,7 @@ import {
   Compass,
   Library,
   History,
+  GraduationCap,
   ChevronsUpDown,
   Sparkles,
   Paperclip,
@@ -419,7 +420,7 @@ const Chatbot = () => {
         </div>
 
         {/* Main Nav */}
-        <nav className="sidebar-nav">
+                <nav className="sidebar-nav">
           <Link to="/" className="nav-item">
             <Home size={18} />
             <span>Home</span>
@@ -428,13 +429,17 @@ const Chatbot = () => {
             <Compass size={18} />
             <span>Internships</span>
           </Link>
+          <Link to="/resume-enhancer" className="nav-item">
+            <History size={18} />
+            <span>Resume Enhancer</span>
+          </Link>
           <Link to="/schedule" className="nav-item">
             <Library size={18} />
             <span>Scheduler</span>
           </Link>
-          <Link to="/resume-enhancer" className="nav-item">
-            <History size={18} />
-            <span>Resume Enhancer</span>
+          <Link to="/capstone" className="nav-item">
+            <GraduationCap size={18} />
+            <span>Capstone</span>
           </Link>
         </nav>
 

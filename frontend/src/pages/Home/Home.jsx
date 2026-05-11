@@ -9,7 +9,7 @@ import ChatbotShowcase from "./ChatbotShowcase";
 import AboutSummary from "./AboutSummary";
 import BottomNavbar from "./BottomNavbar";
 
-import logo from "./assets/Images/Logo2.png";
+import logo from "./assets/Images/Logo2 colored.png";
 
 const Section = ({ id, children, className = "", ...rest }) => {
   return (
@@ -97,16 +97,17 @@ const Home = () => {
       <div className="hero-unified-frame">
         <nav className="hero-nav-notched">
           <div className="nav-group-left">
-            <Link to="/internships">Internships</Link>
+                        <Link to="/internships">Internships</Link>
             <Link to="/resume-enhancer">Resume</Link>
             <Link to="/chatbot">Chatbot</Link>
             <Link to="/schedule">Scheduler</Link>
+            <Link to="/capstone">Capstone</Link>
           </div>
 
           <div className="nav-group-center">
             <div className="branding-logo-box">
               <img src={logo} alt="MuGate Logo" className="nav-logo-black" />
-              <span className="brand-name-black">MUGATE</span>
+              <span className="brand-name-black" style={{ color: "#0e220e" }}>MUGATE</span>
             </div>
           </div>
 
@@ -299,10 +300,11 @@ const Home = () => {
 
           <div className="footer-links-group">
             <h4 className="footer-links-heading">Platform</h4>
-            <Link to="/schedule" className="footer-link">Scheduler</Link>
+                        <Link to="/schedule" className="footer-link">Scheduler</Link>
             <Link to="/internships" className="footer-link">Internships</Link>
             <Link to="/resume-enhancer" className="footer-link">Resume Enhancer</Link>
             <Link to="/chatbot" className="footer-link">AI Chatbot</Link>
+            <Link to="/capstone" className="footer-link">Capstone</Link>
           </div>
 
           <div className="footer-links-group">

@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { createSession, sendMessage as sendChatbotMessage, uploadFile as uploadChatbotFile } from '../../services/chatbotApi';
 import mammoth from 'mammoth';
@@ -109,7 +109,6 @@ const ResumeEnhancer = () => {
 
   // ── Interactive Suggestion Flow ──
   const [activeSuggestionFlow, setActiveSuggestionFlow] = useState(null);
-  // Flow states: { suggestionId, suggestionText, awaitingUserInput, collectedValue, promptMessage }
 
   // ── AI Document Editing ──
   const [isEditingDocument, setIsEditingDocument] = useState(false);
@@ -291,7 +290,6 @@ const ResumeEnhancer = () => {
         rawInstructions += `change "${match[1].trim()}" to "${match[2].trim()}"\n`;
       }
     }
-    // Validation: only keep instructions whose "old text" actually exists in the resume
     if (rawInstructions.trim() && resumeText) {
       const validLines = [];
       const lines = rawInstructions.trim().split('\n');
@@ -299,7 +297,6 @@ const ResumeEnhancer = () => {
         const match = line.match(/change "([^"]+)" to "([^"]+)"/);
         if (match) {
           const oldText = match[1];
-          // Check if the old text exists in the resume (case-insensitive)
           if (resumeText.toLowerCase().includes(oldText.toLowerCase()) || oldText === '""' || oldText === "") {
             validLines.push(line);
           }
@@ -313,7 +310,6 @@ const ResumeEnhancer = () => {
     }
   }, [resumeText]);
 
-  // ── Interactive Suggestion Flow ──
   const INTERACTIVE_SUGGESTION_TYPES = ['linkedin', 'email', 'phone', 'gpa', 'summary', 'projects'];
 
   const INTERACTIVE_PROMPTS = {
@@ -335,20 +331,13 @@ const ResumeEnhancer = () => {
     if (!value || !value.trim()) return '';
     const v = value.trim();
     switch (suggestionId) {
-      case 'linkedin':
-        return `change "" to "LinkedIn: ${v}"`;
-      case 'email':
-        return `change "" to "Email: ${v}"`;
-      case 'phone':
-        return `change "" to "Phone: ${v}"`;
-      case 'gpa':
-        return `change "" to "GPA: ${v}"`;
-      case 'summary':
-        return `change "" to "${v}"`;
-      case 'projects':
-        return `change "" to "${v}"`;
-      default:
-        return '';
+      case 'linkedin': return `change "" to "LinkedIn: ${v}"`;
+      case 'email': return `change "" to "Email: ${v}"`;
+      case 'phone': return `change "" to "Phone: ${v}"`;
+      case 'gpa': return `change "" to "GPA: ${v}"`;
+      case 'summary': return `change "" to "${v}"`;
+      case 'projects': return `change "" to "${v}"`;
+      default: return '';
     }
   }
 
@@ -357,7 +346,6 @@ const ResumeEnhancer = () => {
     const text = inputValue.trim();
     if (!text || isChatLoading) return;
 
-    // Check if we're in an interactive suggestion flow awaiting user input
     if (activeSuggestionFlow && activeSuggestionFlow.awaitingUserInput) {
       setActiveSuggestionFlow(prev => ({ ...prev, collectedValue: text, awaitingUserInput: false }));
       setMessages(prev => [...prev, { text, isUser: true }]);
@@ -365,7 +353,6 @@ const ResumeEnhancer = () => {
       setIsChatLoading(true);
 
       try {
-        // Generate edit instruction from the collected info
         const instruction = generateEditFromFlow(activeSuggestionFlow.suggestionId, text);
         if (instruction) {
           setLastAIInstructions(instruction);
@@ -391,7 +378,6 @@ const ResumeEnhancer = () => {
       return;
     }
 
-    // Normal chat flow
     setMessages(prev => [...prev, { text, isUser: true }]);
     setInputValue('');
     setIsChatLoading(true);
@@ -401,7 +387,6 @@ const ResumeEnhancer = () => {
         const session = await createSession('Resume Enhancement');
         sid = session.id;
         setChatSessionId(sid);
-        // Enriched initial context with full resume text and anti-duplication instructions
         const ctx = resumeText
           ? `Here is my FULL resume text content. You MUST check this content before suggesting ANY changes. NEVER suggest adding something that already exists in my resume:\n---\n${resumeText}\n---\nScore: ${resumeScore}/100.\nCurrent issues found: ${resumeSuggestions.map(s => s.text).join('; ')}.\n\nIMPORTANT: You are now acting as an AI Resume Enhancement Agent. Rules:\n1. Before suggesting any change, verify it's NOT already present in the resume text above.\n2. Only suggest changes that are genuinely missing or could be improved.\n3. When you find something that needs changing, use the exact format: change "old text" to "new text"\n4. Do NOT repeat back large portions of my resume. Be concise and specific.\n5. For suggestions like "Add LinkedIn" — first confirm I don't already have one in the document.`
           : '';
@@ -486,9 +471,7 @@ const ResumeEnhancer = () => {
     setAppliedSuggestions(prev => new Set([...prev, suggestion.id]));
     setResumeScore(prev => Math.min(100, prev + suggestion.weight));
 
-    // Check if this suggestion is interactive (needs user to provide info)
     if (INTERACTIVE_SUGGESTION_TYPES.includes(suggestion.id)) {
-      // Start interactive flow: prompt AI to ask for the specific info
       setActiveSuggestionFlow({
         suggestionId: suggestion.id,
         suggestionText: suggestion.text,
@@ -496,23 +479,21 @@ const ResumeEnhancer = () => {
         collectedValue: '',
       });
       const question = `Let's fix: "${suggestion.text}"`;
-    setMessages(prev => [...prev, { text: question, isUser: true }]);
-    setIsChatLoading(true);
+      setMessages(prev => [...prev, { text: question, isUser: true }]);
+      setIsChatLoading(true);
 
-    try {
-      let sid = chatSessionId;
+      try {
+        let sid = chatSessionId;
         if (!sid) {
           const session = await createSession('Resume Enhancement');
           sid = session.id;
           setChatSessionId(sid);
         }
-        // Send an interactive prompt to the AI to ask for the specific info
         const interactivePrompt = generateInteractivePrompt(suggestion.id, suggestion.text);
         const response = await sendChatbotMessage(sid, interactivePrompt);
         const responseText = response.text || "Could you provide the information needed for this?";
-      setMessages(prev => [...prev, { text: responseText, isUser: false }]);
-    } catch {
-        // Fallback: directly ask user for the info
+        setMessages(prev => [...prev, { text: responseText, isUser: false }]);
+      } catch {
         const fallbackQuestions = {
           linkedin: "What's your LinkedIn profile URL?",
           email: "What's your professional email address?",
@@ -520,7 +501,7 @@ const ResumeEnhancer = () => {
           gpa: "What's your GPA and any academic honors you've received?",
           summary: "Please describe yourself in 2-3 lines for a professional summary.",
           projects: "What projects or activities would you like to add?",
-};
+        };
         setMessages(prev => [...prev, {
           text: fallbackQuestions[suggestion.id] || `Please provide the information needed: "${suggestion.text}"`,
           isUser: false,
@@ -531,7 +512,6 @@ const ResumeEnhancer = () => {
       return;
     }
 
-    // Non-interactive suggestions: send to AI as normal
     const question = `How can I improve my resume regarding: "${suggestion.text}"`;
     setMessages(prev => [...prev, { text: question, isUser: true }]);
     setIsChatLoading(true);
@@ -546,8 +526,9 @@ const ResumeEnhancer = () => {
     } catch {
       setMessages(prev => [...prev, { text: `To address this: ${suggestion.text} — try updating your resume and reupload.`, isUser: false }]);
     } finally { setIsChatLoading(false); }
-  }, [appliedSuggestions, chatSessionId, resumeScore, extractAndSetEditInstructions, INTERACTIVE_SUGGESTION_TYPES]);
+  }, [appliedSuggestions, chatSessionId, resumeScore, extractAndSetEditInstructions]);
 
+  // ─── Render ─────────────────────────────────────────────
   return (
     <div className="resume-page">
       <div className="re-bg-mesh-1" />
@@ -561,10 +542,11 @@ const ResumeEnhancer = () => {
 
       <nav className="re-navbar">
         <Link to="/">Home</Link>
+        <Link to="/internships">Internships</Link>
+        <Link to="/resume-enhancer" className="active">Resume</Link>
         <Link to="/chatbot">Chatbot</Link>
         <Link to="/schedule">Scheduler</Link>
-        <Link to="/resume-enhancer" className="active">Resume Enhancer</Link>
-        <Link to="/internships">Internships</Link>
+        <Link to="/capstone">Capstone</Link>
         <div className="re-nav-avatar">
           <img src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68" alt="Profile" />
         </div>
@@ -712,7 +694,7 @@ const ResumeEnhancer = () => {
                       </div>
                     )}
                   </div>
-          </div>
+                </div>
               </div>
             )}
           </div>
@@ -783,4 +765,3 @@ const ResumeEnhancer = () => {
 };
 
 export default ResumeEnhancer;
-
