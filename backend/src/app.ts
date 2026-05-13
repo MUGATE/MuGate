@@ -17,6 +17,8 @@ import { InternshipRepository } from "./modules/internships/internship.repositor
 import capstoneRoutes from "./modules/capstone/capstone.routes";
 import { CapstoneRepository } from "./modules/capstone/capstone.repository";
 import { CapstoneService } from "./modules/capstone/capstone.service";
+import eventRoutes from "./modules/events/event.routes";
+import { EventRepository } from "./modules/events/event.repository";
 
 const app = express();
 
@@ -35,6 +37,7 @@ app.use("/api/scraper", scraperRoutes);   // Scraper & Knowledge Base
 app.use("/api/resume", resumeRoutes);
 app.use("/api/internships", internshipRoutes); // Internship reviews
 app.use("/api/capstone", capstoneRoutes);       // Capstone partner matching & AI ideas
+app.use("/api/events", eventRoutes);             // Events discovery & scraping
 
 // Helper route for checking auth route in browser
 app.get("/api/auth/login", (req, res) => {
@@ -64,6 +67,9 @@ InternshipRepository.ensureTable();
 
 // Ensure Capstone tables exist and seed ideas
 CapstoneRepository.ensureTables().then(() => CapstoneService.seedIdeasIfEmpty());
+
+// Ensure Events table exists
+EventRepository.ensureTable();
 
 // Initialize background CRON jobs
 initCronJobs();

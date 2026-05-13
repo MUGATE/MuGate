@@ -5,8 +5,8 @@ import "./BottomNavbar.css";
 /**
  * Bottom Navigation Bar — Compact fixed navbar at bottom of viewport.
  *
-  *   - Hidden on Page 1 (video hero) and Page 8 (footer)
- *   - Visible on Pages 2–7 with typewriter text transitions
+  *   - Hidden on Page 1 (video hero) and Page 9 (footer)
+  *   - Visible on Pages 2–8 with typewriter text transitions
  *   - Slides up/down with 0.6s ease animation
  *   - Button uses cinematic glassy gradient style
  */
@@ -18,8 +18,9 @@ const PAGE_BUTTON_TEXT = {
     4: "Explore",
     5: "Create",
     6: "Find",
-    7: "Learn",
-    8: null,        // Hidden
+    7: "Discover",
+    8: "Learn",
+    9: null,        // Hidden
 };
 
 const PAGE_ROUTES = {
@@ -28,7 +29,8 @@ const PAGE_ROUTES = {
     4: "/internships",
     5: "/chatbot",
     6: "/capstone",
-    7: "/chatbot",
+    7: "/events",     // Events page
+    8: "/chatbot",
 };
 
 const TYPEWRITER_SPEED = 35; // ms per letter
@@ -158,8 +160,8 @@ const BottomNavbar = () => {
 
         if (stablePage === prevPage) return;
 
-                const shouldShow = stablePage >= 2 && stablePage <= 7;
-        const wasShown = prevPage >= 2 && prevPage <= 7;
+                const shouldShow = stablePage >= 2 && stablePage <= 8;
+                const wasShown = prevPage >= 2 && prevPage <= 8;
 
         if (shouldShow) {
             const newText = PAGE_BUTTON_TEXT[stablePage] || "";

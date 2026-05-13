@@ -34,6 +34,7 @@ const Capstone = () => {
         <Link to="/chatbot">Chatbot</Link>
         <Link to="/schedule">Scheduler</Link>
         <Link to="/capstone" className="active">Capstone</Link>
+        <Link to="/events">Events</Link>
       </nav>
 
       {/* Body: Sidebar + Main */}
