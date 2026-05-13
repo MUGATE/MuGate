@@ -60,7 +60,7 @@ export class EventController {
      */
     static async getById(req: Request, res: Response) {
         try {
-            const id = parseInt(req.params.id, 10);
+            const id = parseInt(req.params.id as string, 10);
             if (isNaN(id) || id < 1) {
                 res.status(400).json({ success: false, message: "Invalid event ID" });
                 return;

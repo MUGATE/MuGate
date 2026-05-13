@@ -24,7 +24,7 @@ export const EVENT_CATEGORIES: EventCategory[] = [
 // ─── Event Source ─────────────────────────────────────────
 
 export type EventSource = "scraped" | "manual";
-export type ScraperSource = "eventbrite" | "meetup" | "facebook" | "instagram" | "linkedin" | "luma" | "konfhub" | "google" | "university" | "other";
+export type ScraperSource = "eventbrite" | "meetup" | "facebook" | "instagram" | "linkedin" | "luma" | "konfhub" | "google" | "university" | "zaka" | "other";
 
 // ─── Event Interface ──────────────────────────────────────
 

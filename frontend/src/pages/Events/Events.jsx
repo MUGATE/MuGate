@@ -29,9 +29,11 @@ const mapBackendEvent = (ev) => {
   // Map scraperSource to a display-friendly name
   const sourceLabels = {
     eventbrite: "Eventbrite", facebook: "Facebook", linkedin: "LinkedIn",
-    meetup: "Meetup", instagram: "Instagram", other: "Web",
+    meetup: "Meetup", instagram: "Instagram", university: "University", zaka: "Zaka AI", other: "Web",
   };
 
+  // Preserve raw source for accurate filtering
+  const rawSource = ev.scraperSource || "other";
   return {
     id: String(ev.id),
     title: ev.title,
@@ -41,9 +43,11 @@ const mapBackendEvent = (ev) => {
     time: timeStr,
     location: ev.location || "Lebanon",
     description: ev.description || "",
-    source: sourceLabels[ev.scraperSource] || ev.scraperSource || "Web",
+    source: sourceLabels[rawSource] || rawSource,
+    rawSource: rawSource,
     tags: ev.tags ? ev.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
     isFree: ev.isFree ?? true,
+    imageUrl: ev.imageUrl || "",
     registrationUrl: ev.externalUrl || "",
   };
 };
@@ -123,15 +127,18 @@ const TYPE_LABELS = {
 
 const FILTER_OPTIONS = ["all", "workshop", "competition", "talk", "meetup"];
 
-const SOURCE_FILTER_OPTIONS = ["all", "Eventbrite", "Meetup"];
+const SOURCE_FILTER_OPTIONS = ["all", "university", "eventbrite", "zaka"];
 
 /* SVG icon components for sources (no emojis) */
 const SourceIcon = ({ source, size = 14 }) => {
-  if (source === "Eventbrite") return (
+  if (source === "Eventbrite" || source === "eventbrite") return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M2 11h20"/></svg>
   );
-  if (source === "Meetup") return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+  if (source === "university") return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5M6 6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V6"/><path d="M6 10v6a4 4 0 0 0 4 4h4a4 4 0 0 0 4-4v-6"/></svg>
+  );
+  if (source === "zaka") return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 12l4-4"/><path d="M12 12l-4-4"/><path d="M12 12l4 4"/><path d="M12 12l-4 4"/></svg>
   );
   // Globe for "all"
   return (
@@ -170,39 +177,125 @@ const EventCard = ({ event }) => {
   const thisWeek = isThisWeek(event.date);
   const isPast = daysUntil !== null && daysUntil < 0;
 
+  // Check if URL is a generic/root page (not a specific event registration)
+  const isGeneric = (() => {
+    if (!event.registrationUrl) return true;
+    try {
+      const u = new URL(event.registrationUrl);
+      const path = u.pathname.replace(/\/$/, "");
+      return path === "" || path === "/events" || path === "/news-events" || path.split("/").length <= 2;
+    } catch { return true; }
+  })();
+
+  // Per-event unique image via deterministic hash of event title (30-image pool)
+  const uniqueEventImage = (() => {
+    if (event.imageUrl) return event.imageUrl;
+    // 30 unique Unsplash images — every event block gets a different one
+    const imgs = [
+      "photo-1504384308090-c894fdcc538d",  // hackathon table
+      "photo-1540575467063-178a50c2df87",  // conference hall
+      "photo-1519389950473-47ba0277781c",  // tech workspace
+      "photo-1522071820081-009f0129c71c",  // networking crowd
+      "photo-1505373877841-8d25f7d46678",  // presentation
+      "photo-1517694712202-14dd9538aa97",  // laptop coding
+      "photo-1550751827-4bd374c3f58b",     // cyber security
+      "photo-1552664730-d307ca884978",     // product meeting
+      "photo-1451187580459-43490279c0fa",  // digital globe
+      "photo-1498050108023-c5249f4df085",  // macbook code
+      "photo-1461749280684-dccba630e2f6",  // code screen
+      "photo-1526374965328-7f61d4dc18c5",  // matrix code
+      "photo-1518432031352-d6fc5c10da5a",  // binary code
+      "photo-1531482615719-2afd82697983",  // networking2
+      "photo-1573164713714-d95e436ab8d6",  // office meeting
+      "photo-1517245386807-bb43f82c33c4",  // workshop desk
+      "photo-1523580494863-6f3031224c94",  // graduation
+      "photo-1558494949-ef010cbdcc31",     // data center
+      "photo-1531746790095-e5cb15763bcf",  // robot hand
+      "photo-1488590528505-98d2b5aba04b",  // tech abstract
+      "photo-1504639725590-34d0984388bd",  // science lab
+      "photo-1516321165247-4aa6a5d403f1",  // microchip
+      "photo-1551033406-611cf9a28f67",     // server room
+      "photo-1507721999472-8ed44223c192",  // data viz
+      "photo-1579829366248-204fe8413f31",  // drone
+      "photo-1434030216411-0b793f4b4173",  // studying
+      "photo-1516321318423-f06f85e504b3",  // kids coding
+      "photo-1521791136064-7986c2920216",  // career fair
+      "photo-1485827404703-89b55fcc595e",  // robot
+      "photo-1535378917042-10a22c95931a",  // coding workspace
+    ];
+    // Deterministic hash of event title to get consistent unique index
+    let hash = 0;
+    for (let i = 0; i < event.title.length; i++) {
+      hash = ((hash << 5) - hash) + event.title.charCodeAt(i);
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    const idx = Math.abs(hash) % imgs.length;
+    return `https://images.unsplash.com/${imgs[idx]}?w=600&h=400&fit=crop`;
+  })();
+
+  const imgSrc = uniqueEventImage;
+
   return (
     <div className={`ev-card ${isPast ? "ev-card-past" : ""}`} style={{ borderLeftColor: borderColor }}>
-      <div className="ev-card-header">
-        <span className="ev-type-badge" style={{ background: borderColor }}>{TYPE_LABELS[event.type] || event.type}</span>
-        <div className="ev-card-pills">
-          {event.isFree && <span className="ev-pill ev-pill-free">FREE</span>}
-          {thisWeek && !isPast && <span className="ev-pill ev-pill-week">This Week</span>}
+      {/* Event Image */}
+      <div className="ev-card-image-wrap">
+        <img src={imgSrc} alt={event.title} className="ev-card-image" loading="lazy" />
+        <div className="ev-card-image-overlay">
+          <span className="ev-type-badge" style={{ background: borderColor }}>{TYPE_LABELS[event.type] || event.type}</span>
+          <div className="ev-card-pills">
+            {event.isFree && <span className="ev-pill ev-pill-free">FREE</span>}
+            {thisWeek && !isPast && <span className="ev-pill ev-pill-week">This Week</span>}
+          </div>
         </div>
       </div>
-      <h3 className="ev-card-title">{event.title}</h3>
-      <p className="ev-card-desc">{event.description}</p>
-      <div className="ev-card-meta">
-        <div className="ev-meta-row">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <span>{formatDate(event.date)}{event.endDate ? ` — ${formatDate(event.endDate)}` : ""}</span>
-          {event.time && <span className="ev-meta-time">· {event.time}</span>}
+      
+      {/* Card body */}
+      <div className="ev-card-body">
+        <h3 className="ev-card-title">{event.title}</h3>
+        <p className="ev-card-desc">{event.description}</p>
+        <div className="ev-card-meta">
+          <div className="ev-meta-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>{formatDate(event.date)}{event.endDate ? ` — ${formatDate(event.endDate)}` : ""}</span>
+            {event.time && <span className="ev-meta-time">· {event.time}</span>}
+          </div>
+          <div className="ev-meta-row">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>{event.location}</span>
+          </div>
         </div>
-        <div className="ev-meta-row">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          <span>{event.location}</span>
-        </div>
+        {event.tags && event.tags.length > 0 && (
+          <div className="ev-tags-row">
+            {event.tags.slice(0, 4).map((tag, i) => (
+              <span key={i} className="ev-tag">{tag}</span>
+            ))}
+          </div>
+        )}
         {daysUntil !== null && daysUntil >= 0 && (
-          <span className="ev-countdown">in {daysUntil} day{daysUntil !== 1 ? "s" : ""}</span>
+          <span className={`ev-countdown ${daysUntil <= 3 ? "ev-countdown-urgent" : ""}`}>
+            {daysUntil === 0 ? "Today!" : daysUntil === 1 ? "Tomorrow" : `${daysUntil} days away`}
+          </span>
         )}
         {isPast && <span className="ev-countdown ev-countdown-past">Event passed</span>}
       </div>
+      
+      {/* Footer */}
       <div className="ev-card-footer">
         <span className="ev-source">via {event.source}</span>
-        {event.registrationUrl && !isPast && (
+        {event.registrationUrl && !isPast && !isGeneric && (
           <a href={event.registrationUrl} target="_blank" rel="noreferrer" className="ev-register-btn">
             Register
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
           </a>
+        )}
+        {event.registrationUrl && !isPast && isGeneric && (
+          <a href={event.registrationUrl} target="_blank" rel="noreferrer" className="ev-register-btn ev-register-btn-secondary">
+            View Source
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+          </a>
+        )}
+        {!event.registrationUrl && !isPast && (
+          <span className="ev-register-btn ev-register-btn-disabled">No link</span>
         )}
       </div>
     </div>
@@ -321,9 +414,9 @@ const Events = () => {
       });
     }
 
-    // Source / platform filter
+    // Source / platform filter (use raw source for accurate matching)
     if (activeSource !== "all") {
-      events = events.filter((e) => e.source === activeSource);
+      events = events.filter((e) => e.rawSource === activeSource);
     }
 
     // Search filter
@@ -386,13 +479,12 @@ const Events = () => {
             <h2 className="ev-section-title">
               <span className="ev-section-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span> Discovered Events
             </h2>
-            <p className="ev-section-subtitle">Scraped from Eventbrite, Facebook, LinkedIn & Meetup — updated periodically</p>
+            <p className="ev-section-subtitle">Curated Lebanese tech events from universities + scraped from Eventbrite + Zaka AI — updated periodically</p>
           </div>
           <button
-            className={`ev-filter-pill ${scraping ? "active" : ""}`}
+            className={`ev-filter-pill ev-refresh-btn ${scraping ? "ev-refresh-btn-scraping" : ""}`}
             onClick={handleScrape}
             disabled={scraping}
-            style={{ marginLeft: "auto", minWidth: 140 }}
           >
             {scraping ? (
               <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ev-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Scraping...</>
@@ -408,9 +500,9 @@ const Events = () => {
           </div>
         )}
 
-        {/* Filters + Search */}
+        {/* Filters + Search — single scrollable toolbar */}
         <div className="ev-toolbar">
-          <div className="ev-filter-pills">
+          <div className="ev-filter-pills ev-type-pills">
             {FILTER_OPTIONS.map((f) => (
               <button
                 key={f}
@@ -421,15 +513,16 @@ const Events = () => {
               </button>
             ))}
           </div>
-          <div className="ev-filter-pills ev-source-pills">
+          <div className="ev-filter-pills">
             {SOURCE_FILTER_OPTIONS.map((s) => (
               <button
                 key={s}
+                data-source={s}
                 className={`ev-filter-pill ev-source-pill ${activeSource === s ? "active" : ""}`}
                 onClick={() => setActiveSource(s)}
               >
                 <SourceIcon source={s} size={13} />
-                {s === "all" ? "All Sources" : s}
+                {s === "all" ? "All Sources" : s === "university" ? "University" : s === "eventbrite" ? "Eventbrite" : "Zaka AI"}
               </button>
             ))}
           </div>
@@ -465,7 +558,7 @@ const Events = () => {
           <div className="ev-empty-state">
             <span className="ev-empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
             <h3>No events found</h3>
-            <p>{discoveredEvents.length === 0 ? "Click \"Refresh Events\" to scrape upcoming tech events from Eventbrite & Meetup." : "Try adjusting your filters or search query."}</p>
+            <p>{discoveredEvents.length === 0 ? "Click \"Refresh Events\" to load curated Lebanese tech events from universities, Eventbrite, and Zaka AI." : "Try adjusting your filters or search query."}</p>
           </div>
         )}
       </div>
