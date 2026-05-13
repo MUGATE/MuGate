@@ -195,6 +195,28 @@
   letter-spacing: -0.01em;
 }
 
+/* Header actions row: search + refresh side by side */
+.ev-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.ev-header-actions .ev-search-wrapper {
+  flex: 0 0 965px;
+  min-width: 680px;
+  position: relative;
+}
+
+.ev-header-actions .ev-search-input {
+  padding: 8px 36px 8px 40px;
+  font-size: 0.85rem;
+  border-radius: 24px;
+  height: 38px;
+  box-sizing: border-box;
+}
+
 /* ══════════════════════════════════════════════════
    TOOLBAR (Filters + Search)
    ══════════════════════════════════════════════════ */
@@ -204,25 +226,23 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 32px;
-  overflow-x: auto;
-  overflow-y: visible;
-  padding-bottom: 8px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(230, 168, 23, 0.25) transparent;
-  -webkit-overflow-scrolling: touch;
+  flex-wrap: wrap;
+  overflow: visible;
 }
 
-.ev-toolbar::-webkit-scrollbar {
-  height: 4px;
+/* Vertical divider between Types and Sources */
+.ev-toolbar-divider {
+  color: #ccc;
+  font-size: 1.1rem;
+  font-weight: 300;
+  line-height: 1;
+  user-select: none;
+  flex-shrink: 0;
+  margin: 0 4px;
 }
 
-.ev-toolbar::-webkit-scrollbar-thumb {
-  background: rgba(230, 168, 23, 0.25);
-  border-radius: 4px;
-}
-
-.ev-toolbar::-webkit-scrollbar-track {
-  background: transparent;
+.ev-source-pills-group {
+  margin-left: 4px;
 }
 
 .ev-filter-pills {
@@ -304,13 +324,17 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #aaa;
+  color: #999;
   pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ev-search-input {
   width: 100%;
-  padding: 10px 36px 10px 40px;
+  padding: 12px 36px 12px 42px;
   border-radius: 14px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.7);
