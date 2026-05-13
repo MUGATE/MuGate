@@ -1,34 +1,52 @@
-import { chromium, Browser, Page } from "playwright";
+import { chromium, Browser } from "playwright";
 import { logger } from "../../core/logger/logger";
 import { ScrapedEvent, EventCategory, CATEGORY_KEYWORDS, ScraperSource } from "./event.types";
 
+// ─── HTTP Helper ──────────────────────────────────────────
+
+const HTTP_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+};
+
+async function httpGet(url: string, headers: Record<string, string> = {}): Promise<string> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+        const resp = await fetch(url, {
+            headers: { ...HTTP_HEADERS, ...headers },
+            signal: controller.signal,
+            redirect: "follow",
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+        return await resp.text();
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+async function httpGetJson(url: string, headers: Record<string, string> = {}): Promise<any> {
+    const text = await httpGet(url, { ...headers, "Accept": "application/json" });
+    return JSON.parse(text);
+}
+
 // ─── Auto-Categorization ─────────────────────────────────
 
-/**
- * Determine the best category for an event based on title + description keywords.
- */
 function categorizeEvent(title: string, description: string): EventCategory {
     const text = `${title} ${description}`.toLowerCase();
-
-    // Check each category's keywords (order matters — more specific first)
     const orderedCategories: EventCategory[] = [
         "hackathon", "competition", "workshop", "conference", "talk", "meetup", "social"
     ];
-
     for (const cat of orderedCategories) {
         const keywords = CATEGORY_KEYWORDS[cat];
         for (const keyword of keywords) {
-            if (text.includes(keyword.toLowerCase())) {
-                return cat;
-            }
+            if (text.includes(keyword.toLowerCase())) return cat;
         }
     }
     return "other";
 }
 
-/**
- * Extract tags from event title and description.
- */
 function extractTags(title: string, description: string): string {
     const text = `${title} ${description}`.toLowerCase();
     const tagKeywords = [
@@ -39,52 +57,51 @@ function extractTags(title: string, description: string): string {
         "programming", "tech", "digital", "innovation", "open source",
         "gaming", "robotics", "iot", "fintech", "healthtech", "edtech",
     ];
-
-    const found = tagKeywords.filter(tag => text.includes(tag));
-    return found.join(", ");
+    return tagKeywords.filter(tag => text.includes(tag)).join(", ");
 }
 
-/**
- * Check if an event title is tech-related.
- * Filters out random non-tech events (pizza parties, social dinners, etc.)
- */
 function isTechRelevant(title: string, description: string = ""): boolean {
     const text = `${title} ${description}`.toLowerCase();
 
-    // Must match at least one tech keyword
     const techKeywords = [
         "tech", "code", "coding", "programming", "developer", "software",
         "hackathon", "hack", "startup", "ai", "artificial intelligence",
-        "machine learning", "data", "cloud", "devops", "web", "app",
-        "cyber", "security", "blockchain", "crypto", "design", "ux", "ui",
-        "workshop", "bootcamp", "seminar", "conference", "summit",
-        "innovation", "digital", "robotics", "iot", "fintech",
-        "python", "javascript", "react", "node", "java", "api",
-        "database", "frontend", "backend", "fullstack", "full-stack",
-        "networking", "career", "internship", "computer", "science",
-        "engineering", "entrepreneur", "pitch", "demo day",
+        "machine learning", "data science", "cloud", "devops", "web dev",
+        "cyber", "security", "blockchain", "design thinking",
+        "bootcamp", "summit", "innovation", "digital transformation",
+        "robotics", "iot", "fintech", "python", "javascript", "react",
+        "node", "java", "api", "database", "frontend", "backend",
+        "fullstack", "full-stack", "computer science", "engineering",
         "open source", "linux", "git", "agile", "scrum",
-        "product", "saas", "edtech", "healthtech", "leetcode",
-        "algorithm", "competition", "icpc", "acm",
+        "saas", "edtech", "healthtech", "leetcode", "algorithm",
+        "icpc", "acm", "google developer", "aws", "azure", "gcp",
+        "deep learning", "neural", "nlp", "computer vision",
+        "mobile app", "ios dev", "android dev", "flutter", "kotlin",
+        "rust", "golang", "typescript", "sql", "nosql", "mongodb",
+        "docker", "kubernetes", "microservices", "serverless",
+        "ux research", "product management", "scaleup",
+        "demo day", "pitch competition", "accelerator", "incubator",
     ];
 
-    // Blocklist — skip obviously non-tech events
     const blockWords = [
         "pizza party", "bbq", "barbecue", "brunch", "dinner party",
         "yoga", "meditation", "church", "prayer", "bible",
         "wedding", "birthday", "baby shower", "funeral",
         "karaoke", "nightclub", "bar crawl", "pub quiz",
-        "cooking class", "bake sale", "potluck",
+        "cooking class", "bake sale", "potluck", "wine tasting",
+        "book club", "knitting", "gardening", "hiking group",
+        "singles mixer", "speed dating", "dance class",
+        "real estate", "forex", "mlm", "make money online",
+        "exposed: how to", "get rich", "passive income",
+        "weight loss", "fitness", "zumba", "pilates",
     ];
 
     for (const block of blockWords) {
         if (text.includes(block)) return false;
     }
-
     for (const keyword of techKeywords) {
         if (text.includes(keyword)) return true;
     }
-
     return false;
 }
 
