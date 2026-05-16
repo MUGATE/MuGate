@@ -19,8 +19,9 @@ const PAGE_BUTTON_TEXT = {
     5: "Create",
     6: "Find",
     7: "Discover",
-    8: "Learn",
-    9: null,        // Hidden
+    8: "Plan",      // RoadMap
+    9: "Learn",
+    10: null,       // Hidden
 };
 
 const PAGE_ROUTES = {
@@ -30,7 +31,8 @@ const PAGE_ROUTES = {
     5: "/chatbot",
     6: "/capstone",
     7: "/events",     // Events page
-    8: "/chatbot",
+    8: "/roadmap",    // RoadMap page
+    9: "/chatbot",
 };
 
 const TYPEWRITER_SPEED = 35; // ms per letter
@@ -160,8 +162,8 @@ const BottomNavbar = () => {
 
         if (stablePage === prevPage) return;
 
-                const shouldShow = stablePage >= 2 && stablePage <= 8;
-                const wasShown = prevPage >= 2 && prevPage <= 8;
+                const shouldShow = stablePage >= 2 && stablePage <= 9;
+                const wasShown = prevPage >= 2 && prevPage <= 9;
 
         if (shouldShow) {
             const newText = PAGE_BUTTON_TEXT[stablePage] || "";

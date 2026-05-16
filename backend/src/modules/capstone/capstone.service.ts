@@ -124,7 +124,7 @@ NOTE: No historical capstone ideas are currently loaded in the database. You may
                 role: msg.role as "user" | "assistant" | "system",
                 content: msg.content,
                 createdAt: new Date()
-            }));
+            })) as any[];
 
             // Call the AI provider
             const response = await AiProvider.generateResponse(systemPrompt, chatHistory, message);

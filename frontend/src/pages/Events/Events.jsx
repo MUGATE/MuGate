@@ -463,6 +463,7 @@ const Events = () => {
         <Link to="/schedule">Scheduler</Link>
         <Link to="/capstone">Capstone</Link>
         <Link to="/events" className="active">Events</Link>
+        <Link to="/roadmap">RoadMap</Link>
 
         <div className="ev-nav-avatar">
           <img

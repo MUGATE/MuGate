@@ -89,7 +89,7 @@ router.post("/partners", authMiddleware, async (req: AuthRequest, res: Response)
  */
 router.delete("/partners/:partnerId", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
-        const partnerId = parseInt(req.params.partnerId, 10);
+        const partnerId = parseInt(req.params.partnerId as string, 10);
         if (isNaN(partnerId)) {
             return res.status(400).json({ success: false, message: "Invalid partnerId." });
         }

@@ -35,6 +35,7 @@ const Capstone = () => {
         <Link to="/schedule">Scheduler</Link>
         <Link to="/capstone" className="active">Capstone</Link>
         <Link to="/events">Events</Link>
+        <Link to="/roadmap">RoadMap</Link>
       </nav>
 
       {/* Body: Sidebar + Main */}

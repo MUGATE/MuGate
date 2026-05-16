@@ -27,7 +27,7 @@ router.get("/stats", async (req: Request, res: Response) => {
  */
 router.get("/reviews/:companyId", async (req: Request, res: Response) => {
     try {
-        const companyId = parseInt(req.params.companyId, 10);
+        const companyId = parseInt(req.params.companyId as string, 10);
         if (isNaN(companyId)) {
             return res.status(400).json({ success: false, message: "Invalid companyId." });
         }
@@ -46,7 +46,7 @@ router.get("/reviews/:companyId", async (req: Request, res: Response) => {
  */
 router.post("/reviews/:companyId", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
-        const companyId = parseInt(req.params.companyId, 10);
+        const companyId = parseInt(req.params.companyId as string, 10);
         if (isNaN(companyId)) {
             return res.status(400).json({ success: false, message: "Invalid companyId." });
         }
@@ -100,7 +100,7 @@ router.post("/reviews/:companyId", authMiddleware, async (req: AuthRequest, res:
  */
 router.put("/reviews/:reviewId", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
-        const reviewId = parseInt(req.params.reviewId, 10);
+        const reviewId = parseInt(req.params.reviewId as string, 10);
         if (isNaN(reviewId)) {
             return res.status(400).json({ success: false, message: "Invalid reviewId." });
         }
@@ -140,7 +140,7 @@ router.put("/reviews/:reviewId", authMiddleware, async (req: AuthRequest, res: R
  */
 router.delete("/reviews/:reviewId", authMiddleware, async (req: AuthRequest, res: Response) => {
     try {
-        const reviewId = parseInt(req.params.reviewId, 10);
+        const reviewId = parseInt(req.params.reviewId as string, 10);
         if (isNaN(reviewId)) {
             return res.status(400).json({ success: false, message: "Invalid reviewId." });
         }

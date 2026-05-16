@@ -441,6 +441,10 @@ const Chatbot = () => {
             <GraduationCap size={18} />
             <span>Capstone</span>
           </Link>
+          <Link to="/roadmap" className="nav-item">
+            <Library size={18} />
+            <span>RoadMap</span>
+          </Link>
         </nav>
 
         {/* Chat Sessions History */}

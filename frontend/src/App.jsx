@@ -6,6 +6,7 @@ import ResumeEnhancer from "./pages/ResumeEnhancer";
 import Internships from "./pages/Internship/InternshipList";
 import Capstone from "./pages/Capstone";
 import Events from "./pages/Events";
+import RoadMap from "./pages/RoadMap/RoadMap";
 import GlobalGlow from "./components/layout/GlobalGlow";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/resume-enhancer" element={<ResumeEnhancer />} />
         <Route path="/capstone" element={<Capstone />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/roadmap" element={<RoadMap />} />
       </Routes>
     </Router>
   );

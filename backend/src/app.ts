@@ -19,6 +19,8 @@ import { CapstoneRepository } from "./modules/capstone/capstone.repository";
 import { CapstoneService } from "./modules/capstone/capstone.service";
 import eventRoutes from "./modules/events/event.routes";
 import { EventRepository } from "./modules/events/event.repository";
+import roadmapRoutes from "./modules/roadmap/roadmap.routes";
+import { RoadMapRepository } from "./modules/roadmap/roadmap.repository";
 
 const app = express();
 
@@ -38,6 +40,7 @@ app.use("/api/resume", resumeRoutes);
 app.use("/api/internships", internshipRoutes); // Internship reviews
 app.use("/api/capstone", capstoneRoutes);       // Capstone partner matching & AI ideas
 app.use("/api/events", eventRoutes);             // Events discovery & scraping
+app.use("/api/roadmap", roadmapRoutes);          // Interactive Degree RoadMap
 
 // Helper route for checking auth route in browser
 app.get("/api/auth/login", (req, res) => {
@@ -70,6 +73,9 @@ CapstoneRepository.ensureTables().then(() => CapstoneService.seedIdeasIfEmpty())
 
 // Ensure Events table exists
 EventRepository.ensureTable();
+
+// Ensure RoadMap table exists
+RoadMapRepository.ensureTable();
 
 // Initialize background CRON jobs
 initCronJobs();

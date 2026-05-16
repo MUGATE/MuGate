@@ -8,6 +8,7 @@ import InternshipShowcase from "./InternshipShowcase";
 import ChatbotShowcase from "./ChatbotShowcase";
 import CapstoneShowcase from "./CapstoneShowcase";
 import EventsShowcase from "./EventsShowcase";
+import RoadMapShowcase from "./RoadMapShowcase";
 import AboutSummary from "./AboutSummary";
 import BottomNavbar from "./BottomNavbar";
 
@@ -112,6 +113,7 @@ const Home = () => {
               <span className="brand-name-black" style={{ color: "#0e220e" }}>MUGATE</span>
             </div>
             <Link to="/events" className="nav-events-link">Events</Link>
+            <Link to="/roadmap" className="nav-events-link" style={{ marginLeft: '10px' }}>RoadMap</Link>
           </div>
 
           <div className="nav-group-right">
@@ -294,11 +296,14 @@ const Home = () => {
       {/* SECTION 7 — EVENTS SHOWCASE */}
       <EventsShowcase data-page="7" />
 
-      {/* SECTION 8 — ABOUT SUMMARY */}
-      <AboutSummary data-page="8" />
+      {/* SECTION 8 — ROADMAP SHOWCASE */}
+      <RoadMapShowcase data-page="8" />
+
+      {/* SECTION 9 — ABOUT SUMMARY */}
+      <AboutSummary data-page="9" />
 
       {/* FOOTER */}
-      <footer className="home-footer" data-page="9">
+      <footer className="home-footer" data-page="10">
         <div className="footer-inner">
           <div className="footer-brand">
             <span className="footer-brand-name">MUGATE</span>
