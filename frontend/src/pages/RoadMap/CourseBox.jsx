@@ -14,7 +14,8 @@ const CourseBox = ({ course, onEdit, onDelete }) => {
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 100 : 1
+    zIndex: isDragging ? 100 : 1,
+    transition: isDragging ? "none" : undefined, // Prevents dnd-kit glitching with the CSS hover transitions
   };
 
   const colorClass = COURSE_COLORS[course.category] || "cat-general";

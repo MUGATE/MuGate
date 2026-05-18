@@ -33,6 +33,7 @@ const RoadMap = () => {
   const [editingCourse, setEditingCourse] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState(null);
 
   // Fetch initial data
   useEffect(() => {
@@ -111,10 +112,15 @@ const RoadMap = () => {
   };
 
   const handleDeleteCourse = (id) => {
-    if (window.confirm("Are you sure you want to remove this course?")) {
-      const newCourses = courses.filter(c => c.id !== id);
+    setCourseToDelete(id);
+  };
+
+  const confirmDeleteCourse = () => {
+    if (courseToDelete) {
+      const newCourses = courses.filter(c => c.id !== courseToDelete);
       setCourses(newCourses);
       saveToBackend(newCourses);
+      setCourseToDelete(null);
     }
   };
 
@@ -270,6 +276,24 @@ const RoadMap = () => {
             <div className="modal-actions" style={{ display: 'flex', gap: '12px', margin: 0 }}>
               <button type="button" className="btn-cancel" onClick={() => setIsResetModalOpen(false)} style={{ flex: 1, padding: '12px', borderRadius: '10px', fontWeight: '600', fontSize: '15px' }}>Cancel</button>
               <button type="button" className="btn-save" onClick={confirmResetRoadmap} style={{ backgroundColor: '#f44336', flex: 1, padding: '12px', borderRadius: '10px', fontWeight: '600', fontSize: '15px', boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)' }}>Yes, Reset</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {courseToDelete && (
+        <div className="modal-overlay" onClick={() => setCourseToDelete(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </div>
+            <h2 style={{ marginBottom: '12px', fontSize: '22px', fontWeight: '800', color: '#0f172a' }}>Remove Course?</h2>
+            <p style={{ margin: '0 0 30px 0', fontSize: '15px', color: '#475569', lineHeight: '1.6' }}>
+              Are you sure you want to remove <strong style={{ color: '#0f172a' }}>{courses.find(c => c.id === courseToDelete)?.courseCode}</strong> from your roadmap?
+            </p>
+            <div className="modal-actions" style={{ display: 'flex', gap: '12px', margin: 0 }}>
+              <button type="button" className="btn-cancel" onClick={() => setCourseToDelete(null)} style={{ flex: 1, padding: '12px', borderRadius: '10px', fontWeight: '600', fontSize: '15px' }}>Cancel</button>
+              <button type="button" className="btn-save" onClick={confirmDeleteCourse} style={{ backgroundColor: '#ef4444', flex: 1, padding: '12px', borderRadius: '10px', fontWeight: '600', fontSize: '15px', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)' }}>Remove</button>
             </div>
           </div>
         </div>
