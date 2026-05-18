@@ -7,6 +7,7 @@ import Internships from "./pages/Internship/InternshipList";
 import Capstone from "./pages/Capstone";
 import Events from "./pages/Events";
 import RoadMap from "./pages/RoadMap/RoadMap";
+import About from "./pages/About/About";
 import GlobalGlow from "./components/layout/GlobalGlow";
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/capstone" element={<Capstone />} />
         <Route path="/events" element={<Events />} />
         <Route path="/roadmap" element={<RoadMap />} />
+        <Route path="/about" element={<About />} />
       </Routes>
     </Router>
   );

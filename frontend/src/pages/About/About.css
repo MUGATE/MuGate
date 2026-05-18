@@ -1,0 +1,323 @@
+.about-wrapper {
+  width: 100vw;
+  height: 100vh;
+  background-color: #ffffff;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.about-container {
+  width: 100%;
+  height: 100vh;
+  background-color: #ffffff;
+  border: 16px solid #ffffff;
+  border-radius: 40px;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+  display: block;
+}
+
+/* Left & Right Cinematic Images */
+.about-img-left,
+.about-img-right {
+  position: absolute;
+  bottom: 0; /* Touched the ground */
+  height: 85vh; /* Adjusted height slightly if needed */
+  width: auto;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+}
+
+.about-img-left {
+  left: 2%;
+}
+
+.about-img-right {
+  right: -2%; /* Moved a bit to the left */
+}
+
+.about-img-left img {
+  height: 100%;
+  object-fit: contain;
+  /* Shadow to the right, increased size (blur), reduced opacity */
+  filter: drop-shadow(40px 20px 60px rgba(0, 0, 0, 0.15));
+}
+
+.about-img-right img {
+  height: 100%;
+  object-fit: contain;
+  /* Shadow to the left, increased size (blur), reduced opacity */
+  filter: drop-shadow(-40px 20px 60px rgba(0, 0, 0, 0.15));
+}
+
+.credits-viewport {
+  position: relative;
+  width: 50%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto; /* Center it horizontally now that parent is block */
+  overflow: hidden;
+  z-index: 5;
+  /* Fades out at the top and bottom for smooth entry/exit */
+  mask-image: linear-gradient(to bottom, transparent 5%, black 20%, black 80%, transparent 95%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 5%, black 20%, black 80%, transparent 95%);
+}
+
+.credits-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 600px;
+  position: absolute;
+  top: 100%;
+  animation: scrollCredits 40s linear infinite;
+  color: #111; /* Dark text for white background */
+}
+
+.credits-content.paused {
+  animation-play-state: paused;
+}
+
+/* Initial Messages Styling */
+.intro-sequence {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  width: 50%;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.intro-text {
+  font-family: "SolidroadCustom", sans-serif;
+  font-size: 3rem;
+  font-weight: 400; /* Removed bolding */
+  color: #0e220e; /* Use a softer black/dark green like the heading */
+  letter-spacing: -0.02em;
+  text-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  opacity: 0;
+  transform: translateY(20px);
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.intro-text.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.intro-text.exit {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+/* Credits Typography */
+.credit-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+  width: 100%;
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+
+.credit-title {
+  margin-top: 40px;
+  margin-bottom: 20px;
+  font-family: "SolidroadCustom", sans-serif;
+  font-size: 2.2rem;
+  font-weight: 400; /* Removed bolding */
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-align: center;
+  width: 100%;
+  color: #0e220e;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.credit-role {
+  font-family: "Matter", sans-serif;
+  width: 45%;
+  text-align: right;
+  padding-right: 20px;
+  font-weight: 400; /* Removed bolding */
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.credit-name {
+  font-family: "Matter", sans-serif;
+  width: 55%;
+  text-align: left;
+  padding-left: 20px;
+  font-weight: 400; /* Removed bolding */
+  color: #222;
+  letter-spacing: 0.5px;
+}
+
+/* Keyframes for sliding up */
+@keyframes scrollCredits {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    /* Push it all the way up so the last item passes the screen */
+    transform: translateY(-250%); 
+  }
+}
+
+/* Glassmorphism Floating Navbar */
+.about-floating-nav {
+  position: fixed;
+  bottom: 40px; /* Moved back to bottom */
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  padding: 16px 32px;
+  background: rgba(255, 255, 255, 0.01); /* Super transparent */
+  backdrop-filter: blur(60px); /* Massive depth */
+  -webkit-backdrop-filter: blur(60px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  border-radius: 60px;
+  z-index: 100;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.about-floating-nav:hover {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 45px 90px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  transform: translateX(-50%) translateY(-5px);
+}
+
+.nav-icon-btn {
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px; /* Square with rounded edges */
+  cursor: pointer;
+  color: #111;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-icon-btn:hover {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+}
+
+.nav-icon-btn:active {
+  transform: translateY(1px);
+}
+
+/* Video Modal */
+.video-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.video-modal-content {
+  position: relative;
+  width: 80%;
+  max-width: 1000px;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.video-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+}
+
+.close-video-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.close-video-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .about-img-left, .about-img-right {
+    height: 60vh;
+  }
+  .credits-viewport {
+    width: 60%;
+  }
+}
+
+@media (max-width: 768px) {
+  .about-img-left, .about-img-right {
+    opacity: 0.2; /* Fade images on small screens so text is readable */
+    height: 50vh;
+  }
+  .credits-viewport {
+    width: 90%;
+  }
+  .credit-role {
+    font-size: 1rem;
+  }
+  .credit-name {
+    font-size: 1rem;
+  }
+}

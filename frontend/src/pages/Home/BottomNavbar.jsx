@@ -20,7 +20,7 @@ const PAGE_BUTTON_TEXT = {
     6: "Find",
     7: "Discover",
     8: "Plan",      // RoadMap
-    9: "Learn",
+    9: "About",
     10: null,       // Hidden
 };
 
@@ -32,7 +32,7 @@ const PAGE_ROUTES = {
     6: "/capstone",
     7: "/events",     // Events page
     8: "/roadmap",    // RoadMap page
-    9: "/chatbot",
+    9: "/about",
 };
 
 const TYPEWRITER_SPEED = 35; // ms per letter

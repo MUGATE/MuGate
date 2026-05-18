@@ -114,6 +114,7 @@ const Home = () => {
             </div>
             <Link to="/events" className="nav-events-link">Events</Link>
             <Link to="/roadmap" className="nav-events-link" style={{ marginLeft: '10px' }}>RoadMap</Link>
+            <Link to="/about" className="nav-events-link" style={{ marginLeft: '10px' }}>About</Link>
           </div>
 
           <div className="nav-group-right">

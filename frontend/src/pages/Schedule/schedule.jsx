@@ -419,6 +419,7 @@ const Schedule = () => {
         <Link to="/capstone">Capstone</Link>
         <Link to="/events">Events</Link>
         <Link to="/roadmap">RoadMap</Link>
+        <Link to="/about">About</Link>
         <div className="nav-avatar">
           <img
             src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68"
