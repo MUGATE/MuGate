@@ -10,6 +10,8 @@ const About = () => {
   const navigate = useNavigate();
   const [isPaused, setIsPaused] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
+  const [selectedGuy, setSelectedGuy] = useState(null); // 'ismael' | 'mohammad' | null
+  const [typedChars, setTypedChars] = useState(0); // For typing animation
 
   // Animation States
   const [phase, setPhase] = useState('intro'); // 'intro' or 'credits'
@@ -19,7 +21,7 @@ const About = () => {
   const introTexts = [
     "The MuGate Project",
     "Done By",
-    "Abo Al Fadel Ismael & Mohammad Jomaa",
+    "Mohammad Jomaa & Abo Al Fadel Ismael",
     "A University AI Platform that guides students to academic excellence"
   ];
 
@@ -28,8 +30,8 @@ const About = () => {
     { title: '', role: '', name: '' },
     { title: '', role: '', name: '' },
     { title: 'THE MUGATE PROJECT', role: '', name: '' },
-    { title: '', role: 'Created By', name: '' },
-    { title: '', role: 'Abo Al Fadel Ismael', name: '& Mohammad Jomaa' },
+    { type: 'centered', className: 'created-by-title', text: 'Created By' },
+    { type: 'centered', className: 'creators-names', text: 'Abo Al Fadel Ismael & Mohammad Jomaa' },
     { title: '', role: '', name: '' },
     { title: 'A University AI Platform', role: '', name: '' },
     { title: 'That guides students to academic excellence', role: '', name: '' },
@@ -49,7 +51,8 @@ const About = () => {
     { title: '', role: 'Resume Enhancer', name: 'AI-Powered Improvements' },
     { title: '', role: 'Internship Finder', name: 'Tailored Opportunities' },
     { title: '', role: 'Degree RoadMap', name: 'Visual Progress Tracking' },
-    { title: '', role: 'Capstone Showcase', name: 'Student Project Gallery' },
+    { title: '', role: 'Capstone Gallery', name: 'Student Project Showcase' },
+    { title: '', role: 'Events Hub', name: 'Campus & Academic Activities' },
     { title: '', role: '', name: '' },
     { title: 'SPECIAL THANKS', role: '', name: '' },
     { title: '', role: 'Al Maaref University', name: 'Faculty & Staff' },
@@ -61,7 +64,7 @@ const About = () => {
 
   // Animation Logic
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || selectedGuy) return;
 
     if (phase === 'intro') {
       let timer;
@@ -81,19 +84,87 @@ const About = () => {
       }
       return () => clearTimeout(timer);
     } else if (phase === 'credits') {
-      // Wait for 40s (the CSS animation duration), then loop back to intro
+      // Match exactly with the CSS scrollCredits duration (25s)
       const timer = setTimeout(() => {
         setPhase('intro');
         setIntroIndex(0);
         setIntroAnimState('entering');
-      }, 40000);
+      }, 25000);
       return () => clearTimeout(timer);
     }
-  }, [phase, introIndex, introAnimState, isPaused, introTexts.length]);
+  }, [phase, introIndex, introAnimState, isPaused, introTexts.length, selectedGuy]);
+
+  // Token-based typing animation for perfect syntax highlighting without color popping
+  const ismaelTokens = [
+    { text: "<MuGateTeamMember\n", color: "#e06c75" },
+    { text: "  name", color: "#d19a66" },
+    { text: "=", color: "#abb2bf" },
+    { text: '"Abo Al Fadel Ismael"\n', color: "#98c379" },
+    { text: "/>", color: "#e06c75" },
+    { text: ";\n", color: "#abb2bf" }, // Title ends at the semicolon
+    { text: "const ", color: "#c678dd" },
+    { text: "developer ", color: "#e5c07b" },
+    { text: "= {\n", color: "#abb2bf" },
+    { text: "  role", color: "#e06c75" },
+    { text: ": ", color: "#abb2bf" },
+    { text: '"UI/UX Designer & Frontend"', color: "#98c379" },
+    { text: ",\n", color: "#abb2bf" },
+    { text: "  passion", color: "#e06c75" },
+    { text: ": ", color: "#abb2bf" },
+    { text: '"Seamless user experiences"', color: "#98c379" },
+    { text: ",\n", color: "#abb2bf" },
+    { text: "  stack", color: "#e06c75" },
+    { text: ": [", color: "#abb2bf" },
+    { text: '"React"', color: "#98c379" },
+    { text: ", ", color: "#abb2bf" },
+    { text: '"Modern CSS"', color: "#98c379" },
+    { text: "]\n", color: "#abb2bf" },
+    { text: "};", color: "#abb2bf" }
+  ];
+
+  const mohammadTokens = [
+    { text: "<MuGateTeamMember\n", color: "#e06c75" },
+    { text: "  name", color: "#d19a66" },
+    { text: "=", color: "#abb2bf" },
+    { text: '"Mohammad Jomaa"\n', color: "#98c379" },
+    { text: "/>", color: "#e06c75" },
+    { text: ";\n", color: "#abb2bf" }, // Title ends at the semicolon
+    { text: "const ", color: "#c678dd" },
+    { text: "developer ", color: "#e5c07b" },
+    { text: "= {\n", color: "#abb2bf" },
+    { text: "  role", color: "#e06c75" },
+    { text: ": ", color: "#abb2bf" },
+    { text: '"Backend Developer"', color: "#98c379" },
+    { text: ",\n", color: "#abb2bf" },
+    { text: "  focus", color: "#e06c75" },
+    { text: ": ", color: "#abb2bf" },
+    { text: '"AI Integration"', color: "#98c379" },
+    { text: ",\n", color: "#abb2bf" },
+    { text: "  platform", color: "#e06c75" },
+    { text: ": ", color: "#abb2bf" },
+    { text: '"MuGate"\n', color: "#98c379" },
+    { text: "};", color: "#abb2bf" }
+  ];
+
+  const currentTokens = selectedGuy === 'ismael' ? ismaelTokens : selectedGuy === 'mohammad' ? mohammadTokens : [];
+  const fullTextLength = currentTokens.reduce((acc, token) => acc + token.text.length, 0);
+
+  useEffect(() => {
+    if (!selectedGuy) {
+      setTypedChars(0);
+      return;
+    }
+    if (typedChars >= fullTextLength) return;
+
+    const timer = setTimeout(() => {
+      setTypedChars(prev => prev + 1);
+    }, 25); // Slightly faster typing for code
+    return () => clearTimeout(timer);
+  }, [selectedGuy, typedChars, fullTextLength]);
 
 
   return (
-    <div className="about-page-root" style={{ position: 'relative', width: '100%', minHeight: '100vh', background: '#ffffff' }}>
+    <div className={`about-page-root ${selectedGuy ? 'focus-mode' : ''}`} style={{ position: 'relative', width: '100%', minHeight: '100vh', background: '#ffffff' }}>
       {/* ORIGINAL NAVBAR FROM HOME */}
       <div className="hero-unified-frame">
         <nav className="hero-nav-notched">
@@ -130,15 +201,76 @@ const About = () => {
       </div>
 
       <div className="about-container">
+        {selectedGuy && <div className="focus-overlay" onClick={() => setSelectedGuy(null)}></div>}
+
         {/* Left Image */}
-        <div className="about-img-left">
-          <img src={leftImg} alt="Ismael" />
+        <div
+          className={`about-img-left ${selectedGuy === 'mohammad' ? 'selected' : ''} ${selectedGuy === 'ismael' ? 'dimmed' : ''}`}
+        >
+          <div className="hitbox hitbox-left" onClick={() => setSelectedGuy(selectedGuy === 'mohammad' ? null : 'mohammad')}></div>
+          <img
+            src={leftImg}
+            alt="Mohammad Jomaa"
+          />
         </div>
 
         {/* Right Image */}
-        <div className="about-img-right">
-          <img src={rightImg} alt="Mohammad" />
+        <div
+          className={`about-img-right ${selectedGuy === 'ismael' ? 'selected' : ''} ${selectedGuy === 'mohammad' ? 'dimmed' : ''}`}
+        >
+          <div className="hitbox hitbox-right" onClick={() => setSelectedGuy(selectedGuy === 'ismael' ? null : 'ismael')}></div>
+          <img
+            src={rightImg}
+            alt="Abo Al Fadel Ismael"
+          />
         </div>
+
+        {/* Selected Guy Info Overlay */}
+        {selectedGuy && (() => {
+          let charsLeft = typedChars;
+          const renderedTitleTokens = [];
+          const renderedBodyTokens = [];
+          let isBody = false;
+          let isTypingTitle = true;
+
+          currentTokens.forEach((token, index) => {
+            if (charsLeft <= 0) return;
+
+            const textToRender = token.text.slice(0, charsLeft);
+            const renderedToken = <span key={index} style={{ color: token.color }}>{textToRender}</span>;
+
+            if (!isBody) {
+              renderedTitleTokens.push(renderedToken);
+              if (token.text.includes(';')) {
+                isBody = true;
+                if (charsLeft > token.text.indexOf(';')) {
+                  isTypingTitle = false;
+                }
+              }
+            } else {
+              renderedBodyTokens.push(renderedToken);
+            }
+
+            charsLeft -= token.text.length;
+          });
+
+          return (
+            <div className="guy-info-panel centered">
+              <h2 className="typewriter-text" style={{ whiteSpace: 'pre-wrap', textAlign: 'left', display: 'inline-block' }}>
+                {renderedTitleTokens}
+                {isTypingTitle && <span className="blink-cursor">_</span>}
+              </h2>
+              {renderedBodyTokens.length > 0 && (
+                <div className="typewriter-content">
+                  <p style={{ whiteSpace: 'pre-wrap', textAlign: 'left', display: 'inline-block' }}>
+                    {renderedBodyTokens}
+                    {!isTypingTitle && <span className="blink-cursor">_</span>}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Center Intro Sequence */}
         {phase === 'intro' && (
@@ -146,8 +278,8 @@ const About = () => {
             {introTexts.map((text, idx) => {
               if (idx === introIndex) {
                 return (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className={`intro-text ${introAnimState === 'visible' ? 'visible' : introAnimState === 'exiting' ? 'exit' : ''}`}
                   >
                     {text}
@@ -165,7 +297,9 @@ const About = () => {
             <div className={`credits-content ${isPaused ? 'paused' : ''}`}>
               {creditsData.map((item, index) => (
                 <div key={index} className="credit-row">
-                  {item.title ? (
+                  {item.type === 'centered' ? (
+                    <div className={`credit-centered ${item.className || ''}`}>{item.text}</div>
+                  ) : item.title ? (
                     <h2 className="credit-title">{item.title}</h2>
                   ) : (
                     <>
@@ -181,8 +315,8 @@ const About = () => {
 
         {/* Glassmorphism Floating Navbar */}
         <div className="about-floating-nav">
-          <button 
-            className="nav-icon-btn" 
+          <button
+            className="nav-icon-btn"
             onClick={() => navigate('/')}
             title="Back to Home"
           >
@@ -192,8 +326,8 @@ const About = () => {
             </svg>
           </button>
 
-          <button 
-            className="nav-icon-btn" 
+          <button
+            className="nav-icon-btn"
             onClick={() => setIsPaused(!isPaused)}
             title={isPaused ? "Resume" : "Pause"}
           >
@@ -209,13 +343,14 @@ const About = () => {
             )}
           </button>
 
-          <button 
-            className="nav-icon-btn" 
+          <button
+            className="nav-icon-btn"
             onClick={() => setShowVideo(true)}
             title="Play Video"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
             </svg>
           </button>
         </div>

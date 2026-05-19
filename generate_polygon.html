@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Polygon</title>
+</head>
+<body>
+  <div id="output">Loading...</div>
+  
+  <script>
+    async function getPolygon(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Downscale to 100x100 for a simplified polygon
+          canvas.width = 100;
+          canvas.height = 100;
+          ctx.drawImage(img, 0, 0, 100, 100);
+          
+          const imgData = ctx.getImageData(0, 0, 100, 100);
+          const data = imgData.data;
+          
+          // Find boundary points
+          const points = [];
+          
+          // Go around the perimeter: top, right, bottom, left
+          // Actually, tracing a concave hull from pixels is hard in a short script.
+          // Let's do a simple raycasting from the edges to find the first opaque pixel!
+          
+          // Top edge (left to right)
+          for(let x=0; x<=100; x+=5) {
+            for(let y=0; y<=100; y++) {
+              if (data[(y*100 + x)*4 + 3] > 128) {
+                points.push(`${x}% ${y}%`);
+                break;
+              }
+            }
+          }
+          
+          // Right edge (top to bottom)
+          for(let y=0; y<=100; y+=5) {
+            for(let x=100; x>=0; x--) {
+              if (data[(y*100 + x)*4 + 3] > 128) {
+                points.push(`${x}% ${y}%`);
+                break;
+              }
+            }
+          }
+          
+          // Bottom edge (right to left)
+          for(let x=100; x>=0; x-=5) {
+            for(let y=100; y>=0; y--) {
+              if (data[(y*100 + x)*4 + 3] > 128) {
+                points.push(`${x}% ${y}%`);
+                break;
+              }
+            }
+          }
+          
+          // Left edge (bottom to top)
+          for(let y=100; y>=0; y-=5) {
+            for(let x=0; x<=100; x++) {
+              if (data[(y*100 + x)*4 + 3] > 128) {
+                points.push(`${x}% ${y}%`);
+                break;
+              }
+            }
+          }
+          
+          // Remove duplicates and output
+          const unique = [...new Set(points)];
+          resolve('clip-path: polygon(' + unique.join(', ') + ');');
+        };
+        img.src = src;
+      });
+    }
+
+    async function run() {
+      const leftSrc = "http://localhost:5173/src/assets/guys/left-guy.png"; // check actual path
+      const rightSrc = "http://localhost:5173/src/assets/guys/right-guy.png"; // check actual path
+      
+      try {
+        const leftPoly = await getPolygon('/src/assets/Abo_Al_Fadel.png'); // Wait, need actual paths.
+      } catch(e) {
+        document.getElementById('output').innerText = "Error";
+      }
+    }
+  </script>
+</body>
+</html>

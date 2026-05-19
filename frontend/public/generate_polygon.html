@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Polygon</title>
+</head>
+<body>
+  <h1>Left:</h1>
+  <div id="left-output">Loading...</div>
+  <h1>Right:</h1>
+  <div id="right-output">Loading...</div>
+  
+  <script>
+    async function getPolygon(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          const RESOLUTION = 20; // 20x20 grid
+          canvas.width = RESOLUTION;
+          canvas.height = RESOLUTION;
+          ctx.drawImage(img, 0, 0, RESOLUTION, RESOLUTION);
+          
+          const imgData = ctx.getImageData(0, 0, RESOLUTION, RESOLUTION);
+          const data = imgData.data;
+          
+          const points = [];
+          
+          // Helper to get alpha at grid
+          const getAlpha = (x, y) => data[(y * RESOLUTION + x) * 4 + 3];
+          
+          // Find topmost points per column
+          for (let x = 0; x < RESOLUTION; x++) {
+            for (let y = 0; y < RESOLUTION; y++) {
+              if (getAlpha(x, y) > 128) {
+                points.push(`${Math.round(x/RESOLUTION*100)}% ${Math.round(y/RESOLUTION*100)}%`);
+                break;
+              }
+            }
+          }
+          
+          // Find rightmost points per row
+          for (let y = 0; y < RESOLUTION; y++) {
+            for (let x = RESOLUTION - 1; x >= 0; x--) {
+              if (getAlpha(x, y) > 128) {
+                points.push(`${Math.round(x/RESOLUTION*100)}% ${Math.round(y/RESOLUTION*100)}%`);
+                break;
+              }
+            }
+          }
+          
+          // Find bottommost points per column (reverse)
+          for (let x = RESOLUTION - 1; x >= 0; x--) {
+            for (let y = RESOLUTION - 1; y >= 0; y--) {
+              if (getAlpha(x, y) > 128) {
+                points.push(`${Math.round(x/RESOLUTION*100)}% ${Math.round(y/RESOLUTION*100)}%`);
+                break;
+              }
+            }
+          }
+          
+          // Find leftmost points per row (reverse)
+          for (let y = RESOLUTION - 1; y >= 0; y--) {
+            for (let x = 0; x < RESOLUTION; x++) {
+              if (getAlpha(x, y) > 128) {
+                points.push(`${Math.round(x/RESOLUTION*100)}% ${Math.round(y/RESOLUTION*100)}%`);
+                break;
+              }
+            }
+          }
+          
+          resolve('clip-path: polygon(' + points.join(', ') + ');');
+        };
+        img.src = src;
+      });
+    }
+
+    async function run() {
+      try {
+        const leftPoly = await getPolygon('http://localhost:5173/src/assets/Images/left.png');
+        document.getElementById('left-output').innerText = leftPoly;
+        
+        const rightPoly = await getPolygon('http://localhost:5173/src/assets/Images/right.png');
+        document.getElementById('right-output').innerText = rightPoly;
+      } catch(e) {
+        document.getElementById('left-output').innerText = "Error: " + e;
+      }
+    }
+    
+    window.onload = run;
+  </script>
+</body>
+</html>

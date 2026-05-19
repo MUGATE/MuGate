@@ -44,6 +44,8 @@
   object-fit: contain;
   /* Shadow to the right, reduced blur to define the character's shape well */
   filter: drop-shadow(35px 15px 12px rgba(0, 0, 0, 0.3));
+  pointer-events: none; /* Disable clicking on the full image bounding box */
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), filter 0.5s ease;
 }
 
 .about-img-right img {
@@ -51,6 +53,158 @@
   object-fit: contain;
   /* Shadow to the left, reduced blur to define the character's shape well */
   filter: drop-shadow(-35px 15px 12px rgba(0, 0, 0, 0.3));
+  pointer-events: none; /* Disable clicking on the full image bounding box */
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), filter 0.5s ease;
+}
+
+/* Hitboxes for perfectly masking the transparent PNGs */
+.hitbox-left, .hitbox-right {
+  position: absolute;
+  bottom: 0;
+  z-index: 50;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Left character — 100% accurate alpha trace */
+.hitbox-left {
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(0% 55%, 5% 50%, 10% 45%, 15% 45%, 20% 5%, 25% 5%, 30% 5%, 35% 5%, 40% 5%, 45% 0%, 50% 0%, 55% 5%, 60% 5%, 65% 10%, 70% 45%, 75% 50%, 80% 50%, 85% 65%, 90% 80%, 95% 95%, 50% 0%, 60% 5%, 65% 10%, 55% 15%, 55% 20%, 55% 25%, 55% 30%, 50% 35%, 55% 40%, 70% 45%, 80% 50%, 80% 55%, 80% 60%, 85% 65%, 85% 70%, 85% 75%, 90% 80%, 90% 85%, 90% 90%, 95% 95%, 95% 95%, 90% 95%, 85% 95%, 80% 95%, 75% 95%, 70% 95%, 65% 95%, 60% 95%, 55% 95%, 50% 95%, 45% 95%, 40% 95%, 35% 95%, 30% 95%, 25% 95%, 20% 95%, 15% 95%, 10% 95%, 5% 75%, 0% 65%, 10% 95%, 10% 90%, 10% 85%, 10% 80%, 5% 75%, 5% 70%, 0% 65%, 0% 60%, 0% 55%, 5% 50%, 10% 45%, 25% 40%, 35% 35%, 35% 30%, 30% 25%, 30% 20%, 30% 15%, 30% 10%, 20% 5%, 45% 0%);
+}
+
+/* Right character — 100% accurate alpha trace */
+.hitbox-right {
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(45% 80%, 50% 50%, 55% 5%, 60% 0%, 65% 5%, 70% 5%, 75% 5%, 80% 45%, 85% 50%, 60% 0%, 75% 5%, 70% 10%, 70% 15%, 70% 20%, 70% 25%, 70% 30%, 70% 35%, 75% 40%, 80% 45%, 85% 50%, 85% 55%, 85% 60%, 85% 65%, 85% 70%, 85% 75%, 85% 80%, 80% 85%, 80% 90%, 80% 95%, 85% 80%, 80% 95%, 75% 95%, 70% 95%, 65% 95%, 60% 95%, 55% 95%, 50% 95%, 45% 95%, 45% 95%, 45% 90%, 45% 85%, 45% 80%, 50% 75%, 50% 70%, 50% 65%, 50% 60%, 50% 55%, 50% 50%, 55% 45%, 60% 40%, 65% 35%, 60% 30%, 60% 25%, 60% 20%, 60% 15%, 55% 10%, 55% 5%, 60% 0%);
+}
+
+/* Trigger image hover scale when hovering the hitbox */
+.hitbox-left:hover ~ img,
+.hitbox-right:hover ~ img {
+  transform: scale(1.05);
+}
+
+/* Selected Guy States */
+.about-img-left.selected,
+.about-img-right.selected {
+  z-index: 30; /* Bring to front */
+}
+
+.about-img-left.selected img,
+.about-img-right.selected img {
+  transform: scale(1.1);
+  /* Removed white glow as requested */
+}
+
+/* Disable hitbox clicking when selected so click-to-close on overlay works uninterrupted */
+.about-img-left.selected .hitbox-left,
+.about-img-right.selected .hitbox-right {
+  cursor: default;
+  pointer-events: none;
+}
+
+.about-img-left.dimmed,
+.about-img-right.dimmed {
+  filter: blur(8px) brightness(0.4);
+  transition: all 0.5s ease;
+}
+
+/* Focus Overlay Background */
+.focus-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 20;
+  animation: fadeInOverlay 0.5s ease;
+  cursor: pointer;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to { opacity: 1; backdrop-filter: blur(8px); }
+}
+
+/* Guy Info Panel — centered */
+.guy-info-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 45%;
+  z-index: 40;
+  color: #fff;
+  text-align: center;
+  opacity: 0;
+  animation: panelFadeIn 0.4s ease forwards 0.1s;
+  pointer-events: none;
+}
+
+/* No longer needed — using single centered class */
+.guy-info-panel.ismael,
+.guy-info-panel.mohammad,
+.guy-info-panel.centered {
+  /* all use the same centered positioning above */
+}
+
+/* Title styling */
+.guy-info-panel h2.typewriter-text {
+  display: inline;
+  font-family: 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+  font-size: clamp(1.8rem, 2.5vw, 2.5rem);
+  font-weight: 600;
+  color: #ffffff;
+  /* No text-shadow on names */
+}
+
+/* Paragraph wrapper */
+.guy-info-panel div.typewriter-content {
+  margin-top: 20px;
+}
+
+/* Paragraph text */
+.guy-info-panel div.typewriter-content p {
+  font-family: 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+  font-size: clamp(0.9rem, 1.1vw, 1.15rem);
+  line-height: 1.8;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+/* Blinking underscore cursor */
+.blink-cursor {
+  display: inline;
+  font-weight: 300;
+  font-family: 'Fira Code', 'JetBrains Mono', 'Courier New', monospace;
+  animation: blinkCursor 0.8s step-end infinite;
+}
+
+@keyframes panelFadeIn {
+  from { opacity: 0; transform: translate(-50%, -45%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+@keyframes blinkCursor {
+  from, to { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Focus Mode Transitions for background elements */
+.focus-mode .intro-sequence,
+.focus-mode .credits-viewport,
+.focus-mode .about-floating-nav {
+  filter: blur(10px) brightness(0.4);
+  pointer-events: none;
+  transition: filter 0.5s ease;
+}
+
+.intro-sequence, .credits-viewport, .about-floating-nav {
+  transition: filter 0.5s ease;
 }
 
 .credits-viewport {
@@ -74,7 +228,7 @@
   max-width: 600px;
   position: absolute;
   top: 100%;
-  animation: scrollCredits 40s linear infinite;
+  animation: scrollCredits 25s linear forwards; /* Removed infinite, using exact forwards finish */
   color: #111; /* Dark text for white background */
 }
 
@@ -167,14 +321,38 @@
   letter-spacing: 0.5px;
 }
 
+.credit-centered {
+  width: 100%;
+  text-align: center;
+  font-family: "Matter", sans-serif;
+}
+
+.credit-centered.created-by-title {
+  font-size: 1.2rem;
+  font-weight: 400;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 30px;
+  margin-bottom: 8px;
+}
+
+.credit-centered.creators-names {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #0e220e !important;
+  letter-spacing: 0.5px;
+  margin-bottom: 30px;
+}
+
 /* Keyframes for sliding up */
 @keyframes scrollCredits {
   0% {
     transform: translateY(0);
   }
   100% {
-    /* Push it all the way up so the last item passes the screen */
-    transform: translateY(-250%); 
+    /* Mathematically guarantees exact completion regardless of height */
+    transform: translateY(calc(-100% - 100vh)); 
   }
 }
 
