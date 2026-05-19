@@ -42,15 +42,15 @@
 .about-img-left img {
   height: 100%;
   object-fit: contain;
-  /* Shadow to the right, increased size (blur), reduced opacity */
-  filter: drop-shadow(40px 20px 60px rgba(0, 0, 0, 0.15));
+  /* Shadow to the right, reduced blur to define the character's shape well */
+  filter: drop-shadow(35px 15px 12px rgba(0, 0, 0, 0.3));
 }
 
 .about-img-right img {
   height: 100%;
   object-fit: contain;
-  /* Shadow to the left, increased size (blur), reduced opacity */
-  filter: drop-shadow(-40px 20px 60px rgba(0, 0, 0, 0.15));
+  /* Shadow to the left, reduced blur to define the character's shape well */
+  filter: drop-shadow(-35px 15px 12px rgba(0, 0, 0, 0.3));
 }
 
 .credits-viewport {
