@@ -7,7 +7,7 @@
     background-color: #f8fafb;
     font-family: 'Inter', system-ui, sans-serif;
     overflow: hidden;
-    padding: 20px 16px 16px;
+    padding: 20px 0px 16px 16px;
     gap: 16px;
 }
 
@@ -149,7 +149,19 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    margin-bottom: 32px;
+    margin-bottom: 16px;
+    overflow-y: auto;
+    max-height: 35vh;
+    flex-shrink: 0;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: #e0e0e0;
+    border-radius: 4px;
 }
 
 .nav-item {
@@ -292,8 +304,8 @@
         radial-gradient(ellipse at 20% 80%, #f1f7ee 0%, transparent 50%),
         radial-gradient(ellipse at 50% 20%, #ffffff 0%, transparent 60%);
     background-attachment: fixed;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px #f1f3f4;
+    border-radius: 20px 0 0 20px;
+    box-shadow: -4px 4px 20px #f1f3f4;
     overflow: hidden;
     border: 1px solid rgba(0, 0, 0, 0.01);
 }
@@ -306,16 +318,16 @@
 
 /* Scrollbar styling — only visible when has-messages */
 .chatbot-main.has-messages::-webkit-scrollbar {
-    width: 5px;
+    width: 10px;
 }
 
 .chatbot-main.has-messages::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.08);
+    background: rgba(0, 0, 0, 0.25);
     border-radius: 10px;
 }
 
 .chatbot-main.has-messages::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.15);
+    background: rgba(0, 0, 0, 0.4);
 }
 
 /* .main-bg-mesh is now unused — gradient lives on .chatbot-main directly */
@@ -434,7 +446,8 @@
     flex-direction: column;
     justify-content: space-between;
     gap: 16px;
-        min-height: auto;
+    min-height: auto;
+    overscroll-behavior: contain;
 }
 
 .chatbox-input-row {
@@ -515,6 +528,14 @@
     outline: none;
     font-size: 1.05rem;
     color: #333;
+    resize: none;
+    overflow-y: auto;
+    min-height: 24px;
+    max-height: 150px;
+    font-family: inherit;
+    line-height: 1.5;
+    padding-top: 2px;
+    overscroll-behavior: contain;
 }
 
 .chatbox-input::placeholder {
@@ -534,7 +555,7 @@
     gap: 12px;
 }
 
-.action-btn {
+.chatbot-container .action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -548,18 +569,19 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-.action-btn:hover {
+.chatbot-container .action-btn:hover {
     background-color: #f7f7f9;
     color: #333;
 }
 
-.action-btn.icon-only {
+.chatbot-container .action-btn.icon-only {
     width: 32px;
     height: 32px;
     border-radius: 8px;
 }
 
-.action-btn.pill-btn {
+.chatbot-container .action-btn.pill-btn {
+    width: auto;
     height: 32px;
     padding: 0 12px;
     border-radius: 16px;
@@ -569,14 +591,14 @@
 }
 
 /* Reasoning button active state */
-.action-btn.pill-btn.reasoning-active {
+.chatbot-container .action-btn.pill-btn.reasoning-active {
     background-color: #5157d9;
     color: #ffffff;
     border-color: #5157d9;
     box-shadow: 0 2px 8px rgba(81, 87, 217, 0.3);
 }
 
-.action-btn.pill-btn.reasoning-active:hover {
+.chatbot-container .action-btn.pill-btn.reasoning-active:hover {
     background-color: #4148c7;
     color: #ffffff;
 }
@@ -872,6 +894,9 @@
     border-radius: 18px;
     font-size: 0.92rem;
     line-height: 1.6;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 .message-content p {

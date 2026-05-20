@@ -1,0 +1,298 @@
+/* ===== Shared Layout & Welcome/Selection Modals ===== */
+
+.resume-page {
+  height: 100vh;
+  background-color: #f8fafb;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.re-bg-mesh-1,
+.re-bg-mesh-2,
+.re-bg-mesh-3 {
+  display: none;
+}
+
+.re-sparkle {
+  display: none;
+}
+
+.re-glass {
+  background-color: #fafcfe;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px #f1f3f4;
+  border: 1px solid rgba(0, 0, 0, 0.01);
+  position: relative;
+  z-index: 2;
+}
+
+.re-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  padding: 16px 40px;
+  margin: 16px auto 0;
+  max-width: 1500px;
+  width: calc(100% - 80px);
+  border-radius: 20px;
+  position: relative;
+  z-index: 1001;
+  flex-shrink: 0;
+  background-color: #fafcfe;
+  box-shadow: 0 4px 20px #f1f3f4;
+  border: 1px solid rgba(0, 0, 0, 0.01);
+}
+
+.re-navbar a {
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  color: #3a3a3a;
+  padding: 8px 18px;
+  border-radius: 12px;
+  transition: all 0.25s ease;
+  letter-spacing: 0.01em;
+}
+.re-navbar a:hover {
+  color: #1a6bdb;
+  background: rgba(26, 107, 219, 0.08);
+}
+.re-navbar a.active {
+  color: #1a6bdb;
+  background: rgba(26, 107, 219, 0.1);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(26, 107, 219, 0.1);
+}
+
+.re-nav-avatar {
+  position: absolute;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.re-nav-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.re-layout {
+  display: flex;
+  gap: 24px;
+  padding: 20px 0 20px;
+  margin: 0 auto;
+  max-width: 1500px;
+  width: calc(100% - 80px);
+  align-items: stretch;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.re-section-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px;
+}
+
+/* Modals Overlay */
+.re-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.re-modal-overlay.show {
+  opacity: 1;
+  pointer-events: none;
+}
+
+.re-modal-card {
+  width: 480px;
+  max-width: 92vw;
+  padding: 44px 40px 36px;
+  text-align: center;
+  position: relative;
+  overflow: visible;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid rgba(74, 144, 217, 0.15);
+  box-shadow: 0 4px 20px #f1f3f4;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform: scale(0.85) translateY(30px);
+  opacity: 0;
+  pointer-events: auto;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+}
+.re-modal-card.show {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.re-modal-sparkle {
+  position: absolute;
+  color: #4a90d9;
+  pointer-events: none;
+  animation: re-sparkle-pulse 3s ease-in-out infinite alternate;
+}
+.re-modal-sparkle-1 { top: -8px; left: 30px; font-size: 22px; opacity: 0.4; }
+.re-modal-sparkle-2 { top: 20px; right: 24px; font-size: 16px; opacity: 0.3; animation-delay: 1s; }
+.re-modal-sparkle-3 { bottom: 16px; left: 50px; font-size: 18px; opacity: 0.35; animation-delay: 0.5s; }
+
+.re-modal-back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.5);
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.re-modal-back:hover {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1a1a2e;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.re-modal-icon {
+  margin-bottom: 20px;
+}
+
+.re-modal-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e3a5f;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.re-modal-subtitle {
+  font-size: 14px;
+  color: #5a7494;
+  margin: 0 0 28px;
+  font-weight: 400;
+}
+
+.re-modal-options {
+  display: flex;
+  gap: 16px;
+}
+
+.re-modal-option-btn {
+  flex: 1;
+  padding: 24px 16px 20px;
+  border-radius: 18px;
+  border: 2px solid #e8edf5;
+  background: #f8fafd;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+.re-modal-option-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(74, 144, 217, 0.12);
+}
+
+.re-modal-create:hover { border-color: rgba(34, 197, 94, 0.35); background: rgba(34, 197, 94, 0.06); }
+.re-modal-enhance:hover { border-color: rgba(74, 144, 217, 0.35); background: rgba(74, 144, 217, 0.06); }
+.re-modal-local:hover { border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.04); }
+.re-modal-global:hover { border-color: rgba(99, 102, 241, 0.35); background: rgba(99, 102, 241, 0.06); }
+
+.re-modal-btn-icon {
+  margin-bottom: 4px;
+}
+
+.re-modal-btn-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.re-modal-btn-desc {
+  font-size: 12px;
+  color: #6b83a0;
+  line-height: 1.4;
+}
+
+/* Tablet viewports */
+@media (max-width: 1100px) {
+  .re-navbar {
+    margin: 16px 24px 0;
+    gap: 20px;
+    padding: 14px 24px;
+  }
+  .re-layout {
+    flex-wrap: wrap;
+    margin: 0 24px;
+    padding: 20px 0;
+    overflow: visible;
+  }
+}
+
+/* Mobile viewports */
+@media (max-width: 640px) {
+  .resume-page {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+  }
+  .re-navbar {
+    margin: 10px 12px 0;
+    gap: 6px;
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .re-navbar a {
+    font-size: 13px;
+    padding: 6px 12px;
+  }
+  .re-nav-avatar {
+    position: static;
+    margin-left: auto;
+  }
+  .re-layout {
+    flex-direction: column;
+    margin: 0 12px;
+    padding: 14px 0;
+    gap: 14px;
+    overflow: visible;
+  }
+  .re-modal-card {
+    padding: 32px 24px 28px;
+  }
+  .re-modal-options {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .re-modal-title {
+    font-size: 20px;
+  }
+}

@@ -9,7 +9,7 @@ export const env = {
   db: {
     user: process.env.DB_USER || "FONIX",
     password: process.env.DB_PASSWORD || "***REMOVED***",
-    server: process.env.DB_SERVER || "localhost",
+    server: process.env.DB_SERVER || "127.0.0.1",
     database: process.env.DB_NAME || "MuGate",
 },
 

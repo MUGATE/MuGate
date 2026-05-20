@@ -18,7 +18,10 @@ import {
   MessageSquare,
   X,
   FileText,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Brain,
+  Calendar,
+  Info
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -40,7 +43,7 @@ const Chatbot = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [reasoningEnabled, setReasoningEnabled] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
-    const [isRecording, setIsRecording] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const recordingTimerRef = useRef(null);
@@ -50,7 +53,7 @@ const Chatbot = () => {
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
 
-    // Derive user info from JWT in localStorage
+  // Derive user info from JWT in localStorage
   const token = localStorage.getItem('mugate_token');
   let userName = null;
   if (token) {
@@ -65,16 +68,22 @@ const Chatbot = () => {
 
   // ─── Initialize session on mount ────────────────────────
   useEffect(() => {
+    const isResumeSession = (title) => {
+      const t = (title || '').toLowerCase();
+      return t.includes('cv builder') || t.includes('resume') || t.includes('local cv') || t.includes('global cv');
+    };
+
     const init = async () => {
       setIsInitializing(true);
       try {
         // Load existing sessions (works for both logged-in and anonymous users)
-        const existingSessions = await chatbotApi.getSessions();
-        setSessions(existingSessions);
+        const allSessions = await chatbotApi.getSessions();
+        const generalSessions = allSessions.filter(s => !isResumeSession(s.title));
+        setSessions(generalSessions);
 
         // If there are existing sessions, load the most recent one
-        if (existingSessions.length > 0) {
-          const latest = existingSessions[0]; // Already sorted by updatedAt DESC
+        if (generalSessions.length > 0) {
+          const latest = generalSessions[0]; // Already sorted by updatedAt DESC
           setActiveSessionId(latest.id);
           await loadSessionMessages(latest.id);
           setIsInitializing(false);
@@ -99,7 +108,7 @@ const Chatbot = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-    // ─── Load messages for a session ────────────────────────
+  // ─── Load messages for a session ────────────────────────
   const loadSessionMessages = async (sessionId) => {
     try {
       const msgs = await chatbotApi.getSessionMessages(sessionId);
@@ -138,13 +147,13 @@ const Chatbot = () => {
     }
   };
 
-    // ─── Send a message ─────────────────────────────────────
+  // ─── Send a message ─────────────────────────────────────
   const handleSendMessage = async () => {
     const text = inputText.trim();
     const hasFiles = attachedFiles.length > 0;
     if ((!text && !hasFiles) || !activeSessionId || isLoading) return;
 
-        // Build user message with optional attachment metadata
+    // Build user message with optional attachment metadata
     const fileNames = attachedFiles.map(f => ({ name: f.name, type: f.type }));
     const displayContent = text || (hasFiles ? '' : '');
 
@@ -157,6 +166,9 @@ const Chatbot = () => {
     };
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
     const filesToSend = [...attachedFiles];
     setAttachedFiles([]);
     setIsLoading(true);
@@ -243,7 +255,7 @@ const Chatbot = () => {
 
     recognitionRef.current = recognition;
 
-        recognition.onstart = () => {
+    recognition.onstart = () => {
       setIsRecording(true);
       setRecordingSeconds(0);
       recordingTimerRef.current = setInterval(() => {
@@ -271,7 +283,7 @@ const Chatbot = () => {
       }
     };
 
-        recognition.onend = () => {
+    recognition.onend = () => {
       setIsRecording(false);
       recognitionRef.current = null;
       if (recordingTimerRef.current) {
@@ -283,7 +295,7 @@ const Chatbot = () => {
     recognition.start();
   }, [isRecording]);
 
-    // Cleanup recognition and timer on unmount
+  // Cleanup recognition and timer on unmount
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -302,7 +314,7 @@ const Chatbot = () => {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-    // ─── Enhance prompt via AI ─────────────────────────────
+  // ─── Enhance prompt via AI ─────────────────────────────
   const handleEnhancePrompt = async () => {
     const text = inputText.trim();
     if (!text || isEnhancing || isLoading) return;
@@ -364,7 +376,7 @@ const Chatbot = () => {
     (s.title || 'New Chat').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-    // Check if there are user messages (to decide greeting vs chat view)
+  // Check if there are user messages (to decide greeting vs chat view)
   const hasUserMessages = messages.some(m => m.role === 'user');
 
   // Filter out assistant messages that appear before the first user message
@@ -420,7 +432,7 @@ const Chatbot = () => {
         </div>
 
         {/* Main Nav */}
-                <nav className="sidebar-nav">
+        <nav className="sidebar-nav">
           <Link to="/" className="nav-item">
             <Home size={18} />
             <span>Home</span>
@@ -444,6 +456,14 @@ const Chatbot = () => {
           <Link to="/roadmap" className="nav-item">
             <Library size={18} />
             <span>RoadMap</span>
+          </Link>
+          <Link to="/events" className="nav-item">
+            <Calendar size={18} />
+            <span>Events</span>
+          </Link>
+          <Link to="/about" className="nav-item">
+            <Info size={18} />
+            <span>About</span>
           </Link>
         </nav>
 
@@ -488,7 +508,7 @@ const Chatbot = () => {
       </aside>
 
       {/* Main Content Area */}
-            <main className={`chatbot-main${hasUserMessages ? ' has-messages' : ''}`}>
+      <main className={`chatbot-main${hasUserMessages ? ' has-messages' : ''}`}>
         <FluidTrail scrollable />
         <div className="main-bg-mesh"></div>
 
@@ -516,8 +536,8 @@ const Chatbot = () => {
           {/* ─── Messages View (after user sends first message) ─── */}
           {(hasUserMessages || isInitializing) && (
             <div className="messages-container">
-                                                        {displayMessages.map((msg, idx) => (
-                                <div key={idx} className={`message-bubble ${msg.role}`}>
+              {displayMessages.map((msg, idx) => (
+                <div key={idx} className={`message-bubble ${msg.role}`}>
                   <div className="message-content">
                     {msg.role === 'assistant' ? (
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
@@ -540,13 +560,13 @@ const Chatbot = () => {
                 </div>
               ))}
 
-                            {/* Typing / Thinking indicator */}
+              {/* Typing / Thinking indicator */}
               {isLoading && (
                 <div className="message-bubble assistant">
                   <div className="message-content">
                     {reasoningEnabled ? (
                       <div className="thinking-indicator">
-                        <Lightbulb size={16} className="thinking-icon" />
+                        <Brain size={16} className="thinking-icon" />
                         <span>Thinking...</span>
                       </div>
                     ) : (
@@ -564,8 +584,8 @@ const Chatbot = () => {
 
           {/* Input Box */}
           <div className="chatbox-wrapper">
-            <div className="chatbox-inner">
-                            <div className="chatbox-input-row">
+            <div className="chatbox-inner" onWheel={(e) => e.stopPropagation()}>
+              <div className="chatbox-input-row">
                 <button
                   className={`enhance-prompt-btn${isEnhancing ? ' enhancing' : ''}${!inputText.trim() ? ' disabled' : ''}`}
                   onClick={handleEnhancePrompt}
@@ -574,15 +594,19 @@ const Chatbot = () => {
                 >
                   <Sparkles size={18} />
                 </button>
-                <input
+                <textarea
                   ref={inputRef}
-                  type="text"
                   placeholder="Initiate a query or send a command to the AI..."
                   className="chatbox-input"
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={(e) => {
+                    setInputText(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+                  }}
                   onKeyDown={handleKeyDown}
                   disabled={isLoading || isInitializing}
+                  rows={1}
                 />
               </div>
 
@@ -601,7 +625,7 @@ const Chatbot = () => {
                 </div>
               )}
 
-                            {/* Recording overlay bar — shows above normal actions when recording */}
+              {/* Recording overlay bar — shows above normal actions when recording */}
               {isRecording && (
                 <div className="recording-bar">
                   <div className="recording-bar-left">
@@ -654,7 +678,7 @@ const Chatbot = () => {
                       onClick={() => setReasoningEnabled(prev => !prev)}
                       title={reasoningEnabled ? 'Reasoning mode ON — click to disable' : 'Enable reasoning mode for detailed analysis'}
                     >
-                      <Lightbulb size={16} />
+                      <Brain size={16} />
                       <span>Reasoning</span>
                     </button>
                   </div>
