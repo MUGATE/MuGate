@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { EventController } from "./event.controller";
+import { authMiddleware } from "../../core/middleware/auth.middleware";
+import { adminMiddleware } from "../../core/middleware/admin.middleware";
 
 const router = Router();
 
@@ -8,6 +10,11 @@ router.get("/", EventController.getUpcoming);
 router.get("/categories", EventController.getCategories);
 router.get("/stats", EventController.getStats);
 router.get("/:id", EventController.getById);
+
+// Admin-only event routes
+router.post("/", authMiddleware, adminMiddleware, EventController.addManualEvent);
+router.put("/:id", authMiddleware, adminMiddleware, EventController.updateManualEvent);
+router.delete("/:id", authMiddleware, adminMiddleware, EventController.deleteManualEvent);
 
 // Scrape trigger — could be protected with auth in production
 router.post("/scrape", EventController.triggerScrape);

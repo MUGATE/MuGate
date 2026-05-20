@@ -37,6 +37,31 @@ export class EventRepository {
                 )
             `);
 
+            // Ensure imageUrl can store large Base64 strings by dropping default constraint first, altering, and restoring
+            await pool.request().query(`
+                IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Events') AND name = 'imageUrl')
+                BEGIN
+                    IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Events') AND name = 'imageUrl' AND max_length != -1)
+                    BEGIN
+                        DECLARE @ConstraintName NVARCHAR(256);
+                        SELECT @ConstraintName = d.name
+                        FROM sys.default_constraints d
+                        INNER JOIN sys.columns c ON d.parent_column_id = c.column_id AND d.parent_object_id = c.object_id
+                        WHERE d.parent_object_id = OBJECT_ID('Events') AND c.name = 'imageUrl';
+
+                        IF @ConstraintName IS NOT NULL
+                        BEGIN
+                            EXEC('ALTER TABLE Events DROP CONSTRAINT ' + @ConstraintName);
+                        END
+
+                        ALTER TABLE Events ALTER COLUMN imageUrl NVARCHAR(MAX) NOT NULL;
+
+                        -- Restore default constraint
+                        ALTER TABLE Events ADD CONSTRAINT DF_Events_imageUrl DEFAULT '' FOR imageUrl;
+                    END
+                END
+            `);
+
             // Create index on startDate for fast upcoming queries
             await pool.request().query(`
                 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name='IX_Events_StartDate' AND object_id = OBJECT_ID('Events'))
@@ -275,5 +300,93 @@ export class EventRepository {
             SELECT COUNT(*) AS cnt FROM Events WHERE isActive = 1 AND startDate >= GETDATE()
         `);
         return result.recordset[0].cnt;
+    }
+
+    /**
+     * Add a manual event (admin only).
+     */
+    static async addManualEvent(event: Omit<Event, "id" | "createdAt" | "updatedAt">): Promise<Event> {
+        await poolConnect;
+        const result = await pool.request()
+            .input("title", event.title)
+            .input("description", event.description)
+            .input("location", event.location)
+            .input("startDate", event.startDate)
+            .input("endDate", event.endDate || null)
+            .input("category", event.category)
+            .input("tags", event.tags)
+            .input("imageUrl", event.imageUrl)
+            .input("externalUrl", event.externalUrl)
+            .input("source", "manual")
+            .input("sourceId", "")
+            .input("scraperSource", "other")
+            .input("organizer", event.organizer)
+            .input("isFree", event.isFree ? 1 : 0)
+            .input("isActive", event.isActive ? 1 : 0)
+            .input("createdBy", event.createdBy)
+            .query(`
+                INSERT INTO Events (title, description, location, startDate, endDate, category, tags,
+                    imageUrl, externalUrl, source, sourceId, scraperSource, organizer, isFree, isActive, createdBy)
+                OUTPUT INSERTED.*
+                VALUES (@title, @description, @location, @startDate, @endDate, @category, @tags,
+                    @imageUrl, @externalUrl, @source, @sourceId, @scraperSource, @organizer, @isFree, @isActive, @createdBy)
+            `);
+        return result.recordset[0];
+    }
+
+    /**
+     * Update a manual event (admin only).
+     */
+    static async updateManualEvent(id: number, event: Partial<Event>): Promise<Event | null> {
+        await poolConnect;
+        
+        // Find existing event first
+        const existing = await this.getById(id);
+        if (!existing) return null;
+
+        const result = await pool.request()
+            .input("id", id)
+            .input("title", event.title !== undefined ? event.title : existing.title)
+            .input("description", event.description !== undefined ? event.description : existing.description)
+            .input("location", event.location !== undefined ? event.location : existing.location)
+            .input("startDate", event.startDate !== undefined ? event.startDate : existing.startDate)
+            .input("endDate", event.endDate !== undefined ? event.endDate : existing.endDate)
+            .input("category", event.category !== undefined ? event.category : existing.category)
+            .input("tags", event.tags !== undefined ? event.tags : existing.tags)
+            .input("imageUrl", event.imageUrl !== undefined ? event.imageUrl : existing.imageUrl)
+            .input("externalUrl", event.externalUrl !== undefined ? event.externalUrl : existing.externalUrl)
+            .input("organizer", event.organizer !== undefined ? event.organizer : existing.organizer)
+            .input("isFree", event.isFree !== undefined ? (event.isFree ? 1 : 0) : (existing.isFree ? 1 : 0))
+            .input("isActive", event.isActive !== undefined ? (event.isActive ? 1 : 0) : (existing.isActive ? 1 : 0))
+            .query(`
+                UPDATE Events SET
+                    title = @title,
+                    description = @description,
+                    location = @location,
+                    startDate = @startDate,
+                    endDate = @endDate,
+                    category = @category,
+                    tags = @tags,
+                    imageUrl = @imageUrl,
+                    externalUrl = @externalUrl,
+                    organizer = @organizer,
+                    isFree = @isFree,
+                    isActive = @isActive,
+                    updatedAt = GETDATE()
+                OUTPUT INSERTED.*
+                WHERE id = @id
+            `);
+        return result.recordset[0] || null;
+    }
+
+    /**
+     * Delete a manual event (admin only).
+     */
+    static async deleteManualEvent(id: number): Promise<boolean> {
+        await poolConnect;
+        const result = await pool.request()
+            .input("id", id)
+            .query(`DELETE FROM Events WHERE id = @id`);
+        return (result.rowsAffected[0] || 0) > 0;
     }
 }

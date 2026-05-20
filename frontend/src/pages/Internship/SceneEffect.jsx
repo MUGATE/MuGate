@@ -1,4 +1,4 @@
-﻿import { useRef, useState, useMemo, useEffect } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 
 import { Canvas, useFrame } from '@react-three/fiber';
 
@@ -228,9 +228,9 @@ const CarouselItem = ({ index, activeIndex, company, onClick, total, timeRef }) 
 
    ================================================================ */
 
-const Carousel3D = ({ activeIndex, onLogoClick }) => {
+const Carousel3D = ({ activeIndex, onLogoClick, displayCompanies }) => {
 
-  const total = companyData.length;
+  const total = displayCompanies.length;
 
   const timeRef = useRef(0);
 
@@ -240,7 +240,7 @@ const Carousel3D = ({ activeIndex, onLogoClick }) => {
 
     <group>
 
-      {companyData.map((c, i) => (
+      {displayCompanies.map((c, i) => (
 
         <CarouselItem
 
@@ -266,8 +266,9 @@ const Carousel3D = ({ activeIndex, onLogoClick }) => {
 
 };
 
-const SceneEffect = ({ activeIndex = 0, onLogoClick }) => {
-  const activeCompany = companyData[activeIndex];
+const SceneEffect = ({ activeIndex = 0, onLogoClick, companies = [] }) => {
+  const displayCompanies = companies.length > 0 ? companies : companyData;
+  const activeCompany = displayCompanies[activeIndex];
   // Use the first color from the array or fallback to white
   const activeColor = activeCompany?.colors?.[0] || "#ffffff";
 
@@ -286,7 +287,7 @@ const SceneEffect = ({ activeIndex = 0, onLogoClick }) => {
 
         <BackgroundHalo color="#ffffff" opacity={0.12} />
 
-        <Carousel3D activeIndex={activeIndex} onLogoClick={onLogoClick} />
+        <Carousel3D activeIndex={activeIndex} onLogoClick={onLogoClick} displayCompanies={displayCompanies} />
         <GlassStage />
 
         <GodRayFountain color={activeColor} />

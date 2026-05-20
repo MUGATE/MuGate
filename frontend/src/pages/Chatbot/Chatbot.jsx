@@ -21,7 +21,8 @@ import {
   Image as ImageIcon,
   Brain,
   Calendar,
-  Info
+  Info,
+  Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -65,6 +66,17 @@ const Chatbot = () => {
       userName = (!rawName || isGenericName) ? (payload.email?.split('@')[0] || null) : rawName;
     } catch { /* ignore */ }
   }
+
+  const isAdmin = (() => {
+    const userStr = localStorage.getItem("mugate_user");
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u && String(u.universityId) === "101230004") return true;
+      } catch {}
+    }
+    return false;
+  })();
 
   // ─── Initialize session on mount ────────────────────────
   useEffect(() => {
@@ -465,6 +477,12 @@ const Chatbot = () => {
             <Info size={18} />
             <span>About</span>
           </Link>
+          {isAdmin && (
+            <Link to="/admin-control" className="nav-item">
+              <Shield size={18} />
+              <span>Control</span>
+            </Link>
+          )}
         </nav>
 
         {/* Chat Sessions History */}

@@ -65,3 +65,51 @@ export const deleteReview = async (reviewId) => {
     });
     return data;
 };
+
+/**
+ * Get all companies.
+ * @returns {Promise<Array>} companies
+ */
+export const getCompanies = async () => {
+    const data = await apiFetch("/internships/companies");
+    return data.companies || [];
+};
+
+/**
+ * Add a new company. Requires Admin privileges.
+ * @param {Object} company
+ * @returns {Promise<Object>} the created company
+ */
+export const addCompany = async (company) => {
+    const data = await apiFetch("/internships/companies", {
+        method: "POST",
+        body: JSON.stringify(company),
+    });
+    return data.company;
+};
+
+/**
+ * Update an existing company. Requires Admin privileges.
+ * @param {number} id
+ * @param {Object} company
+ * @returns {Promise<Object>} the updated company
+ */
+export const updateCompany = async (id, company) => {
+    const data = await apiFetch(`/internships/companies/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(company),
+    });
+    return data.company;
+};
+
+/**
+ * Delete an existing company. Requires Admin privileges.
+ * @param {number} id
+ * @returns {Promise<Object>}
+ */
+export const deleteCompany = async (id) => {
+    const data = await apiFetch(`/internships/companies/${id}`, {
+        method: "DELETE",
+    });
+    return data;
+};

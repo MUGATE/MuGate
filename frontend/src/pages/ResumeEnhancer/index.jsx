@@ -211,6 +211,17 @@ const ResumeEnhancerRouter = () => {
     }
   }, [showDownloadModal, localForm, globalForm, downloadFileType, downloadFileName]);
 
+  const isAdmin = (() => {
+    const userStr = localStorage.getItem("mugate_user");
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u && String(u.universityId) === "101230004") return true;
+      } catch {}
+    }
+    return false;
+  })();
+
   return (
     <div className="resume-page">
       {/* Dynamic Aesthetic Background Meshes */}
@@ -234,6 +245,7 @@ const ResumeEnhancerRouter = () => {
         <Link to="/events">Events</Link>
         <Link to="/roadmap">RoadMap</Link>
         <Link to="/about">About</Link>
+        {isAdmin && <Link to="/admin-control">Control</Link>}
         <div className="re-nav-avatar">
           <img src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68" alt="Profile" />
         </div>

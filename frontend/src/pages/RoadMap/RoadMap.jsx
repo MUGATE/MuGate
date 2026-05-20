@@ -5,9 +5,10 @@ import CourseBox from "./CourseBox";
 import CourseModal from "./CourseModal";
 import "./RoadMap.css";
 
-const SemesterCell = ({ id, courses, onEdit, onDelete }) => {
+const SemesterCell = ({ id, courses, onEdit, onDelete, isGuest }) => {
   const { isOver, setNodeRef } = useDroppable({
     id,
+    disabled: isGuest,
   });
 
   return (
@@ -21,6 +22,7 @@ const SemesterCell = ({ id, courses, onEdit, onDelete }) => {
           course={course}
           onEdit={onEdit}
           onDelete={onDelete}
+          isGuest={isGuest}
         />
       ))}
     </div>
@@ -35,15 +37,20 @@ const RoadMap = () => {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState(null);
 
+  const isGuest = !localStorage.getItem("mugate_token");
+
   // Fetch initial data
   useEffect(() => {
     const fetchRoadmap = async () => {
       try {
         const token = localStorage.getItem("mugate_token");
-        if (!token) return; // Wait for login or handle offline?
+        const headers = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
 
         const res = await fetch("http://localhost:5000/api/roadmap", {
-          headers: { "Authorization": `Bearer ${token}` }
+          headers
         });
         const data = await res.json();
         if (data.success) {
@@ -171,6 +178,17 @@ const RoadMap = () => {
     return acc;
   }, {});
 
+  const isAdmin = (() => {
+    const userStr = localStorage.getItem("mugate_user");
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u && String(u.universityId) === "101230004") return true;
+      } catch {}
+    }
+    return false;
+  })();
+
   return (
     <div className="roadmap-container">
       <nav className="re-navbar">
@@ -183,6 +201,7 @@ const RoadMap = () => {
         <Link to="/events">Events</Link>
         <Link to="/roadmap" className="active">RoadMap</Link>
         <Link to="/about">About</Link>
+        {isAdmin && <Link to="/admin-control">Control</Link>}
         <div className="re-nav-avatar">
           <img src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68" alt="Profile" />
         </div>
@@ -216,6 +235,24 @@ const RoadMap = () => {
         </div>
       </div>
 
+      {isGuest && (
+        <div className="guest-banner" style={{
+          background: 'rgba(59, 130, 246, 0.1)',
+          border: '1px solid rgba(59, 130, 246, 0.2)',
+          color: '#3b82f6',
+          padding: '12px 20px',
+          borderRadius: '12px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '14px',
+          fontWeight: '500'
+        }}>
+          <span>ℹ️</span> You are viewing the degree chart in Guest Mode. Login to customize your roadmap.
+        </div>
+      )}
+
       <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
         <div className="roadmap-grid">
           <div className="roadmap-col-headers">
@@ -233,28 +270,35 @@ const RoadMap = () => {
                 courses={getCoursesForCell(year, "Fall")}
                 onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
                 onDelete={handleDeleteCourse}
+                isGuest={isGuest}
               />
               <SemesterCell
                 id={`${year}-Spring`}
                 courses={getCoursesForCell(year, "Spring")}
                 onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
                 onDelete={handleDeleteCourse}
+                isGuest={isGuest}
               />
               <SemesterCell
                 id={`${year}-Summer`}
                 courses={getCoursesForCell(year, "Summer")}
                 onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
                 onDelete={handleDeleteCourse}
+                isGuest={isGuest}
               />
             </div>
           ))}
         </div>
       </DndContext>
 
-      <button className="reset-course-fab" onClick={handleResetRoadmap} title="Reset to Default Courses">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-      </button>
-      <button className="add-course-fab" onClick={openAddModal}>+</button>
+      {!isGuest && (
+        <>
+          <button className="reset-course-fab" onClick={handleResetRoadmap} title="Reset to Default Courses">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          </button>
+          <button className="add-course-fab" onClick={openAddModal}>+</button>
+        </>
+      )}
 
       {isModalOpen && (
         <CourseModal

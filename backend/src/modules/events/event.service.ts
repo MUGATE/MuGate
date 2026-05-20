@@ -130,4 +130,37 @@ export class EventService {
             totalErrors,
         };
     }
+
+    /**
+     * Add a manual event (admin only).
+     */
+    static async addManualEvent(event: Omit<Event, "id" | "createdAt" | "updatedAt">): Promise<Event> {
+        if (!event.title || event.title.trim().length === 0) {
+            throw new Error("Event title is required");
+        }
+        if (!event.startDate) {
+            throw new Error("Start date is required");
+        }
+        return EventRepository.addManualEvent(event);
+    }
+
+    /**
+     * Update a manual event (admin only).
+     */
+    static async updateManualEvent(id: number, event: Partial<Event>): Promise<Event | null> {
+        if (!id || isNaN(id) || id < 1) {
+            throw new Error("Invalid event ID");
+        }
+        return EventRepository.updateManualEvent(id, event);
+    }
+
+    /**
+     * Delete a manual event (admin only).
+     */
+    static async deleteManualEvent(id: number): Promise<boolean> {
+        if (!id || isNaN(id) || id < 1) {
+            throw new Error("Invalid event ID");
+        }
+        return EventRepository.deleteManualEvent(id);
+    }
 }

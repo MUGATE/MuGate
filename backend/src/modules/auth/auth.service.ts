@@ -92,7 +92,7 @@ export class AuthService {
         }
 
         // 6. Generate and return MuGate JWT
-        const payload: TokenPayload = { userId: user.id, email: user.email, name: user.name };
+        const payload: TokenPayload = { userId: user.id, email: user.email, name: user.name, universityId: user.universityId };
         const token = generateToken(payload);
 
         return {

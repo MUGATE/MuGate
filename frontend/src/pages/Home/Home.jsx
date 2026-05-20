@@ -29,18 +29,30 @@ const Home = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     // Check if token exists on mount
     const token = localStorage.getItem("mugate_token");
     if (token) {
       setIsLoggedIn(true);
+      const userStr = localStorage.getItem("mugate_user");
+      if (userStr) {
+        try {
+          const u = JSON.parse(userStr);
+          if (u && String(u.universityId) === "101230004") {
+            setIsAdmin(true);
+          }
+        } catch {}
+      }
     }
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("mugate_token");
+    localStorage.removeItem("mugate_user");
     setIsLoggedIn(false);
+    setIsAdmin(false);
     setUniversityId("");
     setPassword("");
     setValidationErrors({});
@@ -83,9 +95,13 @@ const Home = () => {
 
       // Store the JWT token securely
       localStorage.setItem("mugate_token", data.data.token);
+      localStorage.setItem("mugate_user", JSON.stringify(data.data.user));
 
       // Update UI state to hide login block
       setIsLoggedIn(true);
+      if (data.data.user && String(data.data.user.universityId) === "101230004") {
+        setIsAdmin(true);
+      }
 
     } catch (err) {
       setErrorMsg(err.message);
@@ -99,13 +115,13 @@ const Home = () => {
       {/* THE ENTIRE WHITE FRAME (TOP, LEFT, RIGHT, BOTTOM) + NAVBAR MOVES AS ONE */}
       <div className="hero-unified-frame">
         <nav className="hero-nav-notched">
-                                        <div className="nav-group-left">
-                      <Link to="/internships">Internships</Link>
-                      <Link to="/resume-enhancer">Resume</Link>
-                      <Link to="/chatbot">Chatbot</Link>
-                      <Link to="/schedule">Scheduler</Link>
-                      <Link to="/capstone">Capstone</Link>
-                    </div>
+          <div className="nav-group-left">
+            <Link to="/internships">Internships</Link>
+            <Link to="/resume-enhancer">Resume</Link>
+            <Link to="/chatbot">Chatbot</Link>
+            <Link to="/schedule">Scheduler</Link>
+            <Link to="/capstone">Capstone</Link>
+          </div>
 
           <div className="nav-group-center">
             <div className="branding-logo-box">
@@ -115,6 +131,9 @@ const Home = () => {
             <Link to="/events" className="nav-events-link">Events</Link>
             <Link to="/roadmap" className="nav-events-link" style={{ marginLeft: '10px' }}>RoadMap</Link>
             <Link to="/about" className="nav-events-link" style={{ marginLeft: '10px' }}>About</Link>
+            {isAdmin && (
+              <Link to="/admin-control" className="nav-events-link" style={{ marginLeft: '10px' }}>Control</Link>
+            )}
           </div>
 
           <div className="nav-group-right">
@@ -134,17 +153,19 @@ const Home = () => {
                 </span>
               </button>
             ) : (
-              <button
-                className="nav-demo-btn-solidroad"
-                onClick={handleLogout}
-              >
-                Logout <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255, 255, 255, 0.3)" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
-                  </svg>
-                </span>
-              </button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  className="nav-demo-btn-solidroad"
+                  onClick={handleLogout}
+                >
+                  Logout <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255, 255, 255, 0.3)" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </span>
+                </button>
+              </div>
             )}
           </div>
         </nav>

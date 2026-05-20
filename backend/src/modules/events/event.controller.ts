@@ -90,5 +90,76 @@ export class EventController {
         } catch (error: any) {
             res.status(500).json({ success: false, message: error.message });
         }
+     }
+
+    /**
+     * POST /api/events
+     * Add a manual event. Admin only.
+     */
+    static async addManualEvent(req: any, res: Response) {
+        try {
+            const userName = req.user?.name || "Admin";
+            const eventData = {
+                ...req.body,
+                source: "manual",
+                sourceId: "",
+                scraperSource: "other",
+                isActive: true,
+                createdBy: userName,
+            };
+
+            const newEvent = await EventService.addManualEvent(eventData);
+            res.status(201).json({ success: true, data: newEvent });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    /**
+     * PUT /api/events/:id
+     * Update an event. Admin only.
+     */
+    static async updateManualEvent(req: any, res: Response) {
+        try {
+            const id = parseInt(req.params.id as string, 10);
+            if (isNaN(id) || id < 1) {
+                res.status(400).json({ success: false, message: "Invalid event ID" });
+                return;
+            }
+
+            const updatedEvent = await EventService.updateManualEvent(id, req.body);
+            if (!updatedEvent) {
+                res.status(404).json({ success: false, message: "Event not found" });
+                return;
+            }
+
+            res.json({ success: true, data: updatedEvent });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    }
+
+    /**
+     * DELETE /api/events/:id
+     * Delete an event. Admin only.
+     */
+    static async deleteManualEvent(req: any, res: Response) {
+        try {
+            const id = parseInt(req.params.id as string, 10);
+            if (isNaN(id) || id < 1) {
+                res.status(400).json({ success: false, message: "Invalid event ID" });
+                return;
+            }
+
+            const deleted = await EventService.deleteManualEvent(id);
+            if (!deleted) {
+                res.status(404).json({ success: false, message: "Event not found" });
+                return;
+            }
+
+            res.json({ success: true, message: "Event deleted successfully" });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
     }
 }

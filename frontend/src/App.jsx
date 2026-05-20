@@ -8,6 +8,7 @@ import Capstone from "./pages/Capstone";
 import Events from "./pages/Events";
 import RoadMap from "./pages/RoadMap/RoadMap";
 import About from "./pages/About/About";
+import AdminControl from "./pages/AdminControl/AdminControl";
 import GlobalGlow from "./components/layout/GlobalGlow";
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
         <Route path="/events" element={<Events />} />
         <Route path="/roadmap" element={<RoadMap />} />
         <Route path="/about" element={<About />} />
+        <Route path="/admin-control" element={<AdminControl />} />
       </Routes>
     </Router>
   );

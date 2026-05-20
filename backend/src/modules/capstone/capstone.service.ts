@@ -1,6 +1,8 @@
 import { CapstoneRepository, CapstoneIdea } from "./capstone.repository";
 import { AiProvider } from "../ai/chatbot/ai/ai.provider";
 import { logger } from "../../core/logger/logger";
+import * as fs from "fs";
+import * as path from "path";
 
 /**
  * Capstone Service — handles AI-powered idea suggestions and partner matching logic.
@@ -155,8 +157,77 @@ NOTE: No historical capstone ideas are currently loaded in the database. You may
                 return;
             }
 
-            logger.info("Seeding CapstoneIdeas with sample data...");
+            logger.info("Locating and parsing CSC_499_Projects_All_Semesters.txt...");
 
+            let rawText = "";
+            const pathsToTry = [
+                path.join(__dirname, "../../../../../frontend/src/pages/Capstone/CSC_499_Projects_All_Semesters.txt"),
+                path.join(__dirname, "../../../../frontend/src/pages/Capstone/CSC_499_Projects_All_Semesters.txt"),
+                path.join(process.cwd(), "frontend/src/pages/Capstone/CSC_499_Projects_All_Semesters.txt"),
+                path.join(process.cwd(), "../frontend/src/pages/Capstone/CSC_499_Projects_All_Semesters.txt"),
+                path.join(process.cwd(), "src/pages/Capstone/CSC_499_Projects_All_Semesters.txt")
+            ];
+
+            for (const p of pathsToTry) {
+                if (fs.existsSync(p)) {
+                    rawText = fs.readFileSync(p, "utf-8");
+                    logger.info(`Successfully loaded projects text file from: ${p}`);
+                    break;
+                }
+            }
+
+            const parsedIdeas: any[] = [];
+            if (rawText) {
+                const lines = rawText.split('\n');
+                let currentSemester = '';
+                let currentTitle = '';
+                let currentDesc = '';
+
+                for (const line of lines) {
+                    const semesterMatch = line.match(/──\s*(FALL|SPRING)\s*(\d{4})\s*──/i);
+                    if (semesterMatch) {
+                        currentSemester = `${semesterMatch[2]} ${semesterMatch[1]}`;
+                        continue;
+                    }
+
+                    const titleMatch = line.match(/^\s*\d+\.\s+(.+?)\s*$/);
+                    if (titleMatch) {
+                        if (currentTitle && currentDesc) {
+                            parsedIdeas.push({ semester: currentSemester, title: currentTitle, description: currentDesc });
+                        }
+                        currentTitle = titleMatch[1].trim();
+                        currentDesc = '';
+                        continue;
+                    }
+
+                    const descMatch = line.match(/^\s{4}(.+)$/);
+                    if (descMatch && currentTitle) {
+                        currentDesc = descMatch[1].trim();
+                        continue;
+                    }
+                }
+
+                if (currentTitle && currentDesc) {
+                    parsedIdeas.push({ semester: currentSemester, title: currentTitle, description: currentDesc });
+                }
+            }
+
+            logger.info(`Parsed ${parsedIdeas.length} projects from CSC_499_Projects_All_Semesters.txt`);
+
+            // Map parsed ideas to CapstoneIdea schema
+            const dbIdeas = parsedIdeas.map(p => {
+                const yearMatch = p.semester ? p.semester.match(/^(\d{4})/) : null;
+                const year = yearMatch ? parseInt(yearMatch[1], 10) : 2024;
+                return {
+                    title: p.title,
+                    description: p.description,
+                    faculty: "Sciences",
+                    year: year,
+                    tags: "CSC 499, " + (p.semester || "General")
+                };
+            });
+
+            // 10 custom sample projects
             const sampleIdeas = [
                 {
                     title: "Smart Campus Navigation System",
@@ -227,151 +298,16 @@ NOTE: No historical capstone ideas are currently loaded in the database. You may
                     faculty: "Business Administration",
                     year: 2024,
                     tags: "web,finance,budgeting,analytics,personal-finance"
-                },
-                {
-                    title: "Virtual Lab Simulation Platform",
-                    description: "A web-based platform providing interactive 3D simulations of physics, chemistry, and biology lab experiments for remote learning scenarios.",
-                    faculty: "Sciences",
-                    year: 2023,
-                    tags: "3D,simulation,education,WebGL,virtual-lab"
-                },
-                {
-                    title: "Campus Safety Alert System",
-                    description: "A real-time emergency notification system with panic button, GPS tracking, and automated alerts to campus security, integrated with the university's existing infrastructure.",
-                    faculty: "Engineering",
-                    year: 2024,
-                    tags: "mobile,safety,GPS,real-time,emergency"
-                },
-                {
-                    title: "Peer Tutoring Matchmaking Platform",
-                    description: "A platform that matches students who need help in specific subjects with qualified peer tutors, including scheduling, rating system, and session tracking.",
-                    faculty: "Education",
-                    year: 2023,
-                    tags: "web,education,matching,tutoring,peer-learning"
-                },
-                {
-                    title: "Sustainable Campus Energy Dashboard",
-                    description: "A real-time dashboard monitoring and visualizing energy consumption across campus buildings, with AI predictions for optimization and sustainability recommendations.",
-                    faculty: "Engineering",
-                    year: 2024,
-                    tags: "IoT,dashboard,energy,sustainability,data-visualization"
-                },
-                {
-                    title: "Arabic Natural Language Processing Toolkit",
-                    description: "A comprehensive NLP toolkit for Arabic text processing including sentiment analysis, named entity recognition, and text summarization tailored for Lebanese Arabic dialect.",
-                    faculty: "Engineering",
-                    year: 2024,
-                    tags: "NLP,Arabic,AI,ML,text-processing"
-                },
-                {
-                    title: "Student Health Records Management System",
-                    description: "A secure digital platform for managing student health records, vaccination tracking, and clinic appointments at the university health center.",
-                    faculty: "Health Sciences",
-                    year: 2023,
-                    tags: "web,health,records,security,HIPAA"
-                },
-                {
-                    title: "Interactive Campus Map with Accessibility Features",
-                    description: "A web and mobile application providing detailed campus maps with accessibility routes for students with disabilities, including wheelchair paths and elevator locations.",
-                    faculty: "Engineering",
-                    year: 2023,
-                    tags: "web,mobile,accessibility,maps,GIS"
-                },
-                {
-                    title: "AI Resume Builder & Job Matcher",
-                    description: "An intelligent platform that helps students build professional resumes using AI suggestions and matches them with relevant internship and job opportunities.",
-                    faculty: "Engineering",
-                    year: 2024,
-                    tags: "AI,NLP,resume,career,job-matching"
-                },
-                {
-                    title: "University Social Media Analytics Dashboard",
-                    description: "A dashboard analyzing the university's social media presence across platforms, tracking engagement metrics, sentiment, and providing content strategy recommendations.",
-                    faculty: "Mass Communication and Fine Arts",
-                    year: 2024,
-                    tags: "analytics,social-media,dashboard,NLP,marketing"
-                },
-                {
-                    title: "Online Voting System for Student Elections",
-                    description: "A secure, transparent online voting platform for student council elections with identity verification, real-time results, and audit trail capabilities.",
-                    faculty: "Engineering",
-                    year: 2023,
-                    tags: "web,security,voting,authentication,democracy"
-                },
-                {
-                    title: "Augmented Reality Campus Tour Guide",
-                    description: "An AR mobile application that provides interactive campus tours for prospective students, overlaying information about buildings, history, and programs when pointing their phone.",
-                    faculty: "Engineering",
-                    year: 2024,
-                    tags: "AR,mobile,tourism,3D,education"
-                },
-                {
-                    title: "Course Review & Rating Platform",
-                    description: "A platform where students can anonymously review and rate courses and instructors, helping future students make informed registration decisions.",
-                    faculty: "Engineering",
-                    year: 2023,
-                    tags: "web,reviews,ratings,education,community"
-                },
-                {
-                    title: "Waste Management & Recycling Tracker",
-                    description: "An IoT-based system monitoring waste bins across campus with a mobile app for reporting, recycling gamification, and analytics for campus sustainability initiatives.",
-                    faculty: "Engineering",
-                    year: 2024,
-                    tags: "IoT,sustainability,mobile,gamification,environment"
-                },
-                {
-                    title: "Digital Signage Content Management System",
-                    description: "A centralized platform for managing digital display screens across campus, enabling departments to schedule announcements, events, and emergency messages.",
-                    faculty: "Mass Communication and Fine Arts",
-                    year: 2023,
-                    tags: "web,CMS,digital-signage,scheduling,communication"
-                },
-                {
-                    title: "Internship Management & Tracking System",
-                    description: "A comprehensive platform for managing the entire internship lifecycle — from company partnerships and student applications to supervisor evaluations and credit tracking.",
-                    faculty: "Business Administration",
-                    year: 2024,
-                    tags: "web,internships,management,tracking,career"
-                },
-                {
-                    title: "AI-Powered Plagiarism Detection for Arabic Text",
-                    description: "A plagiarism detection system specifically designed for Arabic academic writing, using NLP techniques to identify copied content, paraphrasing, and citation issues.",
-                    faculty: "Engineering",
-                    year: 2024,
-                    tags: "AI,NLP,Arabic,plagiarism,academic-integrity"
-                },
-                {
-                    title: "Student Attendance Tracking with Face Recognition",
-                    description: "An automated attendance system using facial recognition technology to track student presence in lectures, with privacy-conscious design and opt-out options.",
-                    faculty: "Engineering",
-                    year: 2023,
-                    tags: "AI,computer-vision,attendance,biometrics,privacy"
-                },
-                {
-                    title: "E-Learning Content Accessibility Converter",
-                    description: "A tool that automatically converts educational content into accessible formats — adding captions to videos, alt-text to images, and converting PDFs to screen-reader-friendly formats.",
-                    faculty: "Education",
-                    year: 2024,
-                    tags: "accessibility,education,AI,automation,inclusive-design"
-                },
-                {
-                    title: "Research Collaboration Network",
-                    description: "A platform connecting researchers across departments for interdisciplinary collaboration, project matching, resource sharing, and publication tracking.",
-                    faculty: "Sciences",
-                    year: 2024,
-                    tags: "web,research,collaboration,networking,academic"
-                },
-                {
-                    title: "Smart Classroom Environment Controller",
-                    description: "An IoT system that automatically adjusts lighting, temperature, and ventilation in classrooms based on occupancy, time of day, and weather conditions for optimal learning.",
-                    faculty: "Engineering",
-                    year: 2023,
-                    tags: "IoT,smart-building,automation,sensors,comfort"
                 }
             ];
 
-            const inserted = await CapstoneRepository.bulkInsertIdeas(sampleIdeas);
-            logger.info(`Seeded ${inserted}/${sampleIdeas.length} capstone ideas.`);
+            // Combine parsed ideas with custom ones
+            const finalIdeas = [...dbIdeas, ...sampleIdeas];
+
+            logger.info(`Total ideas to insert: ${finalIdeas.length}`);
+
+            const inserted = await CapstoneRepository.bulkInsertIdeas(finalIdeas);
+            logger.info(`Successfully seeded ${inserted}/${finalIdeas.length} capstone ideas.`);
         } catch (err: any) {
             logger.error(`Failed to seed capstone ideas: ${err.message}`);
         }

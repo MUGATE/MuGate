@@ -23,6 +23,17 @@ const Capstone = () => {
 
 
 
+  const isAdmin = (() => {
+    const userStr = localStorage.getItem("mugate_user");
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u && String(u.universityId) === "101230004") return true;
+      } catch {}
+    }
+    return false;
+  })();
+
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="capstone-page-wrapper">
@@ -37,6 +48,7 @@ const Capstone = () => {
         <Link to="/events">Events</Link>
         <Link to="/roadmap">RoadMap</Link>
         <Link to="/about">About</Link>
+        {isAdmin && <Link to="/admin-control">Control</Link>}
       </nav>
 
       {/* Body: Sidebar + Main */}

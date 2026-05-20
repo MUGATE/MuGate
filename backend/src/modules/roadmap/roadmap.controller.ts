@@ -50,7 +50,7 @@ export class RoadMapController {
             // @ts-ignore
             const userId = req.user?.userId;
             if (!userId) {
-                res.status(401).json({ success: false, message: "Unauthorized" });
+                res.json({ success: true, data: DEFAULT_COURSES, isGuest: true });
                 return;
             }
 

@@ -1,32 +1,73 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, Globe, X, LayoutGrid, Star, LogIn, Pencil, Trash2, Check } from 'lucide-react';
+import { Mail, Phone, Globe, X, LayoutGrid, Star, LogIn, Pencil, Trash2, Check, Plus } from 'lucide-react';
 import { companyData } from '../../data/companies';
 import * as internshipApi from '../../services/internshipApi';
 import SceneEffect from './SceneEffect';
 import GlassButton from './GlassButton';
 import './hero.css';
 
+import TouchLogo from './Logos/touch.png';
+import YoubeeLogo from './Logos/Youbee ai.png';
+import WhishLogo from './Logos/Whish Money.png';
+import XpertBotLogo from './Logos/XpertBot.png';
+import IDSLogo from './Logos/IDS.png';
+import FortyTwoBeirutLogo from './Logos/42 Beirut.png';
+import AlMaarefLogo from './Logos/Al Maaref.png';
+import BrainketsLogo from './Logos/Brainkets.png';
+import DynasoftLogo from './Logos/Dynasoft.png';
+import EktidarLogo from './Logos/Ektidar.png';
+import NeruosLogo from './Logos/Neruos.png';
+import SemicolonLogo from './Logos/Semicolon.png';
+import SoftaviaLogo from './Logos/Softavia.png';
+import VanriseLogo from './Logos/Vanrise.png';
+
+const logoMap = {
+  "Touch": TouchLogo,
+  "Youbee ai": YoubeeLogo,
+  "Whish Money": WhishLogo,
+  "XpertBot": XpertBotLogo,
+  "IDS": IDSLogo,
+  "42 Beirut": FortyTwoBeirutLogo,
+  "Al Maaref": AlMaarefLogo,
+  "Brainkets": BrainketsLogo,
+  "Dynasoft": DynasoftLogo,
+  "Ektidar": EktidarLogo,
+  "Neruos": NeruosLogo,
+  "Semicolon": SemicolonLogo,
+  "Softavia": SoftaviaLogo,
+  "Vanrise": VanriseLogo
+};
+
+const resolveLogo = (logoStr) => {
+  if (!logoStr) return WhishLogo;
+  if (logoMap[logoStr]) return logoMap[logoStr];
+  return logoStr;
+};
+
 /**
  * HeroSection — Cinematic hero combining a 3D R3F Canvas + DOM overlays.
- *
- * Architecture:
- *   .hero-container (relative, 100vw × 100vh)
- *     ├── SceneEffect (R3F Canvas, z-index: 0)
- *     │     VolumetricBeam, Lighting, Carousel3D, GlassFloor,
- *     │     Sparkles, PostProcessing (Bloom + Vignette), Environment
- *     └── DOM Overlays (z-index: 50–100)
- *           Navbar (avatar, back arrow, links)
- *           Company name + description
- *           CTA Button ("Explore Now")
- *
- * Keyboard Navigation:
- *   ArrowLeft / ArrowRight → change activeIndex (wraps around)
- *   activeIndex → SceneEffect → Carousel3D → each CarouselItem lerps
  */
 const InternshipList = () => {
-  const total = companyData.length;
-  const [activeIndex, setActiveIndex] = useState(Math.floor(companyData.length / 2)); // Center default
+  const [companies, setCompanies] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // ── Admin Company CRUD States ──
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [editingCompany, setEditingCompany] = useState(null);
+  const [compName, setCompName] = useState('');
+  const [compDesc, setCompDesc] = useState('');
+  const [compEmail, setCompEmail] = useState('');
+  const [compPhone, setCompPhone] = useState('');
+  const [compWebsite, setCompWebsite] = useState('');
+  const [compSvgString, setCompSvgString] = useState('');
+  const [compScale, setCompScale] = useState(0.02);
+  const [compColors, setCompColors] = useState('');
+  const [compForceWhite, setCompForceWhite] = useState(false);
+  const [compIsMetallic, setCompIsMetallic] = useState(false);
+  const [companySubmitError, setCompanySubmitError] = useState('');
+  const [isDraggingLogo, setIsDraggingLogo] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExploreAllOpen, setIsExploreAllOpen] = useState(false);
   const [selectedExploreCompany, setSelectedExploreCompany] = useState(null);
@@ -38,7 +79,7 @@ const InternshipList = () => {
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
 
   // ── Edit/Delete state ──
@@ -54,7 +95,7 @@ const InternshipList = () => {
   const token = localStorage.getItem('mugate_token');
   const isLoggedIn = !!token;
 
-    // Decode JWT to get current userId + name (for ownership check + avatar)
+  // Decode JWT to get current userId + name (for ownership check + avatar)
   const jwtPayload = (() => {
     if (!token) return null;
     try {
@@ -63,6 +104,116 @@ const InternshipList = () => {
   })();
   const currentUserId = jwtPayload ? String(jwtPayload.userId || '') : null;
   const currentUserName = jwtPayload?.name || jwtPayload?.email?.split('@')[0] || '';
+
+  const isAdmin = (() => {
+    if (jwtPayload && String(jwtPayload.universityId) === '101230004') return true;
+    const userStr = localStorage.getItem('mugate_user');
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u && String(u.universityId) === '101230004') return true;
+      } catch {}
+    }
+    return false;
+  })();
+
+  const fetchCompanies = async () => {
+    try {
+      const data = await internshipApi.getCompanies();
+      const formatted = data.map(c => ({
+        ...c,
+        colors: typeof c.colors === 'string' ? c.colors.split(',') : (Array.isArray(c.colors) ? c.colors : ['#ffffff']),
+        forceWhiteBack: !!c.forceWhiteBack,
+        isMetallic: !!c.isMetallic,
+        svgString: resolveLogo(c.svgString)
+      }));
+      setCompanies(formatted);
+      if (formatted.length > 0) {
+        setActiveIndex(prev => {
+          if (prev >= formatted.length) return 0;
+          return prev;
+        });
+      }
+    } catch (err) {
+      console.error('Failed to get companies:', err);
+    }
+  };
+
+  const handleOpenCompanyModal = (companyToEdit = null) => {
+    setEditingCompany(companyToEdit);
+    if (companyToEdit) {
+      setCompName(companyToEdit.name || '');
+      setCompDesc(companyToEdit.description || '');
+      setCompEmail(companyToEdit.email || '');
+      setCompPhone(companyToEdit.phone || '');
+      setCompWebsite(companyToEdit.website || '');
+      setCompSvgString(companyToEdit.svgString || '');
+      setCompScale(companyToEdit.scale || 0.02);
+      setCompColors(Array.isArray(companyToEdit.colors) ? companyToEdit.colors.join(',') : (companyToEdit.colors || ''));
+      setCompForceWhite(!!companyToEdit.forceWhiteBack);
+      setCompIsMetallic(!!companyToEdit.isMetallic);
+    } else {
+      setCompName('');
+      setCompDesc('');
+      setCompEmail('');
+      setCompPhone('');
+      setCompWebsite('');
+      setCompSvgString('');
+      setCompScale(0.02);
+      setCompColors('');
+      setCompForceWhite(false);
+      setCompIsMetallic(false);
+    }
+    setCompanySubmitError('');
+    setIsCompanyModalOpen(true);
+  };
+
+  const handleSaveCompany = async () => {
+    if (!compName.trim()) {
+      setCompanySubmitError('Company name is required.');
+      return;
+    }
+    const payload = {
+      name: compName.trim(),
+      description: compDesc.trim(),
+      email: compEmail.trim() || null,
+      phone: compPhone.trim() || null,
+      website: compWebsite.trim() || null,
+      svgString: compSvgString.trim() || null,
+      scale: parseFloat(compScale) || 0.02,
+      colors: compColors.trim() || null,
+      forceWhiteBack: compForceWhite ? 1 : 0,
+      isMetallic: compIsMetallic ? 1 : 0
+    };
+    try {
+      if (editingCompany) {
+        await internshipApi.updateCompany(editingCompany.id, payload);
+      } else {
+        await internshipApi.addCompany(payload);
+      }
+      setIsCompanyModalOpen(false);
+      await fetchCompanies();
+    } catch (err) {
+      setCompanySubmitError(err.message || 'Failed to save company.');
+    }
+  };
+
+  const handleDeleteCompany = async (companyId) => {
+    if (!window.confirm('Are you sure you want to delete this company listing? All reviews for this company will also be deleted.')) {
+      return;
+    }
+    try {
+      await internshipApi.deleteCompany(companyId);
+      if (selectedExploreCompany && selectedExploreCompany.id === companyId) {
+        setSelectedExploreCompany(null);
+      }
+      await fetchCompanies();
+    } catch (err) {
+      alert(err.message || 'Failed to delete company.');
+    }
+  };
+
+  const total = companies.length > 0 ? companies.length : companyData.length;
 
   const goPrev = useCallback(() => {
     setActiveIndex((i) => (i - 1 + total) % total);
@@ -76,8 +227,9 @@ const InternshipList = () => {
     if (i !== activeIndex) setActiveIndex(i);
   }, [activeIndex]);
 
-    // ── Load company stats on mount ──
+  // ── Load company stats and companies on mount ──
   useEffect(() => {
+    fetchCompanies();
     internshipApi.getCompanyStats()
       .then(stats => {
         const map = {};
@@ -117,7 +269,7 @@ const InternshipList = () => {
     setSubmitSuccess('');
     try {
       await internshipApi.submitReview(selectedExploreCompany.id, feedbackRating, feedbackText.trim());
-            setSubmitSuccess('Review submitted successfully!');
+      setSubmitSuccess('Review submitted successfully!');
       setFeedbackText('');
       setFeedbackRating(0);
       await reloadReviewsAndStats();
@@ -139,7 +291,7 @@ const InternshipList = () => {
     setCompanyStats(map);
   };
 
-    // ── Delete review handler ──
+  // ── Delete review handler ──
   const handleDeleteReview = async (reviewId) => {
     setDeletingReviewId(reviewId);
     setConfirmDeleteId(null);
@@ -199,12 +351,12 @@ const InternshipList = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [goPrev, goNext]);
 
-  const company = companyData[activeIndex];
+  const company = (companies.length > 0 ? companies[activeIndex] : companyData[activeIndex]) || {};
 
   return (
     <div className="hero-container">
       {/* ── 3D SCENE ── */}
-      <SceneEffect activeIndex={activeIndex} onLogoClick={handleLogoClick} />
+      <SceneEffect activeIndex={activeIndex} onLogoClick={handleLogoClick} companies={companies} />
 
       {/* ── NAVBAR ── */}
       <nav className="hero-nav">
@@ -226,6 +378,11 @@ const InternshipList = () => {
             <LayoutGrid size={18} />
             Explore All
           </button>
+          {isAdmin && (
+            <button className="hero-explore-all-btn" style={{ marginLeft: 8 }} onClick={() => handleOpenCompanyModal(null)}>
+              <Plus size={16} style={{ color: '#000000', strokeWidth: 3, marginRight: 4 }} /> Add Company
+            </button>
+          )}
         </div>
                 <div className="hero-nav-menu">
           <Link to="/schedule" className="hero-nav-link">Scheduler</Link>
@@ -233,6 +390,7 @@ const InternshipList = () => {
           <Link to="/capstone" className="hero-nav-link">Capstone</Link>
           <Link to="/roadmap" className="hero-nav-link">RoadMap</Link>
           <Link to="/about" className="hero-nav-link">About</Link>
+          {isAdmin && <Link to="/admin-control" className="hero-nav-link">Control</Link>}
           <Link to="/chatbot" className="hero-nav-link">Chatbot</Link>
         </div>
       </nav>
@@ -244,7 +402,7 @@ const InternshipList = () => {
       </div>
 
       {/* ── CTA BUTTON ── */}
-      <GlassButton onClick={() => setIsModalOpen(true)}>Explore More</GlassButton>
+      <GlassButton onClick={() => { setSelectedExploreCompany(company); setIsExploreAllOpen(true); }}>Explore More</GlassButton>
 
       {/* ── COMPANY INFO MODAL OVERLAY ── */}
       {isModalOpen && (
@@ -310,7 +468,43 @@ const InternshipList = () => {
                 <div className="explore-detail-header">
                   <img src={selectedExploreCompany.svgString} alt={selectedExploreCompany.name} className="explore-detail-logo" />
                   <div className="explore-detail-title-group">
-                    <h2 className="explore-detail-title">{selectedExploreCompany.name}</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <h2 className="explore-detail-title">{selectedExploreCompany.name}</h2>
+                      {isAdmin && (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            onClick={() => handleOpenCompanyModal(selectedExploreCompany)}
+                            style={{
+                              border: 'none',
+                              background: 'rgba(255,255,255,0.15)',
+                              color: '#fff',
+                              borderRadius: 4,
+                              padding: '4px 8px',
+                              cursor: 'pointer',
+                              fontSize: '11px',
+                              fontWeight: 600
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCompany(selectedExploreCompany.id)}
+                            style={{
+                              border: 'none',
+                              background: 'rgba(239,68,68,0.2)',
+                              color: '#ef4444',
+                              borderRadius: 4,
+                              padding: '4px 8px',
+                              cursor: 'pointer',
+                              fontSize: '11px',
+                              fontWeight: 600
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                     <p className="explore-detail-subtitle">
                                             {getDisplayRating(selectedExploreCompany)} <Star size={18} fill="#f59e0b" color="#f59e0b" style={{ display: 'inline', verticalAlign: 'text-top' }} />
                       <span className="explore-detail-review-count">({getDisplayReviewCount(selectedExploreCompany)} reviews)</span>
@@ -562,11 +756,11 @@ const InternshipList = () => {
                   <p className="explore-all-subtitle">Ranked by overall student ratings and feedback.</p>
                 </div>
                                 <div className="explore-all-content">
-                  {[...companyData]
+                  {[...companies]
                     .sort((a, b) => {
                       // Sort by real backend rating first, fallback to static
-                      const ratingA = companyStats[a.id]?.avgRating ?? parseFloat(a.averageRating);
-                      const ratingB = companyStats[b.id]?.avgRating ?? parseFloat(b.averageRating);
+                      const ratingA = companyStats[a.id]?.avgRating ?? parseFloat(a.averageRating || "0");
+                      const ratingB = companyStats[b.id]?.avgRating ?? parseFloat(b.averageRating || "0");
                       return ratingB - ratingA;
                     })
                     .map((c, index) => {
@@ -577,6 +771,7 @@ const InternshipList = () => {
                           className="explore-all-row clickable-row"
                           key={c.id}
                           onClick={() => setSelectedExploreCompany(c)}
+                          style={{ position: 'relative' }}
                         >
                           <div className="explore-col-rank">
                             <span className="explore-rank-number">#{index + 1}</span>
@@ -590,7 +785,7 @@ const InternshipList = () => {
                           </div>
                           <div className="explore-col-rating">
                             <span className="explore-rating-label">Rating</span>
-                                                        <span className="explore-rating-value">
+                            <span className="explore-rating-value">
                               {getDisplayRating(c)} <Star size={18} fill="currentColor" />
                             </span>
                             <span className="explore-rating-count">({getDisplayReviewCount(c)} reviews)</span>
@@ -599,12 +794,394 @@ const InternshipList = () => {
                             <span className="explore-feedback-label">Latest Feedback</span>
                             <span className="explore-feedback-text">{latestFeedback}</span>
                           </div>
+                          {isAdmin && (
+                            <div 
+                              className="company-top-actions" 
+                              style={{ 
+                                position: 'absolute', 
+                                top: '8px', 
+                                right: '8px', 
+                                display: 'flex', 
+                                gap: '6px', 
+                                zIndex: 20 
+                              }} 
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={() => handleOpenCompanyModal(c)}
+                                title="Edit Company"
+                                style={{
+                                  background: 'rgba(255, 255, 255, 0.1)',
+                                  color: '#ffffff',
+                                  borderRadius: '50%',
+                                  width: '28px',
+                                  height: '28px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  backdropFilter: 'blur(4px)',
+                                  border: '1px solid rgba(255, 255, 255, 0.15)'
+                                }}
+                              >
+                                <Pencil size={12} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCompany(c.id)}
+                                title="Delete Company"
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.15)',
+                                  color: '#ef4444',
+                                  borderRadius: '50%',
+                                  width: '28px',
+                                  height: '28px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  backdropFilter: 'blur(4px)',
+                                  border: '1px solid rgba(239, 68, 68, 0.3)'
+                                }}
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── COMPANY EDITOR MODAL OVERLAY ── */}
+      {isCompanyModalOpen && (
+        <div className="hero-modal-overlay" onClick={() => setIsCompanyModalOpen(false)}>
+          <div className="hero-modal-glass" style={{ maxWidth: 550, maxHeight: '90vh', overflowY: 'auto', background: '#090d16', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)' }} onClick={(e) => e.stopPropagation()}>
+            <button className="hero-modal-close" onClick={() => setIsCompanyModalOpen(false)} aria-label="Close" style={{ color: '#ffffff' }}>
+              <X size={20} />
+            </button>
+            <h2 className="modal-brand" style={{ color: '#ffffff', fontWeight: 800 }}>{editingCompany ? "Edit Company" : "Add New Company"}</h2>
+            <p className="modal-desc" style={{ marginBottom: 20, color: '#94a3b8' }}>
+              {editingCompany ? "Modify company details and 3D settings." : "Create a new company listing for internships."}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', textAlign: 'left' }}>
+              <div>
+                <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Company Name *</label>
+                <input
+                  type="text"
+                  value={compName}
+                  onChange={(e) => setCompName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(255,255,255,0.25)',
+                    background: 'rgba(255,255,255,0.06)',
+                    color: '#ffffff',
+                    outline: 'none',
+                    fontSize: '0.9rem'
+                  }}
+                  placeholder="e.g. Google"
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Description</label>
+                <textarea
+                  value={compDesc}
+                  onChange={(e) => setCompDesc(e.target.value)}
+                  rows="3"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(255,255,255,0.25)',
+                    background: 'rgba(255,255,255,0.06)',
+                    color: '#ffffff',
+                    outline: 'none',
+                    resize: 'vertical',
+                    fontSize: '0.9rem'
+                  }}
+                  placeholder="Company description..."
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Email</label>
+                  <input
+                    type="email"
+                    value={compEmail}
+                    onChange={(e) => setCompEmail(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(255,255,255,0.25)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#ffffff',
+                      outline: 'none',
+                      fontSize: '0.9rem'
+                    }}
+                    placeholder="contact@company.com"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Phone</label>
+                  <input
+                    type="text"
+                    value={compPhone}
+                    onChange={(e) => setCompPhone(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(255,255,255,0.25)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#ffffff',
+                      outline: 'none',
+                      fontSize: '0.9rem'
+                    }}
+                    placeholder="+1 555-0199"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Website URL</label>
+                <input
+                  type="url"
+                  value={compWebsite}
+                  onChange={(e) => setCompWebsite(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(255,255,255,0.25)',
+                    background: 'rgba(255,255,255,0.06)',
+                    color: '#ffffff',
+                    outline: 'none',
+                    fontSize: '0.9rem'
+                  }}
+                  placeholder="https://company.com"
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Company Logo (Drag & Drop Image) *</label>
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setIsDraggingLogo(true); }}
+                  onDragLeave={() => setIsDraggingLogo(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDraggingLogo(false);
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        setCompSvgString(reader.result);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  onClick={() => document.getElementById('logo-file-input').click()}
+                  style={{
+                    width: '100%',
+                    height: '110px',
+                    border: isDraggingLogo ? '2px dashed #6366f1' : '1px dashed rgba(255,255,255,0.3)',
+                    borderRadius: 12,
+                    background: isDraggingLogo ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.03)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    padding: '8px'
+                  }}
+                >
+                  <input
+                    id="logo-file-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setCompSvgString(reader.result);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                  {compSvgString ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', height: '100%', padding: '0 12px' }}>
+                      <img 
+                        src={compSvgString} 
+                        alt="Preview" 
+                        style={{ 
+                          width: '56px', 
+                          height: '56px', 
+                          objectFit: 'contain', 
+                          borderRadius: 8,
+                          background: 'rgba(255,255,255,0.1)',
+                          border: '1px solid rgba(255,255,255,0.2)'
+                        }} 
+                      />
+                      <div style={{ flex: 1, textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block' }}>Logo Image Loaded</span>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setCompSvgString(''); }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#ef4444',
+                            fontSize: '0.78rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            padding: '2px 0 0 0',
+                            textDecoration: 'underline'
+                          }}
+                        >
+                          Remove Image
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Plus size={20} color="#6366f1" style={{ marginBottom: 6 }} />
+                      <span style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 500 }}>
+                        Drag & drop logo here, or <span style={{ color: '#818cf8', textDecoration: 'underline' }}>browse</span>
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>Supports SVG, PNG, JPG</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Scale (for 3D mesh)</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    value={compScale}
+                    onChange={(e) => setCompScale(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(255,255,255,0.25)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#ffffff',
+                      outline: 'none',
+                      fontSize: '0.9rem'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Theme Colors (comma-separated hex)</label>
+                  <input
+                    type="text"
+                    value={compColors}
+                    onChange={(e) => setCompColors(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 8,
+                      border: '1px solid rgba(255,255,255,0.25)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: '#ffffff',
+                      outline: 'none',
+                      fontSize: '0.9rem'
+                    }}
+                    placeholder="#3b82f6,#1d4ed8,#ffffff"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 20, margin: '6px 0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: '#ffffff', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={compForceWhite}
+                    onChange={(e) => setCompForceWhite(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  Force White Background (3D)
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: '#ffffff', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={compIsMetallic}
+                    onChange={(e) => setCompIsMetallic(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  Metallic Look (3D)
+                </label>
+              </div>
+
+              {companySubmitError && (
+                <div style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: 4, fontWeight: 500 }}>
+                  {companySubmitError}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 14 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsCompanyModalOpen(false)}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(255,255,255,0.05)',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveCompany}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
+                >
+                  Save Company
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

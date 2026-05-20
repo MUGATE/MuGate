@@ -163,6 +163,17 @@ const About = () => {
   }, [selectedGuy, typedChars, fullTextLength]);
 
 
+  const isAdmin = (() => {
+    const userStr = localStorage.getItem("mugate_user");
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u && String(u.universityId) === "101230004") return true;
+      } catch {}
+    }
+    return false;
+  })();
+
   return (
     <div className={`about-page-root ${selectedGuy ? 'focus-mode' : ''}`} style={{ position: 'relative', width: '100%', minHeight: '100vh', background: '#ffffff' }}>
       {/* ORIGINAL NAVBAR FROM HOME */}
@@ -183,6 +194,9 @@ const About = () => {
             <Link to="/events" className="nav-events-link">Events</Link>
             <Link to="/roadmap" className="nav-events-link" style={{ marginLeft: '10px' }}>RoadMap</Link>
             <Link to="/about" className="nav-events-link" style={{ marginLeft: '10px' }}>About</Link>
+            {isAdmin && (
+              <Link to="/admin-control" className="nav-events-link" style={{ marginLeft: '10px' }}>Control</Link>
+            )}
           </div>
           <div className="nav-group-right">
             <button

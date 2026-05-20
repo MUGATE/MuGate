@@ -8,6 +8,7 @@ export interface TokenPayload {
     userId: string;
     email: string;
     name?: string;
+    universityId?: string;
 }
 
 export const generateToken = (payload: TokenPayload): string => {

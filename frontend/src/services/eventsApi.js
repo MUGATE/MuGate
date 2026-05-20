@@ -64,3 +64,35 @@ export const triggerEventScrape = async () => {
     });
     return data.data || {};
 };
+
+/**
+ * Add a manual event (admin only).
+ */
+export const addManualEvent = async (eventData) => {
+    const data = await apiFetch("/events", {
+        method: "POST",
+        body: JSON.stringify(eventData),
+    });
+    return data.data;
+};
+
+/**
+ * Update a manual event (admin only).
+ */
+export const updateManualEvent = async (id, eventData) => {
+    const data = await apiFetch(`/events/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(eventData),
+    });
+    return data.data;
+};
+
+/**
+ * Delete a manual event (admin only).
+ */
+export const deleteManualEvent = async (id) => {
+    const data = await apiFetch(`/events/${id}`, {
+        method: "DELETE",
+    });
+    return data;
+};

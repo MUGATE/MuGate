@@ -64,8 +64,17 @@ export class CapstoneRepository {
                     faculty NVARCHAR(255) NOT NULL DEFAULT '',
                     year INT NOT NULL DEFAULT 0,
                     tags NVARCHAR(MAX) NOT NULL DEFAULT '',
+                    isActive BIT NOT NULL DEFAULT 1,
                     createdAt DATETIME2 DEFAULT GETDATE()
                 )
+                ELSE
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT * FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('CapstoneIdeas') AND name = 'isActive'
+                    )
+                    ALTER TABLE CapstoneIdeas ADD isActive BIT NOT NULL DEFAULT 1;
+                END
             `);
 
             logger.info("Capstone tables ensured (CapstonePartners + CapstoneIdeas).");
@@ -159,14 +168,16 @@ export class CapstoneRepository {
     /**
      * Get all ideas, newest first. Optional limit.
      */
-    static async getAllIdeas(limit: number = 200): Promise<CapstoneIdea[]> {
+    static async getAllIdeas(limit: number = 300, includeDeleted: boolean = false): Promise<CapstoneIdea[]> {
         await poolConnect;
+        const condition = includeDeleted ? "" : "WHERE isActive = 1";
         const result = await pool.request()
             .input("limit", limit)
             .query(`
-                SELECT TOP (@limit) id, title, description, faculty, year, tags, createdAt
+                SELECT TOP (@limit) id, title, description, faculty, year, tags, isActive, createdAt
                 FROM CapstoneIdeas
-                ORDER BY year DESC, createdAt DESC
+                ${condition}
+                ORDER BY year DESC, title ASC, createdAt DESC
             `);
         return result.recordset;
     }
@@ -174,19 +185,21 @@ export class CapstoneRepository {
     /**
      * Search ideas by keyword (matches title, description, tags, faculty).
      */
-    static async searchIdeas(keyword: string, limit: number = 50): Promise<CapstoneIdea[]> {
+    static async searchIdeas(keyword: string, limit: number = 300): Promise<CapstoneIdea[]> {
         await poolConnect;
         const result = await pool.request()
             .input("keyword", `%${keyword}%`)
             .input("limit", limit)
             .query(`
-                SELECT TOP (@limit) id, title, description, faculty, year, tags, createdAt
+                SELECT TOP (@limit) id, title, description, faculty, year, tags, isActive, createdAt
                 FROM CapstoneIdeas
-                WHERE title LIKE @keyword
-                   OR description LIKE @keyword
-                   OR tags LIKE @keyword
-                   OR faculty LIKE @keyword
-                ORDER BY year DESC, createdAt DESC
+                WHERE isActive = 1 AND (
+                    title LIKE @keyword
+                    OR description LIKE @keyword
+                    OR tags LIKE @keyword
+                    OR faculty LIKE @keyword
+                )
+                ORDER BY year DESC, title ASC, createdAt DESC
             `);
         return result.recordset;
     }
@@ -194,16 +207,16 @@ export class CapstoneRepository {
     /**
      * Get ideas by faculty.
      */
-    static async getIdeasByFaculty(faculty: string, limit: number = 50): Promise<CapstoneIdea[]> {
+    static async getIdeasByFaculty(faculty: string, limit: number = 300): Promise<CapstoneIdea[]> {
         await poolConnect;
         const result = await pool.request()
             .input("faculty", `%${faculty}%`)
             .input("limit", limit)
             .query(`
-                SELECT TOP (@limit) id, title, description, faculty, year, tags, createdAt
+                SELECT TOP (@limit) id, title, description, faculty, year, tags, isActive, createdAt
                 FROM CapstoneIdeas
-                WHERE faculty LIKE @faculty
-                ORDER BY year DESC, createdAt DESC
+                WHERE isActive = 1 AND faculty LIKE @faculty
+                ORDER BY year DESC, title ASC, createdAt DESC
             `);
         return result.recordset;
     }
@@ -211,7 +224,7 @@ export class CapstoneRepository {
     /**
      * Add a new idea to the database (admin/seeder use).
      */
-    static async addIdea(idea: Omit<CapstoneIdea, "id" | "createdAt">): Promise<CapstoneIdea> {
+    static async addIdea(idea: Omit<CapstoneIdea, "id" | "createdAt" | "isActive">): Promise<CapstoneIdea> {
         await poolConnect;
         const result = await pool.request()
             .input("title", idea.title)
@@ -220,17 +233,82 @@ export class CapstoneRepository {
             .input("year", idea.year)
             .input("tags", idea.tags)
             .query(`
-                INSERT INTO CapstoneIdeas (title, description, faculty, year, tags)
+                INSERT INTO CapstoneIdeas (title, description, faculty, year, tags, isActive)
                 OUTPUT INSERTED.*
-                VALUES (@title, @description, @faculty, @year, @tags)
+                VALUES (@title, @description, @faculty, @year, @tags, 1)
             `);
         return result.recordset[0];
     }
 
     /**
+     * Update an existing idea.
+     */
+    static async updateIdea(id: number, idea: Omit<CapstoneIdea, "id" | "createdAt" | "isActive">): Promise<CapstoneIdea | null> {
+        await poolConnect;
+        const result = await pool.request()
+            .input("id", id)
+            .input("title", idea.title)
+            .input("description", idea.description)
+            .input("faculty", idea.faculty)
+            .input("year", idea.year)
+            .input("tags", idea.tags)
+            .query(`
+                UPDATE CapstoneIdeas
+                SET title = @title, description = @description, faculty = @faculty, year = @year, tags = @tags
+                OUTPUT INSERTED.*
+                WHERE id = @id
+            `);
+        return result.recordset[0] || null;
+    }
+
+    /**
+     * Delete an idea:
+     * - If id <= 187: soft delete (isActive = 0)
+     * - If id > 187: hard delete (physical delete)
+     */
+    static async deleteIdea(id: number): Promise<boolean> {
+        await poolConnect;
+        let query = "";
+        if (id <= 187) {
+            query = "UPDATE CapstoneIdeas SET isActive = 0 WHERE id = @id";
+        } else {
+            query = "DELETE FROM CapstoneIdeas WHERE id = @id";
+        }
+        const result = await pool.request()
+            .input("id", id)
+            .query(query);
+        return (result.rowsAffected[0] || 0) > 0;
+    }
+
+    /**
+     * Restore a soft-deleted default idea.
+     */
+    static async restoreIdea(id: number): Promise<boolean> {
+        await poolConnect;
+        const result = await pool.request()
+            .input("id", id)
+            .query("UPDATE CapstoneIdeas SET isActive = 1 WHERE id = @id");
+        return (result.rowsAffected[0] || 0) > 0;
+    }
+
+    /**
+     * Get soft-deleted ideas (for admin undo delete view).
+     */
+    static async getDeletedIdeas(): Promise<CapstoneIdea[]> {
+        await poolConnect;
+        const result = await pool.request().query(`
+            SELECT id, title, description, faculty, year, tags, isActive, createdAt
+            FROM CapstoneIdeas
+            WHERE isActive = 0
+            ORDER BY year DESC, title ASC
+        `);
+        return result.recordset;
+    }
+
+    /**
      * Bulk insert ideas (for seeding).
      */
-    static async bulkInsertIdeas(ideas: Omit<CapstoneIdea, "id" | "createdAt">[]): Promise<number> {
+    static async bulkInsertIdeas(ideas: Omit<CapstoneIdea, "id" | "createdAt" | "isActive">[]): Promise<number> {
         await poolConnect;
         let inserted = 0;
         for (const idea of ideas) {
@@ -242,8 +320,8 @@ export class CapstoneRepository {
                     .input("year", idea.year)
                     .input("tags", idea.tags)
                     .query(`
-                        INSERT INTO CapstoneIdeas (title, description, faculty, year, tags)
-                        VALUES (@title, @description, @faculty, @year, @tags)
+                        INSERT INTO CapstoneIdeas (title, description, faculty, year, tags, isActive)
+                        VALUES (@title, @description, @faculty, @year, @tags, 1)
                     `);
                 inserted++;
             } catch (err: any) {
@@ -268,7 +346,7 @@ export class CapstoneRepository {
     static async getDistinctFaculties(): Promise<string[]> {
         await poolConnect;
         const result = await pool.request().query(`
-            SELECT DISTINCT faculty FROM CapstoneIdeas WHERE faculty != '' ORDER BY faculty
+            SELECT DISTINCT faculty FROM CapstoneIdeas WHERE faculty != '' AND isActive = 1 ORDER BY faculty
         `);
         return result.recordset.map((r: any) => r.faculty);
     }
