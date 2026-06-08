@@ -342,6 +342,7 @@ const Home = () => {
             <Link to="/chatbot" className="footer-link">AI Chatbot</Link>
             <Link to="/capstone" className="footer-link">Capstone</Link>
             <Link to="/events" className="footer-link">Events</Link>
+            <Link to="/roadmap" className="footer-link">Degree RoadMap</Link>
           </div>
 
           <div className="footer-links-group">

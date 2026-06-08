@@ -46,7 +46,7 @@ export class ClassifierService {
         "deadline", "deadlines", "calendar", "academic calendar",
         "probation", "dismissal", "suspension", "appeal",
         // University-specific roles
-        "professor", "instructor", "dean", "advisor", "advisor",
+        "professor", "professors", "instructor", "instructors", "teacher", "teachers", "doctor", "doctors", "dean", "deans", "advisor", "advisors", "staff",
         "registrar", "bursar", "provost",
         // Portal & app
         "portal", "ums", "mugate", "muchat", "student portal",

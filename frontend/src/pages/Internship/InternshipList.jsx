@@ -92,6 +92,7 @@ const InternshipList = () => {
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [deletingReviewId, setDeletingReviewId] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null); // show inline confirm UI
+  const [confirmDeleteCompanyId, setConfirmDeleteCompanyId] = useState(null);
 
   // Check if user is logged in + decode userId from JWT
   const token = localStorage.getItem('mugate_token');
@@ -206,14 +207,12 @@ const InternshipList = () => {
   };
 
   const handleDeleteCompany = async (companyId) => {
-    if (!window.confirm('Are you sure you want to delete this company listing? All reviews for this company will also be deleted.')) {
-      return;
-    }
     try {
       await internshipApi.deleteCompany(companyId);
       if (selectedExploreCompany && selectedExploreCompany.id === companyId) {
         setSelectedExploreCompany(null);
       }
+      setConfirmDeleteCompanyId(null);
       await fetchCompanies();
     } catch (err) {
       alert(err.message || 'Failed to delete company.');
@@ -392,13 +391,15 @@ const InternshipList = () => {
           )}
         </div>
                 <div className="hero-nav-menu">
+          <Link to="/internships" className="hero-nav-link active">Internships</Link>
+          <Link to="/resume-enhancer" className="hero-nav-link">Resume</Link>
+          <Link to="/chatbot" className="hero-nav-link">Chatbot</Link>
           <Link to="/schedule" className="hero-nav-link">Scheduler</Link>
-          <Link to="/resume-enhancer" className="hero-nav-link">Resume Enhancer</Link>
           <Link to="/capstone" className="hero-nav-link">Capstone</Link>
+          <Link to="/events" className="hero-nav-link">Events</Link>
           <Link to="/roadmap" className="hero-nav-link">RoadMap</Link>
           <Link to="/about" className="hero-nav-link">About</Link>
           {isAdmin && <Link to="/admin-control" className="hero-nav-link">Control</Link>}
-          <Link to="/chatbot" className="hero-nav-link">Chatbot</Link>
         </div>
       </nav>
 
@@ -479,36 +480,82 @@ const InternshipList = () => {
                       <h2 className="explore-detail-title">{selectedExploreCompany.name}</h2>
                       {isAdmin && (
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <button
-                            onClick={() => handleOpenCompanyModal(selectedExploreCompany)}
-                            style={{
-                              border: 'none',
-                              background: 'rgba(255,255,255,0.15)',
-                              color: '#fff',
-                              borderRadius: 4,
-                              padding: '4px 8px',
-                              cursor: 'pointer',
-                              fontSize: '11px',
-                              fontWeight: 600
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCompany(selectedExploreCompany.id)}
-                            style={{
-                              border: 'none',
-                              background: 'rgba(239,68,68,0.2)',
-                              color: '#ef4444',
-                              borderRadius: 4,
-                              padding: '4px 8px',
-                              cursor: 'pointer',
-                              fontSize: '11px',
-                              fontWeight: 600
-                            }}
-                          >
-                            Delete
-                          </button>
+                          {confirmDeleteCompanyId === selectedExploreCompany.id ? (
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              background: 'rgba(239,68,68,0.12)',
+                              padding: '4px 10px',
+                              borderRadius: 6,
+                              border: '1px solid rgba(239,68,68,0.25)'
+                            }}>
+                              <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 600 }}>Confirm Delete?</span>
+                              <button
+                                onClick={() => handleDeleteCompany(selectedExploreCompany.id)}
+                                style={{
+                                  border: 'none',
+                                  background: '#ef4444',
+                                  color: '#fff',
+                                  borderRadius: 4,
+                                  padding: '2px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: '10px',
+                                  fontWeight: 600
+                                }}
+                              >
+                                Yes
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteCompanyId(null)}
+                                style={{
+                                  border: 'none',
+                                  background: 'rgba(255,255,255,0.2)',
+                                  color: '#fff',
+                                  borderRadius: 4,
+                                  padding: '2px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: '10px',
+                                  fontWeight: 600
+                                }}
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleOpenCompanyModal(selectedExploreCompany)}
+                                style={{
+                                  border: 'none',
+                                  background: 'rgba(255,255,255,0.15)',
+                                  color: '#fff',
+                                  borderRadius: 4,
+                                  padding: '4px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: '11px',
+                                  fontWeight: 600
+                                }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteCompanyId(selectedExploreCompany.id)}
+                                style={{
+                                  border: 'none',
+                                  background: 'rgba(239,68,68,0.2)',
+                                  color: '#ef4444',
+                                  borderRadius: 4,
+                                  padding: '4px 8px',
+                                  cursor: 'pointer',
+                                  fontSize: '11px',
+                                  fontWeight: 600
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
@@ -806,54 +853,91 @@ const InternshipList = () => {
                               className="company-top-actions" 
                               style={{ 
                                 position: 'absolute', 
-                                top: '8px', 
-                                right: '8px', 
+                                top: '12px', 
+                                right: '16px', 
                                 display: 'flex', 
-                                gap: '6px', 
+                                gap: '12px', 
                                 zIndex: 20 
                               }} 
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <button
+                              <Pencil
+                                size={14}
+                                style={{ cursor: 'pointer', color: '#6366f1', flexShrink: 0 }}
                                 onClick={() => handleOpenCompanyModal(c)}
                                 title="Edit Company"
-                                style={{
-                                  background: 'rgba(255, 255, 255, 0.1)',
-                                  color: '#ffffff',
-                                  borderRadius: '50%',
-                                  width: '28px',
-                                  height: '28px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s ease',
-                                  backdropFilter: 'blur(4px)',
-                                  border: '1px solid rgba(255, 255, 255, 0.15)'
-                                }}
-                              >
-                                <Pencil size={12} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteCompany(c.id)}
+                              />
+                              <Trash2
+                                size={14}
+                                style={{ cursor: 'pointer', color: '#ef4444', flexShrink: 0 }}
+                                onClick={() => setConfirmDeleteCompanyId(c.id)}
                                 title="Delete Company"
-                                style={{
-                                  background: 'rgba(239, 68, 68, 0.15)',
-                                  color: '#ef4444',
-                                  borderRadius: '50%',
-                                  width: '28px',
-                                  height: '28px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s ease',
-                                  backdropFilter: 'blur(4px)',
-                                  border: '1px solid rgba(239, 68, 68, 0.3)'
-                                }}
-                              >
-                                <X size={12} />
-                              </button>
+                              />
+                            </div>
+                          )}
+                          {confirmDeleteCompanyId === c.id && (
+                            <div 
+                              className="explore-delete-confirm-overlay"
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'linear-gradient(135deg, rgba(254, 226, 226, 0.96) 0%, rgba(254, 242, 242, 0.92) 100%)',
+                                backdropFilter: 'blur(8px)',
+                                borderRadius: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '0 24px',
+                                zIndex: 30,
+                                border: '1px solid rgba(239, 68, 68, 0.25)',
+                                animation: 'fadeIn 0.2s ease-out'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <Trash2 size={20} style={{ color: '#ef4444' }} />
+                                <div style={{ textAlign: 'left' }}>
+                                  <h4 style={{ margin: 0, color: '#991b1b', fontSize: '15px', fontWeight: 700 }}>Delete {c.name}?</h4>
+                                  <p style={{ margin: '2px 0 0 0', color: '#b91c1c', fontSize: '12px' }}>All reviews for this company will also be permanently deleted.</p>
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                  onClick={() => handleDeleteCompany(c.id)}
+                                  style={{
+                                    padding: '8px 16px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                                    color: '#fff',
+                                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.2)',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
+                                >
+                                  Yes, Delete
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDeleteCompanyId(null)}
+                                  style={{
+                                    padding: '8px 16px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 500,
+                                    border: '1px solid rgba(0,0,0,0.1)',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    background: 'rgba(255,255,255,0.8)',
+                                    color: '#1e293b',
+                                    transition: 'background 0.2s'
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>

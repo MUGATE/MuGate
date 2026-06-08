@@ -538,6 +538,23 @@
     overscroll-behavior: contain;
 }
 
+.chatbox-input::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chatbox-input::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chatbox-input::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+}
+
+.chatbox-input::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
+}
+
 .chatbox-input::placeholder {
     color: #909096;
 }
@@ -892,67 +909,207 @@
 .message-content {
     padding: 12px 18px;
     border-radius: 18px;
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     line-height: 1.6;
     word-wrap: break-word;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 }
 
+/* Headings styling */
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4 {
+    white-space: normal;
+}
+
+.message-content h1 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0.5em 0 0.25em 0;
+    color: #1a1a1e;
+}
+
+.message-content h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0.45em 0 0.2em 0;
+    color: #2c2c30;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 2px;
+}
+
+.message-content h3 {
+    font-size: 1.08rem;
+    font-weight: 600;
+    margin: 0.4em 0 0.2em 0;
+    color: #333338;
+}
+
+.message-content h4 {
+    font-size: 0.98rem;
+    font-weight: 600;
+    margin: 0.3em 0 0.15em 0;
+    color: #444;
+}
+
+/* Paragraph spacing */
 .message-content p {
-    margin: 0 0 0.5em 0;
+    margin: 0 0 0.35em 0;
+    white-space: normal;
 }
 
 .message-content p:last-child {
     margin-bottom: 0;
 }
 
-.message-content ul,
-.message-content ol {
-    margin: 0.4em 0;
+/* Horizontal line rule */
+.message-content hr {
+    border: 0;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.08);
+    margin: 0.6em 0;
+}
+
+/* Lists styling */
+.message-content ul {
+    list-style-type: disc;
+    margin: 0.3em 0;
     padding-left: 1.4em;
+    white-space: normal;
+}
+
+.message-content ol {
+    list-style-type: decimal;
+    margin: 0.3em 0;
+    padding-left: 1.4em;
+    white-space: normal;
 }
 
 .message-content li {
-    margin-bottom: 0.2em;
+    margin-bottom: 0.15em;
+    padding-left: 1px;
+    white-space: normal;
 }
 
-.message-content strong {
-    font-weight: 600;
+.message-content li::marker {
+    color: #5157d9;
+    font-weight: bold;
 }
 
+/* Sub-lists support */
+.message-content ul ul,
+.message-content ol ul {
+    list-style-type: circle;
+    margin: 0.1em 0 0.1em 1em;
+}
+
+.message-content ul ol,
+.message-content ol ol {
+    list-style-type: lower-alpha;
+    margin: 0.1em 0 0.1em 1em;
+}
+
+/* Bolding & Highlighting */
+.message-content strong,
+.message-content b {
+    font-weight: 700;
+    color: #111;
+}
+
+.message-content mark {
+    background-color: rgba(255, 223, 0, 0.25);
+    color: #222;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+/* Blockquote */
+.message-content blockquote {
+    border-left: 3px solid #5157d9;
+    padding: 4px 12px;
+    margin: 0.5em 0;
+    background: rgba(81, 87, 217, 0.02);
+    border-radius: 0 4px 4px 0;
+    color: #555;
+    font-style: italic;
+}
+
+/* Inline Code & Code Blocks */
 .message-content code {
-    background: rgba(0, 0, 0, 0.06);
-    padding: 1px 5px;
+    background: rgba(81, 87, 217, 0.06);
+    color: #484ec4;
+    padding: 1px 4px;
     border-radius: 4px;
     font-size: 0.88em;
     font-family: 'Consolas', 'Monaco', monospace;
+    font-weight: 500;
 }
 
 .message-content pre {
-    background: rgba(0, 0, 0, 0.06);
+    background: #1e1e24;
+    color: #f8f8f2;
     padding: 10px 14px;
     border-radius: 8px;
     overflow-x: auto;
     margin: 0.5em 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .message-content pre code {
     background: none;
+    color: inherit;
     padding: 0;
+    font-size: 0.85em;
 }
 
-.message-content h1,
-.message-content h2,
-.message-content h3 {
-    font-size: 1em;
+/* Tables styling */
+.message-content table {
+    white-space: normal;
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.6em 0;
+    font-size: 0.86rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.01);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.message-content th,
+.message-content td {
+    padding: 6px 10px;
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.message-content th {
+    background-color: rgba(81, 87, 217, 0.04);
+    color: #3f44b0;
     font-weight: 600;
-    margin: 0.6em 0 0.3em 0;
+    border-bottom: 2px solid rgba(81, 87, 217, 0.08);
+}
+
+.message-content tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.005);
+}
+
+.message-content tr:hover {
+    background-color: rgba(81, 87, 217, 0.015);
 }
 
 .message-content a {
     color: #5157d9;
-    text-decoration: underline;
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px dashed rgba(81, 87, 217, 0.4);
+    transition: all 0.2s ease;
+}
+
+.message-content a:hover {
+    color: #3f44b0;
+    border-bottom-style: solid;
 }
 
 .message-bubble.user .message-content {
@@ -960,6 +1117,23 @@
     color: #ffffff;
     border-radius: 18px;
     box-shadow: 0 2px 12px rgba(81, 87, 217, 0.2);
+}
+
+.message-bubble.user .message-content * {
+    color: #ffffff !important;
+}
+
+.message-bubble.user .message-content code {
+    background: rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+}
+
+.message-bubble.user .message-content th {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.message-bubble.user .message-content hr {
+    background: rgba(255, 255, 255, 0.2) !important;
 }
 
 .message-bubble.assistant .message-content {

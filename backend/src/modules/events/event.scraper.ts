@@ -94,6 +94,24 @@ function isTechRelevant(title: string, description: string = ""): boolean {
         "real estate", "forex", "mlm", "make money online",
         "exposed: how to", "get rich", "passive income",
         "weight loss", "fitness", "zumba", "pilates",
+        // Art, culture, museum
+        "museum", "sursock", "gallery", "art exhibit", "art exhibition",
+        "sculpture", "painting", "theater", "theatre", "opera",
+        "concert", "recital", "choir", "orchestra", "ballet",
+        "poetry reading", "book launch", "literary festival",
+        "film screening", "movie night", "photography exhibit",
+        "fashion show", "craft fair",
+        // Fundraising, alumni, non-tech campus
+        "blood drive", "donation drive", "fundraiser gala",
+        "alumni reunion", "homecoming", "commencement ceremony",
+        // Seasonal / cultural / religious
+        "spring festival", "fall festival", "christmas party",
+        "easter celebration", "ramadan iftar", "cultural night",
+        "heritage day", "independence day",
+        // Sports
+        "sports tournament", "basketball game", "football game",
+        "soccer match", "marathon", "5k run", "swimming competition",
+        "tennis tournament", "volleyball",
     ];
 
     for (const block of blockWords) {
@@ -103,6 +121,41 @@ function isTechRelevant(title: string, description: string = ""): boolean {
         if (text.includes(keyword)) return true;
     }
     return false;
+}
+
+/**
+ * Validate that a scraped string is actually a proper event title.
+ * Rejects greetings, full paragraphs, CTA fragments, and noise.
+ */
+function isValidEventTitle(title: string): boolean {
+    const t = title.trim();
+
+    // Too short or too long
+    if (t.length < 5 || t.length > 120) return false;
+
+    // Starts with greeting / salutation / address
+    if (/^(dear|hello|hi |hey |good morning|good evening|greetings|attention|notice to|to all)/i.test(t)) return false;
+
+    // Is a full paragraph (too many words for a title)
+    const wordCount = t.split(/\s+/).length;
+    if (wordCount > 15) return false;
+
+    // Ends with period and has many words (likely a sentence, not a title)
+    if (t.endsWith(".") && wordCount > 5) return false;
+
+    // Contains CTA / action fragments (scraped button or link text)
+    if (/click here|learn more|register now|sign up now|read more|view details|submit|subscribe|see more|load more/i.test(t)) return false;
+
+    // Starts with "The event/workshop/session will/is" — description fragment
+    if (/^the (event|workshop|session|program|course|seminar|lecture|webinar) (will|is|was|has|can|provides|features|covers|aims)/i.test(t)) return false;
+
+    // All-caps noise (navigation breadcrumbs, UI labels)
+    if (t === t.toUpperCase() && wordCount > 2) return false;
+
+    // Contains email-like patterns (scraped from body text)
+    if (/@.*\./.test(t)) return false;
+
+    return true;
 }
 
 // ─── Generic Playwright Page Text Helper ──────────────────
@@ -551,7 +604,7 @@ async function scrapeBerytech(): Promise<ScrapedEvent[]> {
                         seenIds.add(id);
                         let startDate: Date;
                         try { startDate = new Date(buf.date); } catch { startDate = new Date(); }
-                        if (startDate >= new Date() && isTechRelevant(buf.title, buf.desc)) {
+                        if (startDate >= new Date() && isValidEventTitle(buf.title) && isTechRelevant(buf.title, buf.desc)) {
                             events.push({
                                 title: buf.title, description: buf.desc,
                                 location: buf.loc || "Beirut, Lebanon", startDate,
@@ -602,7 +655,7 @@ async function scrapeAUB(): Promise<ScrapedEvent[]> {
 
         for (const line of lines) {
             if (line.startsWith("START")) {
-                if (cur && cur.title) {
+                if (cur && cur.title && isValidEventTitle(cur.title)) {
                     const id = cur.title.replace(/[^a-z0-9]/gi, "_").substring(0, 80);
                     if (!seenIds.has(id)) {
                         seenIds.add(id);
@@ -628,8 +681,9 @@ async function scrapeAUB(): Promise<ScrapedEvent[]> {
                 else if (line.startsWith("LOCATION")) cur.loc = line.replace(/^LOCATION\s+/, "").trim();
                 else if (line.startsWith("CATEGORY")) cur.cat = line.replace(/^CATEGORY\s+/, "").trim();
                 else if (line === "READ MORE" || line.startsWith("Share on")) { /* skip */ }
-                                else if (!cur.title && line.length > 8 && line.length < 150 
-                         && !line.match(/^(Start|End|Location|Category|Share on|READ MORE|About the|Program Overview)/i)) 
+                else if (!cur.title && line.length > 8 && line.length < 120 
+                         && !line.match(/^(Start|End|Location|Category|Share on|READ MORE|About the|Program Overview|Dear |Hello |Hi |To all|Attention|Notice)/i)
+                         && isValidEventTitle(line)) 
                     cur.title = line;
                 else if (cur.title && !cur.desc && line.length > 15 
                          && !line.match(/^(Share on|READ MORE|Location|Category)/i)) 
@@ -706,7 +760,7 @@ async function scrapeZakaAI(): Promise<ScrapedEvent[]> {
                     }
                 }
 
-                if (currentTitle && eventDate && eventDate >= new Date() && isTechRelevant(currentTitle)) {
+                if (currentTitle && eventDate && eventDate >= new Date() && isValidEventTitle(currentTitle) && isTechRelevant(currentTitle)) {
                     const id = `zaka_${currentTitle.replace(/[^a-z0-9]/gi, "_")}`.substring(0, 80);
                     if (!seenIds.has(id)) {
                         seenIds.add(id);
@@ -822,6 +876,7 @@ async function scrapeEventbrite(): Promise<ScrapedEvent[]> {
                 for (const pe of pageEvents) {
                     if (seenIds.has(pe.eventId)) continue;
                     seenIds.add(pe.eventId);
+                    if (!isValidEventTitle(pe.title)) continue;
                     if (!isTechRelevant(pe.title)) continue;
                     let startDate: Date;
                     try { startDate = new Date(pe.date); } catch { startDate = new Date(); }

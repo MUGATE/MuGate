@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getUpcomingEvents, triggerEventScrape, addManualEvent, updateManualEvent, deleteManualEvent } from '../../services/eventsApi';
+import { Pencil, Trash2, X } from 'lucide-react';
 import './events.css';
 
 
@@ -45,6 +46,7 @@ const mapBackendEvent = (ev) => {
     description: ev.description || "",
     source: sourceLabels[rawSource] || rawSource,
     rawSource: rawSource,
+    eventSource: ev.source || "scraped",
     tags: ev.tags ? ev.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
     isFree: ev.isFree ?? true,
     imageUrl: ev.imageUrl || "",
@@ -251,15 +253,114 @@ const EventCard = ({ event }) => {
 };
 
 /* ── Admin Event Card ── */
-const AdminCard = ({ event, onImageClick, onEdit, onDelete, isAdmin }) => {
+const AdminCard = ({ event, onImageClick, onEdit, onDelete, isAdmin, confirmDeleteId, setConfirmDeleteId }) => {
   const borderColor = TYPE_COLORS[event.type] || "#999";
+  const isConfirming = confirmDeleteId === event.id;
 
   return (
-    <div className="ev-admin-card" style={{ borderLeftColor: borderColor, position: 'relative' }}>
-      {isAdmin && (
+    <div className="ev-admin-card" style={{ borderLeftColor: borderColor, position: 'relative', overflow: 'hidden' }}>
+      {isConfirming && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(135deg, rgba(254, 226, 226, 0.96) 0%, rgba(254, 242, 242, 0.92) 100%)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          zIndex: 30,
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          textAlign: 'center',
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <Trash2 size={24} style={{ color: '#ef4444', marginBottom: 8 }} />
+          <h4 style={{ margin: '0 0 4px 0', color: '#991b1b', fontSize: '15px', fontWeight: 700 }}>Delete Event?</h4>
+          <p style={{ margin: '0 0 16px 0', color: '#b91c1c', fontSize: '12px', lineHeight: 1.4, padding: '0 10px' }}>
+            "<strong>{event.title}</strong>" will be permanently removed.
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={() => onDelete(event.id)}
+              style={{
+                padding: '6px 16px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: '#fff',
+                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.2)',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'none'}
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => setConfirmDeleteId(null)}
+              style={{
+                padding: '6px 16px',
+                fontSize: '0.8rem',
+                fontWeight: 500,
+                border: '1px solid rgba(0,0,0,0.1)',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: 'rgba(255,255,255,0.8)',
+                color: '#1e293b',
+                transition: 'background 0.2s'
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {isAdmin && !isConfirming && (
         <div className="ev-admin-actions" style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8, zIndex: 10 }}>
-          <button onClick={() => onEdit(event)} className="ev-card-action-btn" style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontSize: '12px' }}>✏️</button>
-          <button onClick={() => onDelete(event.id)} className="ev-card-action-btn" style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontSize: '12px' }}>❌</button>
+          <button 
+            onClick={() => onEdit(event)} 
+            className="ev-card-action-btn" 
+            title="Edit Event"
+            style={{ 
+              background: 'rgba(255,255,255,0.9)', 
+              border: 'none', 
+              borderRadius: '50%', 
+              width: 28, 
+              height: 28, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              cursor: 'pointer', 
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)', 
+              color: '#4f46e5'
+            }}
+          >
+            <Pencil size={13} />
+          </button>
+          <button 
+            onClick={() => setConfirmDeleteId(event.id)} 
+            className="ev-card-action-btn" 
+            title="Delete Event"
+            style={{ 
+              background: 'rgba(255,255,255,0.9)', 
+              border: 'none', 
+              borderRadius: '50%', 
+              width: 28, 
+              height: 28, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              cursor: 'pointer', 
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)', 
+              color: '#ef4444' 
+            }}
+          >
+            <X size={13} />
+          </button>
         </div>
       )}
       <div className="ev-admin-card-header">
@@ -321,6 +422,9 @@ const Events = () => {
   const [communityEvents, setCommunityEvents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [confirmDeleteEventId, setConfirmDeleteEventId] = useState(null);
+  const [activeFilterCommunity, setActiveFilterCommunity] = useState("all");
+  const [searchQueryCommunity, setSearchQueryCommunity] = useState("");
 
   // Form states
   const [formTitle, setFormTitle] = useState("");
@@ -357,8 +461,8 @@ const Events = () => {
       const backendEvents = await getUpcomingEvents({ limit: 100 });
       if (backendEvents && backendEvents.length > 0) {
         const mapped = backendEvents.map(mapBackendEvent);
-        setDiscoveredEvents(mapped.filter((e) => e.source !== "manual"));
-        setCommunityEvents(mapped.filter((e) => e.source === "manual"));
+        setDiscoveredEvents(mapped.filter((e) => e.eventSource !== "manual"));
+        setCommunityEvents(mapped.filter((e) => e.eventSource === "manual"));
       } else {
         setDiscoveredEvents([]);
         setCommunityEvents([]);
@@ -392,15 +496,33 @@ const Events = () => {
 
   const processFile = (file) => {
     if (!file) return;
+    // Compress image using canvas before storing as base64
     const reader = new FileReader();
     reader.onload = (event) => {
-      setDroppedFile({
-        name: file.name,
-        size: (file.size / 1024).toFixed(1) + " KB",
-        dataUrl: event.target.result,
-        type: file.type
-      });
-      setFormImageUrl(event.target.result);
+      const img = new Image();
+      img.onload = () => {
+        const MAX_W = 800;
+        const MAX_H = 800;
+        let w = img.width;
+        let h = img.height;
+        if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+        if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        const compressedSize = Math.round(compressedDataUrl.length * 0.75 / 1024);
+        setDroppedFile({
+          name: file.name,
+          size: compressedSize + " KB (compressed)",
+          dataUrl: compressedDataUrl,
+          type: "image/jpeg"
+        });
+        setFormImageUrl(compressedDataUrl);
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
@@ -508,6 +630,7 @@ const Events = () => {
       location: formLocation,
       startDate: selectedDate,
       category: formCategory,
+      tags: "",
       organizer: formOrganizer,
       imageUrl: formImageUrl,
       externalUrl: formRegUrl,
@@ -528,13 +651,12 @@ const Events = () => {
   };
 
   const handleDeleteEvent = async (id) => {
-    if (window.confirm("Are you sure you want to delete this event?")) {
-      try {
-        await deleteManualEvent(id);
-        fetchEvents();
-      } catch (err) {
-        console.error("Failed to delete manual event", err);
-      }
+    try {
+      await deleteManualEvent(id);
+      setConfirmDeleteEventId(null);
+      fetchEvents();
+    } catch (err) {
+      console.error("Failed to delete manual event", err);
     }
   };
 
@@ -579,6 +701,42 @@ const Events = () => {
     });
   }, [activeFilter, activeSource, searchQuery, discoveredEvents]);
 
+  // Filter + search community events
+  const filteredCommunityEvents = useMemo(() => {
+    let events = communityEvents;
+
+    // Type filter
+    if (activeFilterCommunity !== "all") {
+      events = events.filter((e) => {
+        if (activeFilterCommunity === "competition") return e.type === "competition" || e.type === "hackathon";
+        return e.type === activeFilterCommunity;
+      });
+    }
+
+    // Search query
+    if (searchQueryCommunity.trim()) {
+      const q = searchQueryCommunity.toLowerCase();
+      events = events.filter(
+        (e) =>
+          e.title.toLowerCase().includes(q) ||
+          e.description.toLowerCase().includes(q) ||
+          e.location.toLowerCase().includes(q) ||
+          (e.tags && e.tags.some((t) => t.toLowerCase().includes(q)))
+      );
+    }
+
+    // Sort: upcoming first, then by date
+    return [...events].sort((a, b) => {
+      const dA = getDaysUntil(a.date);
+      const dB = getDaysUntil(b.date);
+      const aPast = dA !== null && dA < 0;
+      const bPast = dB !== null && dB < 0;
+      if (aPast && !bPast) return 1;
+      if (!aPast && bPast) return -1;
+      return new Date(a.date) - new Date(b.date);
+    });
+  }, [activeFilterCommunity, searchQueryCommunity, communityEvents]);
+
   return (
     <div className="events-page">
       {/* Background effects */}
@@ -611,7 +769,91 @@ const Events = () => {
         </div>
       </nav>
 
-      {/* ── SECTION 1: Discovered Events ── */}
+      {/* ── SECTION 1: Community Board ── */}
+      <div className="ev-section">
+        <div className="ev-section-header">
+          <div className="ev-section-title-block">
+            <h2 className="ev-section-title">
+              <span className="ev-section-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> Community Board
+            </h2>
+            <p className="ev-section-subtitle">Pinned by admins — events, flyers, and more</p>
+          </div>
+          <div className="ev-header-actions">
+            <button
+              className="ev-filter-pill ev-refresh-btn"
+              onClick={fetchEvents}
+              disabled={loading}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.0" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Refresh Board
+            </button>
+            {isAdmin && (
+              <button className="ev-filter-pill active" onClick={handleOpenAddModal}>
+                + Add Event
+              </button>
+            )}
+            <div className="ev-search-wrapper ev-search-header">
+              <svg className="ev-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input
+                type="text"
+                className="ev-search-input"
+                placeholder="Search board..."
+                value={searchQueryCommunity}
+                onChange={(e) => setSearchQueryCommunity(e.target.value)}
+              />
+              {searchQueryCommunity && (
+                <button className="ev-search-clear" onClick={() => setSearchQueryCommunity("")}>✕</button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Community Board Filters */}
+        <div className="ev-toolbar">
+          <div className="ev-filter-pills ev-type-pills">
+            {FILTER_OPTIONS.map((f) => (
+              <button
+                key={f}
+                className={`ev-filter-pill ${activeFilterCommunity === f ? "active" : ""}`}
+                onClick={() => setActiveFilterCommunity(f)}
+              >
+                {f === "all" ? "All Types" : TYPE_LABELS[f] || f}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {filteredCommunityEvents.length > 0 ? (
+          <div className="ev-admin-grid">
+            {filteredCommunityEvents.map((event) => (
+              <AdminCard 
+                key={event.id} 
+                event={event} 
+                onImageClick={setLightboxImage} 
+                onEdit={handleOpenEditModal}
+                onDelete={handleDeleteEvent}
+                isAdmin={isAdmin}
+                confirmDeleteId={confirmDeleteEventId}
+                setConfirmDeleteId={setConfirmDeleteEventId}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="ev-empty-state" style={{ padding: "40px" }}>
+            <p>{communityEvents.length === 0 ? "No pinned community events currently scheduled." : "No community events matching your filters."}</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Divider ── */}
+      <div className="ev-divider">
+        <div className="ev-divider-line" />
+        <span className="ev-divider-dot">◆</span>
+        <div className="ev-divider-line" />
+      </div>
+
+      {/* ── SECTION 2: Discovered Events ── */}
       <div className="ev-section">
         <div className="ev-section-header">
           <div className="ev-section-title-block">
@@ -701,51 +943,6 @@ const Events = () => {
             <span className="ev-empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
             <h3>No events found</h3>
             <p>{discoveredEvents.length === 0 ? "Click \"Refresh Events\" to load curated Lebanese tech events from universities, Eventbrite, and Zaka AI." : "Try adjusting your filters or search query."}</p>
-          </div>
-        )}
-      </div>
-
-      {/* ── Divider ── */}
-      <div className="ev-divider">
-        <div className="ev-divider-line" />
-        <span className="ev-divider-dot">◆</span>
-        <div className="ev-divider-line" />
-      </div>
-
-      {/* ── SECTION 2: Community Board ── */}
-      <div className="ev-section">
-        <div className="ev-section-header">
-          <div className="ev-section-title-block">
-            <h2 className="ev-section-title">
-              <span className="ev-section-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span> Community Board
-            </h2>
-            <p className="ev-section-subtitle">Pinned by admins — events, flyers, and more</p>
-          </div>
-          {isAdmin && (
-            <div className="ev-header-actions">
-              <button className="ev-filter-pill active" onClick={handleOpenAddModal}>
-                + Add Event
-              </button>
-            </div>
-          )}
-        </div>
-
-        {communityEvents.length > 0 ? (
-          <div className="ev-admin-grid">
-            {communityEvents.map((event) => (
-              <AdminCard 
-                key={event.id} 
-                event={event} 
-                onImageClick={setLightboxImage} 
-                onEdit={handleOpenEditModal}
-                onDelete={handleDeleteEvent}
-                isAdmin={isAdmin}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="ev-empty-state" style={{ padding: "40px" }}>
-            <p>No pinned community events currently scheduled.</p>
           </div>
         )}
       </div>

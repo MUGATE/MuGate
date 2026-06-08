@@ -37,7 +37,7 @@ export class KnowledgeService {
         "gpa": ["grades", "grade", "average", "cgpa"],
         "credit": ["credits", "hours", "credit hours"],
         "campus": ["location", "facilities", "building", "library"],
-        "professor": ["instructor", "teacher", "dr", "doctor", "professors", "instructors"],
+        "professor": ["instructor", "teacher", "dr", "doctor", "doctors", "professors", "instructors", "teachers", "dean", "deans", "staff", "lecturer", "lecturers"],
     };
 
     /**

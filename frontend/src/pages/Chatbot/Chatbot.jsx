@@ -319,6 +319,14 @@ const Chatbot = () => {
     };
   }, []);
 
+  // Auto-resize textarea when input text changes (including AI enhancement and resets)
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 160)}px`;
+    }
+  }, [inputText]);
+
   // Format seconds as M:SS
   const formatRecordingTime = (secs) => {
     const m = Math.floor(secs / 60);
@@ -617,11 +625,7 @@ const Chatbot = () => {
                   placeholder="Initiate a query or send a command to the AI..."
                   className="chatbox-input"
                   value={inputText}
-                  onChange={(e) => {
-                    setInputText(e.target.value);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
-                  }}
+                  onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyDown}
                   disabled={isLoading || isInitializing}
                   rows={1}
