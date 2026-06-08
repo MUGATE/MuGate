@@ -347,7 +347,7 @@ const Events = () => {
 
   const userStr = localStorage.getItem("mugate_user");
   const user = userStr ? JSON.parse(userStr) : null;
-  const isAdmin = user && String(user.universityId) === "101230004";
+  const isAdmin = user && (user.isAdmin === true || String(user.universityId) === "101230004");
 
   // Fetch events from backend
   const fetchEvents = useCallback(async () => {

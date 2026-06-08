@@ -95,13 +95,25 @@ export class AuthService {
         const payload: TokenPayload = { userId: user.id, email: user.email, name: user.name, universityId: user.universityId };
         const token = generateToken(payload);
 
+        // 7. Check if user is an admin (super admin or in Admins table)
+        let isAdmin = user.universityId === "101230004";
+        if (!isAdmin) {
+            try {
+                const adminCheck = await pool.request()
+                    .input("universityId", user.universityId)
+                    .query("SELECT 1 FROM Admins WHERE universityId = @universityId");
+                isAdmin = adminCheck.recordset.length > 0;
+            } catch {}
+        }
+
         return {
             token,
             user: {
                 userId: user.id,
                 email: user.email,
                 name: user.name,
-                universityId: user.universityId
+                universityId: user.universityId,
+                isAdmin
             }
         };
     }

@@ -216,7 +216,7 @@ const ResumeEnhancerRouter = () => {
     if (userStr) {
       try {
         const u = JSON.parse(userStr);
-        if (u && String(u.universityId) === "101230004") return true;
+        if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
       } catch {}
     }
     return false;

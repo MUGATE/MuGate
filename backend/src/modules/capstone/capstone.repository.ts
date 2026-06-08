@@ -313,17 +313,25 @@ export class CapstoneRepository {
         let inserted = 0;
         for (const idea of ideas) {
             try {
-                await pool.request()
+                const result = await pool.request()
                     .input("title", idea.title)
                     .input("description", idea.description)
                     .input("faculty", idea.faculty)
                     .input("year", idea.year)
                     .input("tags", idea.tags)
                     .query(`
-                        INSERT INTO CapstoneIdeas (title, description, faculty, year, tags, isActive)
-                        VALUES (@title, @description, @faculty, @year, @tags, 1)
+                        IF NOT EXISTS (
+                            SELECT 1 FROM CapstoneIdeas 
+                            WHERE title = @title AND CAST(description AS NVARCHAR(1000)) = CAST(@description AS NVARCHAR(1000))
+                        )
+                        BEGIN
+                            INSERT INTO CapstoneIdeas (title, description, faculty, year, tags, isActive)
+                            VALUES (@title, @description, @faculty, @year, @tags, 1)
+                        END
                     `);
-                inserted++;
+                if (result.rowsAffected[0] && result.rowsAffected[0] > 0) {
+                    inserted++;
+                }
             } catch (err: any) {
                 logger.warn(`Failed to insert idea "${idea.title}": ${err.message}`);
             }

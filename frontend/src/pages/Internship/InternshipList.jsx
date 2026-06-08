@@ -41,7 +41,8 @@ const logoMap = {
 
 const resolveLogo = (logoStr) => {
   if (!logoStr) return WhishLogo;
-  if (logoMap[logoStr]) return logoMap[logoStr];
+  const foundKey = Object.keys(logoMap).find(k => k.toLowerCase() === logoStr.toLowerCase());
+  if (foundKey) return logoMap[foundKey];
   return logoStr;
 };
 
@@ -64,6 +65,7 @@ const InternshipList = () => {
   const [compScale, setCompScale] = useState(0.02);
   const [compColors, setCompColors] = useState('');
   const [compForceWhite, setCompForceWhite] = useState(false);
+  const [compForceBlack, setCompForceBlack] = useState(false);
   const [compIsMetallic, setCompIsMetallic] = useState(false);
   const [companySubmitError, setCompanySubmitError] = useState('');
   const [isDraggingLogo, setIsDraggingLogo] = useState(false);
@@ -106,12 +108,12 @@ const InternshipList = () => {
   const currentUserName = jwtPayload?.name || jwtPayload?.email?.split('@')[0] || '';
 
   const isAdmin = (() => {
-    if (jwtPayload && String(jwtPayload.universityId) === '101230004') return true;
+    if (jwtPayload && (jwtPayload.isAdmin === true || String(jwtPayload.universityId) === '101230004')) return true;
     const userStr = localStorage.getItem('mugate_user');
     if (userStr) {
       try {
         const u = JSON.parse(userStr);
-        if (u && String(u.universityId) === '101230004') return true;
+        if (u && (u.isAdmin === true || String(u.universityId) === '101230004')) return true;
       } catch {}
     }
     return false;
@@ -124,7 +126,9 @@ const InternshipList = () => {
         ...c,
         colors: typeof c.colors === 'string' ? c.colors.split(',') : (Array.isArray(c.colors) ? c.colors : ['#ffffff']),
         forceWhiteBack: !!c.forceWhiteBack,
+        forceBlackBack: !!c.forceBlackBack,
         isMetallic: !!c.isMetallic,
+        rawSvgString: c.svgString,
         svgString: resolveLogo(c.svgString)
       }));
       setCompanies(formatted);
@@ -147,10 +151,11 @@ const InternshipList = () => {
       setCompEmail(companyToEdit.email || '');
       setCompPhone(companyToEdit.phone || '');
       setCompWebsite(companyToEdit.website || '');
-      setCompSvgString(companyToEdit.svgString || '');
+      setCompSvgString(companyToEdit.rawSvgString || '');
       setCompScale(companyToEdit.scale || 0.02);
       setCompColors(Array.isArray(companyToEdit.colors) ? companyToEdit.colors.join(',') : (companyToEdit.colors || ''));
       setCompForceWhite(!!companyToEdit.forceWhiteBack);
+      setCompForceBlack(!!companyToEdit.forceBlackBack);
       setCompIsMetallic(!!companyToEdit.isMetallic);
     } else {
       setCompName('');
@@ -162,6 +167,7 @@ const InternshipList = () => {
       setCompScale(0.02);
       setCompColors('');
       setCompForceWhite(false);
+      setCompForceBlack(false);
       setCompIsMetallic(false);
     }
     setCompanySubmitError('');
@@ -183,6 +189,7 @@ const InternshipList = () => {
       scale: parseFloat(compScale) || 0.02,
       colors: compColors.trim() || null,
       forceWhiteBack: compForceWhite ? 1 : 0,
+      forceBlackBack: compForceBlack ? 1 : 0,
       isMetallic: compIsMetallic ? 1 : 0
     };
     try {
@@ -595,7 +602,7 @@ const InternshipList = () => {
                     <div className="explore-reviews-list">
                                             {/* Backend reviews (real) */}
                       {liveReviews.map((r) => {
-                        const isOwn = currentUserId && String(r.userId) === currentUserId;
+                        const isOwn = currentUserId && String(r.userId).trim().toLowerCase() === currentUserId.trim().toLowerCase();
                         const isEditing = editingReviewId === r.id;
                         return (
                           <div className="explore-feedback-card" key={`live-${r.id}`}>
@@ -730,7 +737,7 @@ const InternshipList = () => {
                         );
                       })}
                       {/* Fallback: static seed reviews (shown when no backend reviews yet) */}
-                      {liveReviews.length === 0 && selectedExploreCompany.ratings.map((r, idx) => (
+                      {liveReviews.length === 0 && selectedExploreCompany.ratings && selectedExploreCompany.ratings.map((r, idx) => (
                         <div className="explore-feedback-card" key={`seed-${idx}`}>
                           <div className="explore-feedback-card-header">
                             <span className="explore-feedback-user">{r.user}</span>
@@ -862,18 +869,18 @@ const InternshipList = () => {
       {/* ── COMPANY EDITOR MODAL OVERLAY ── */}
       {isCompanyModalOpen && (
         <div className="hero-modal-overlay" onClick={() => setIsCompanyModalOpen(false)}>
-          <div className="hero-modal-glass" style={{ maxWidth: 550, maxHeight: '90vh', overflowY: 'auto', background: '#090d16', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)' }} onClick={(e) => e.stopPropagation()}>
-            <button className="hero-modal-close" onClick={() => setIsCompanyModalOpen(false)} aria-label="Close" style={{ color: '#ffffff' }}>
+          <div className="explore-all-modal-glass" style={{ maxWidth: 550, maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <button className="hero-modal-close" onClick={() => setIsCompanyModalOpen(false)} aria-label="Close" style={{ color: 'var(--text-primary)' }}>
               <X size={20} />
             </button>
-            <h2 className="modal-brand" style={{ color: '#ffffff', fontWeight: 800 }}>{editingCompany ? "Edit Company" : "Add New Company"}</h2>
-            <p className="modal-desc" style={{ marginBottom: 20, color: '#94a3b8' }}>
+            <h2 className="modal-brand" style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{editingCompany ? "Edit Company" : "Add New Company"}</h2>
+            <p className="modal-desc" style={{ marginBottom: 20, color: 'var(--text-secondary)' }}>
               {editingCompany ? "Modify company details and 3D settings." : "Create a new company listing for internships."}
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', textAlign: 'left' }}>
               <div>
-                <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Company Name *</label>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Company Name *</label>
                 <input
                   type="text"
                   value={compName}
@@ -882,18 +889,19 @@ const InternshipList = () => {
                     width: '100%',
                     padding: '10px 14px',
                     borderRadius: 8,
-                    border: '1px solid rgba(255,255,255,0.25)',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: '#ffffff',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    background: 'rgba(255,255,255,0.6)',
+                    color: 'var(--text-primary)',
                     outline: 'none',
-                    fontSize: '0.9rem'
+                    fontSize: '0.9rem',
+                    boxSizing: 'border-box'
                   }}
                   placeholder="e.g. Google"
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Description</label>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Description</label>
                 <textarea
                   value={compDesc}
                   onChange={(e) => setCompDesc(e.target.value)}
@@ -902,12 +910,13 @@ const InternshipList = () => {
                     width: '100%',
                     padding: '10px 14px',
                     borderRadius: 8,
-                    border: '1px solid rgba(255,255,255,0.25)',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: '#ffffff',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    background: 'rgba(255,255,255,0.6)',
+                    color: 'var(--text-primary)',
                     outline: 'none',
                     resize: 'vertical',
-                    fontSize: '0.9rem'
+                    fontSize: '0.9rem',
+                    boxSizing: 'border-box'
                   }}
                   placeholder="Company description..."
                 />
@@ -915,7 +924,7 @@ const InternshipList = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Email</label>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Email</label>
                   <input
                     type="email"
                     value={compEmail}
@@ -924,17 +933,18 @@ const InternshipList = () => {
                       width: '100%',
                       padding: '10px 14px',
                       borderRadius: 8,
-                      border: '1px solid rgba(255,255,255,0.25)',
-                      background: 'rgba(255,255,255,0.06)',
-                      color: '#ffffff',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      background: 'rgba(255,255,255,0.6)',
+                      color: 'var(--text-primary)',
                       outline: 'none',
-                      fontSize: '0.9rem'
+                      fontSize: '0.9rem',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="contact@company.com"
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Phone</label>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Phone</label>
                   <input
                     type="text"
                     value={compPhone}
@@ -943,11 +953,12 @@ const InternshipList = () => {
                       width: '100%',
                       padding: '10px 14px',
                       borderRadius: 8,
-                      border: '1px solid rgba(255,255,255,0.25)',
-                      background: 'rgba(255,255,255,0.06)',
-                      color: '#ffffff',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      background: 'rgba(255,255,255,0.6)',
+                      color: 'var(--text-primary)',
                       outline: 'none',
-                      fontSize: '0.9rem'
+                      fontSize: '0.9rem',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="+1 555-0199"
                   />
@@ -955,7 +966,7 @@ const InternshipList = () => {
               </div>
 
               <div>
-                <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Website URL</label>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Website URL</label>
                 <input
                   type="url"
                   value={compWebsite}
@@ -964,18 +975,19 @@ const InternshipList = () => {
                     width: '100%',
                     padding: '10px 14px',
                     borderRadius: 8,
-                    border: '1px solid rgba(255,255,255,0.25)',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: '#ffffff',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    background: 'rgba(255,255,255,0.6)',
+                    color: 'var(--text-primary)',
                     outline: 'none',
-                    fontSize: '0.9rem'
+                    fontSize: '0.9rem',
+                    boxSizing: 'border-box'
                   }}
                   placeholder="https://company.com"
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Company Logo (Drag & Drop Image) *</label>
+                <label style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Company Logo (Drag & Drop Image) *</label>
                 <div
                   onDragOver={(e) => { e.preventDefault(); setIsDraggingLogo(true); }}
                   onDragLeave={() => setIsDraggingLogo(false)}
@@ -995,9 +1007,9 @@ const InternshipList = () => {
                   style={{
                     width: '100%',
                     height: '110px',
-                    border: isDraggingLogo ? '2px dashed #6366f1' : '1px dashed rgba(255,255,255,0.3)',
+                    border: isDraggingLogo ? '2px dashed #6366f1' : '1px dashed rgba(0, 0, 0, 0.15)',
                     borderRadius: 12,
-                    background: isDraggingLogo ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.03)',
+                    background: isDraggingLogo ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.4)',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -1028,19 +1040,19 @@ const InternshipList = () => {
                   {compSvgString ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', height: '100%', padding: '0 12px' }}>
                       <img 
-                        src={compSvgString} 
+                        src={resolveLogo(compSvgString)} 
                         alt="Preview" 
                         style={{ 
                           width: '56px', 
                           height: '56px', 
                           objectFit: 'contain', 
                           borderRadius: 8,
-                          background: 'rgba(255,255,255,0.1)',
-                          border: '1px solid rgba(255,255,255,0.2)'
+                          background: 'rgba(255,255,255,0.6)',
+                          border: '1px solid rgba(0,0,0,0.1)'
                         }} 
                       />
                       <div style={{ flex: 1, textAlign: 'left' }}>
-                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block' }}>Logo Image Loaded</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Logo Image Loaded</span>
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setCompSvgString(''); }}
@@ -1062,10 +1074,10 @@ const InternshipList = () => {
                   ) : (
                     <>
                       <Plus size={20} color="#6366f1" style={{ marginBottom: 6 }} />
-                      <span style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 500 }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>
                         Drag & drop logo here, or <span style={{ color: '#818cf8', textDecoration: 'underline' }}>browse</span>
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>Supports SVG, PNG, JPG</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4 }}>Supports SVG, PNG, JPG</span>
                     </>
                   )}
                 </div>
@@ -1073,7 +1085,7 @@ const InternshipList = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Scale (for 3D mesh)</label>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Scale (for 3D mesh)</label>
                   <input
                     type="number"
                     step="0.001"
@@ -1083,16 +1095,17 @@ const InternshipList = () => {
                       width: '100%',
                       padding: '10px 14px',
                       borderRadius: 8,
-                      border: '1px solid rgba(255,255,255,0.25)',
-                      background: 'rgba(255,255,255,0.06)',
-                      color: '#ffffff',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      background: 'rgba(255,255,255,0.6)',
+                      color: 'var(--text-primary)',
                       outline: 'none',
-                      fontSize: '0.9rem'
+                      fontSize: '0.9rem',
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600, display: 'block', marginBottom: 6 }}>Theme Colors (comma-separated hex)</label>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600, display: 'block', marginBottom: 6 }}>Theme Colors (comma-separated hex)</label>
                   <input
                     type="text"
                     value={compColors}
@@ -1101,29 +1114,46 @@ const InternshipList = () => {
                       width: '100%',
                       padding: '10px 14px',
                       borderRadius: 8,
-                      border: '1px solid rgba(255,255,255,0.25)',
-                      background: 'rgba(255,255,255,0.06)',
-                      color: '#ffffff',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      background: 'rgba(255,255,255,0.6)',
+                      color: 'var(--text-primary)',
                       outline: 'none',
-                      fontSize: '0.9rem'
+                      fontSize: '0.9rem',
+                      boxSizing: 'border-box'
                     }}
                     placeholder="#3b82f6,#1d4ed8,#ffffff"
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 20, margin: '6px 0' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: '#ffffff', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 20px', margin: '6px 0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={compForceWhite}
-                    onChange={(e) => setCompForceWhite(e.target.checked)}
+                    onChange={(e) => {
+                      setCompForceWhite(e.target.checked);
+                      if (e.target.checked) setCompForceBlack(false);
+                    }}
                     style={{ cursor: 'pointer' }}
                   />
                   Force White Background (3D)
                 </label>
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: '#ffffff', cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={compForceBlack}
+                    onChange={(e) => {
+                      setCompForceBlack(e.target.checked);
+                      if (e.target.checked) setCompForceWhite(false);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  Force Black Background (3D)
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={compIsMetallic}
@@ -1147,16 +1177,16 @@ const InternshipList = () => {
                   style={{
                     padding: '10px 20px',
                     borderRadius: 8,
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    background: 'rgba(255,255,255,0.05)',
-                    color: '#ffffff',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    background: 'rgba(255,255,255,0.4)',
+                    color: 'var(--text-primary)',
                     cursor: 'pointer',
                     fontSize: '0.9rem',
                     fontWeight: 600,
                     transition: 'all 0.2s'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.7)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.4)'}
                 >
                   Cancel
                 </button>

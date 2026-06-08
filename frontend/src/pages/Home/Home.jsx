@@ -40,7 +40,7 @@ const Home = () => {
       if (userStr) {
         try {
           const u = JSON.parse(userStr);
-          if (u && String(u.universityId) === "101230004") {
+          if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) {
             setIsAdmin(true);
           }
         } catch {}
@@ -99,7 +99,7 @@ const Home = () => {
 
       // Update UI state to hide login block
       setIsLoggedIn(true);
-      if (data.data.user && String(data.data.user.universityId) === "101230004") {
+      if (data.data.user && (data.data.user.isAdmin === true || String(data.data.user.universityId) === "101230004")) {
         setIsAdmin(true);
       }
 

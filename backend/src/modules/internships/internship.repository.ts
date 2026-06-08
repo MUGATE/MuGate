@@ -22,6 +22,7 @@ export interface Company {
     phone?: string;
     website?: string;
     forceWhiteBack?: boolean;
+    forceBlackBack?: boolean;
     isMetallic?: boolean;
 }
 
@@ -47,9 +48,20 @@ export class InternshipRepository {
                     phone NVARCHAR(255) NULL,
                     website NVARCHAR(255) NULL,
                     forceWhiteBack BIT NOT NULL DEFAULT 0,
+                    forceBlackBack BIT NOT NULL DEFAULT 0,
                     isMetallic BIT NOT NULL DEFAULT 0
                 )
             `);
+            
+            // Ensure forceBlackBack column exists
+            await pool.request().query(`
+                IF NOT EXISTS (
+                    SELECT * FROM sys.columns 
+                    WHERE object_id = OBJECT_ID('Companies') AND name = 'forceBlackBack'
+                )
+                ALTER TABLE Companies ADD forceBlackBack BIT NOT NULL DEFAULT 0;
+            `);
+            
             logger.info("Companies table ensured.");
 
             // 2. Ensure InternshipReviews table exists
@@ -253,10 +265,11 @@ export class InternshipRepository {
                         .input("phone", company.phone)
                         .input("website", company.website)
                         .input("forceWhiteBack", company.forceWhiteBack ? 1 : 0)
+                        .input("forceBlackBack", company.forceBlackBack ? 1 : 0)
                         .input("isMetallic", company.isMetallic ? 1 : 0)
                         .query(`
-                            INSERT INTO Companies (name, description, colors, scale, svgString, email, phone, website, forceWhiteBack, isMetallic)
-                            VALUES (@name, @description, @colors, @scale, @svgString, @email, @phone, @website, @forceWhiteBack, @isMetallic)
+                            INSERT INTO Companies (name, description, colors, scale, svgString, email, phone, website, forceWhiteBack, forceBlackBack, isMetallic)
+                            VALUES (@name, @description, @colors, @scale, @svgString, @email, @phone, @website, @forceWhiteBack, @forceBlackBack, @isMetallic)
                         `);
                 }
                 logger.info("Companies table successfully seeded.");
@@ -275,6 +288,7 @@ export class InternshipRepository {
         return result.recordset.map(row => ({
             ...row,
             forceWhiteBack: !!row.forceWhiteBack,
+            forceBlackBack: !!row.forceBlackBack,
             isMetallic: !!row.isMetallic,
         }));
     }
@@ -294,16 +308,18 @@ export class InternshipRepository {
             .input("phone", company.phone)
             .input("website", company.website)
             .input("forceWhiteBack", company.forceWhiteBack ? 1 : 0)
+            .input("forceBlackBack", company.forceBlackBack ? 1 : 0)
             .input("isMetallic", company.isMetallic ? 1 : 0)
             .query(`
-                INSERT INTO Companies (name, description, colors, scale, svgString, email, phone, website, forceWhiteBack, isMetallic)
+                INSERT INTO Companies (name, description, colors, scale, svgString, email, phone, website, forceWhiteBack, forceBlackBack, isMetallic)
                 OUTPUT INSERTED.*
-                VALUES (@name, @description, @colors, @scale, @svgString, @email, @phone, @website, @forceWhiteBack, @isMetallic)
+                VALUES (@name, @description, @colors, @scale, @svgString, @email, @phone, @website, @forceWhiteBack, @forceBlackBack, @isMetallic)
             `);
         const row = result.recordset[0];
         return {
             ...row,
             forceWhiteBack: !!row.forceWhiteBack,
+            forceBlackBack: !!row.forceBlackBack,
             isMetallic: !!row.isMetallic,
         };
     }
@@ -354,6 +370,10 @@ export class InternshipRepository {
             request.input("forceWhiteBack", company.forceWhiteBack ? 1 : 0);
             updates.push("forceWhiteBack = @forceWhiteBack");
         }
+        if (company.forceBlackBack !== undefined) {
+            request.input("forceBlackBack", company.forceBlackBack ? 1 : 0);
+            updates.push("forceBlackBack = @forceBlackBack");
+        }
         if (company.isMetallic !== undefined) {
             request.input("isMetallic", company.isMetallic ? 1 : 0);
             updates.push("isMetallic = @isMetallic");
@@ -368,6 +388,7 @@ export class InternshipRepository {
         return {
             ...row,
             forceWhiteBack: !!row.forceWhiteBack,
+            forceBlackBack: !!row.forceBlackBack,
             isMetallic: !!row.isMetallic,
         };
     }

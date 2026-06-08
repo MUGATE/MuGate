@@ -80,4 +80,5 @@ RoadMapRepository.ensureTable();
 // Initialize background CRON jobs
 initCronJobs();
 
+// Trigger automatic backend reload and reseeding - V5
 export default app;

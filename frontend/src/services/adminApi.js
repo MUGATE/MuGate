@@ -9,9 +9,10 @@ export const getAdmins = async () => {
     return data.admins || [];
 };
 
-export const getRegisteredUsers = async () => {
-    const data = await apiFetch("/auth/users");
-    return data.users || [];
+/** Check if the currently logged-in user has admin privileges (DB live check). */
+export const checkMyAdminStatus = async () => {
+    const data = await apiFetch("/auth/me/is-admin");
+    return data.isAdmin === true;
 };
 
 export const addAdmin = async (universityId) => {

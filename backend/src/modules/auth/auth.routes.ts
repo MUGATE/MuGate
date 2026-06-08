@@ -8,6 +8,26 @@ const router = Router();
 
 router.post("/login", AuthController.login);
 
+// Lightweight self-check: is the current user an admin? (no adminMiddleware gate)
+router.get("/me/is-admin", authMiddleware, async (req, res) => {
+    const user = (req as any).user;
+    const universityId = String(user?.universityId || "");
+
+    if (universityId === "101230004") {
+        return res.json({ success: true, isAdmin: true });
+    }
+
+    try {
+        await poolConnect;
+        const result = await pool.request()
+            .input("universityId", universityId)
+            .query("SELECT 1 FROM Admins WHERE universityId = @universityId");
+        return res.json({ success: true, isAdmin: result.recordset.length > 0 });
+    } catch (err: any) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // --- Admin Management Routes ---
 
 // 1. Get all registered users to select from
@@ -84,17 +104,24 @@ router.post("/admins", authMiddleware, adminMiddleware, async (req, res) => {
             return res.status(400).json({ success: false, message: "University ID is required." });
         }
 
-        await poolConnect;
-        // Verify user exists in Users table first
-        const userCheck = await pool.request()
-            .input("universityId", universityId)
-            .query("SELECT 1 FROM Users WHERE universityId = @universityId");
-        
-        if (userCheck.recordset.length === 0) {
-            return res.status(404).json({ success: false, message: "User not found with this University ID." });
-        }
+        const derivedEmail = `${universityId}@mu.edu.lb`;
 
-        // Insert into Admins table
+        await poolConnect;
+
+        // Upsert: create the user if they haven't logged in yet
+        await pool.request()
+            .input("universityId", universityId)
+            .input("email", derivedEmail)
+            .input("passwordHash", "SSO_PORTAL_AUTH")
+            .query(`
+                IF NOT EXISTS (SELECT 1 FROM Users WHERE universityId = @universityId)
+                BEGIN
+                    INSERT INTO Users (universityId, email, name, passwordHash)
+                    VALUES (@universityId, @email, @universityId, @passwordHash)
+                END
+            `);
+
+        // Insert into Admins table (idempotent)
         await pool.request()
             .input("universityId", universityId)
             .query(`

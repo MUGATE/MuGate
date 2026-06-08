@@ -1,6 +1,7 @@
 import { CapstoneRepository, CapstoneIdea } from "./capstone.repository";
 import { AiProvider } from "../ai/chatbot/ai/ai.provider";
 import { logger } from "../../core/logger/logger";
+import { pool, poolConnect } from "../../core/database/connection";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -151,6 +152,24 @@ NOTE: No historical capstone ideas are currently loaded in the database. You may
      */
     static async seedIdeasIfEmpty(): Promise<void> {
         try {
+            // Self-healing deduplication CTE to clean up any parallel race conditions or legacy duplicates
+            await poolConnect;
+            const dedupResult = await pool.request().query(`
+                WITH CTE AS (
+                    SELECT id,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY title, CAST(description AS NVARCHAR(1000)) 
+                               ORDER BY id
+                           ) AS RN
+                    FROM CapstoneIdeas
+                )
+                DELETE FROM CapstoneIdeas
+                WHERE id IN (SELECT id FROM CTE WHERE RN > 1);
+            `);
+            if (dedupResult.rowsAffected[0] && dedupResult.rowsAffected[0] > 0) {
+                logger.info(`Self-healed CapstoneIdeas table: deleted ${dedupResult.rowsAffected[0]} duplicate rows.`);
+            }
+
             const count = await CapstoneRepository.getIdeasCount();
             if (count > 0) {
                 logger.info(`CapstoneIdeas already has ${count} entries. Skipping seed.`);
@@ -302,12 +321,28 @@ NOTE: No historical capstone ideas are currently loaded in the database. You may
             ];
 
             // Combine parsed ideas with custom ones
-            const finalIdeas = [...dbIdeas, ...sampleIdeas];
+            const finalIdeas = [...dbIdeas];
 
             logger.info(`Total ideas to insert: ${finalIdeas.length}`);
 
             const inserted = await CapstoneRepository.bulkInsertIdeas(finalIdeas);
             logger.info(`Successfully seeded ${inserted}/${finalIdeas.length} capstone ideas.`);
+
+            // Self-healing deduplication CTE to clean up any parallel race conditions
+            await poolConnect;
+            await pool.request().query(`
+                WITH CTE AS (
+                    SELECT id,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY title, CAST(description AS NVARCHAR(1000)) 
+                               ORDER BY id
+                           ) AS RN
+                    FROM CapstoneIdeas
+                )
+                DELETE FROM CapstoneIdeas
+                WHERE id IN (SELECT id FROM CTE WHERE RN > 1);
+            `);
+            logger.info("CapstoneIdeas database self-healed and deduplicated.");
         } catch (err: any) {
             logger.error(`Failed to seed capstone ideas: ${err.message}`);
         }
