@@ -145,8 +145,10 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     }
   }, []);
 
-  // ── Backend AI analysis (progressive enhancement over the local scorer) ──
-  // Always safe: on failure we simply keep the local heuristic score + suggestions.
+  // ── Backend AI analysis — the SINGLE source of truth for the score AND the
+  // suggestions. The naive local heuristic is only an offline fallback (it gave
+  // false positives like "add a phone number" when the CV already had one, and
+  // a score that conflicted with the AI score). ──
   const runAiAnalysis = useCallback(async (text, jd) => {
     if (!text || !text.trim()) return;
     setIsReanalyzing(true);
@@ -154,8 +156,17 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       const analysis = await analyzeResumeApi(text, jd || '');
       setAiAnalysis(analysis);
       if (typeof analysis.overallScore === 'number') setResumeScore(analysis.overallScore);
+      // Drive the "Suggestions for Improvement" panel from the AI's accurate,
+      // content-aware recommendations so it never contradicts the resume.
+      const recs = Array.isArray(analysis.topRecommendations) ? analysis.topRecommendations : [];
+      if (recs.length) {
+        setResumeSuggestions(recs.map((t, i) => ({ id: `ai-rec-${i}`, text: t, weight: 0 })));
+      }
     } catch (e) {
-      console.error('AI analysis failed, keeping local score:', e);
+      console.error('AI analysis failed, using local heuristic fallback:', e);
+      const local = analyzeResumeText(text);
+      setResumeScore(local.score);
+      setResumeSuggestions(local.suggestions);
     } finally {
       setIsReanalyzing(false);
     }
@@ -221,32 +232,22 @@ const ResumeAnalyzerPage = ({ onBack }) => {
         ]);
         return;
       }
-      const analysis = analyzeResumeText(aiText);
-      setResumeScore(analysis.score);
-      setResumeSuggestions(analysis.suggestions);
       setMessages([
         {
-          text: `I've analyzed your resume! I found ${
-            analysis.suggestions.length
-          } area${analysis.suggestions.length !== 1 ? 's' : ''} for improvement. Check the suggestions on the left, or ask me anything!`,
+          text: "I've analyzed your resume! Building your detailed report — your score and suggestions will appear in a moment.",
           isUser: false,
         },
       ]);
-      // Fire deeper explainable AI analysis (refines the score + breakdown when ready).
+      // The AI analysis is the single source of truth for score + suggestions.
       runAiAnalysis(aiText, '');
     } catch (err) {
       console.error('Analysis error:', err);
       try {
         const text = await file.text();
         setResumeText(text);
-        const analysis = analyzeResumeText(text);
-        setResumeScore(analysis.score);
-        setResumeSuggestions(analysis.suggestions);
         setMessages([
           {
-            text: `I've analyzed your resume locally. Found ${
-              analysis.suggestions.length
-            } suggestion${analysis.suggestions.length !== 1 ? 's' : ''}.`,
+            text: "I've analyzed your resume! Building your detailed report…",
             isUser: false,
           },
         ]);
@@ -455,7 +456,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
         <div className="re-score-card re-glass">
           <h3 className="re-section-title">Resume Score</h3>
           <ScoreRing score={resumeScore} />
-          {isAnalyzing && (
+          {(isAnalyzing || (isReanalyzing && !aiAnalysis)) && (
             <div className="re-analyzing-overlay">
               <div className="re-analyzing-spinner" />
               <span className="re-analyzing-text">Analyzing...</span>
@@ -469,7 +470,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
               <div className="suggestions-placeholder">
                 <p className="suggestions-placeholder-text">Upload your resume to get personalized suggestions.</p>
               </div>
-            ) : isAnalyzing ? (
+            ) : (isAnalyzing || (isReanalyzing && !aiAnalysis)) ? (
               <div className="suggestions-placeholder">
                 <div className="re-analyzing-inline">
                   <div className="re-analyzing-spinner-sm" />

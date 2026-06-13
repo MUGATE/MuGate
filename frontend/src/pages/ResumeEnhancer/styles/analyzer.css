@@ -202,6 +202,10 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  /* Scroll the preview + analysis breakdown so the full report is reachable
+     (the page itself is 100vh/overflow:hidden). */
+  overflow-y: auto;
+  padding-bottom: 8px;
 }
 
 /* Upload Area */
@@ -305,7 +309,9 @@
 .re-preview-card {
   padding: 24px;
   animation: re-fade-up 0.4s ease both;
-  flex: 1;
+  /* Grow to fill, but never shrink below its content when the analysis
+     breakdown is rendered below it (the column scrolls instead). */
+  flex: 1 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
