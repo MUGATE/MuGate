@@ -16,8 +16,9 @@ export class ChatbotController {
             const userName = user ? user.name : undefined;
 
             const dto: CreateSessionDto = req.body;
+            const source = dto.source === "resume" ? "resume" : "chat";
 
-            const session = await ChatbotService.createSession(userId, dto.title, dto.isPinned, userName);
+            const session = await ChatbotService.createSession(userId, dto.title, dto.isPinned, userName, source);
 
             res.status(201).json({ success: true, session });
         } catch (error: any) {

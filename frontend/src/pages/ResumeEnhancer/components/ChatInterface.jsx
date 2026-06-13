@@ -8,7 +8,7 @@ const ChatInterface = ({
   sendMessage,
   isLoading,
   chatRef,
-  placeholder = "Ask the AI to improve, explain, or customize your resume...",
+  placeholder = "Ask AI to improve your resume...",
   title = "Ask AI About Your Resume",
   subtitle = "Get personalized advice or request changes",
   lastAIInstructions = null,

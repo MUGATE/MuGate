@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { API_BASE_URL } from "../../utils/api";
 import "./Home.css";
 import heroVideo from "./assets/Videos/MU VIDEO LANDING PAGE.mp4";
-import InstructorCarousel from "./DoctorCarousel";
-import ResumeAnalyzer from "./ResumeAnalyzer";
-import InternshipShowcase from "./InternshipShowcase";
-import ChatbotShowcase from "./ChatbotShowcase";
-import CapstoneShowcase from "./CapstoneShowcase";
-import EventsShowcase from "./EventsShowcase";
-import RoadMapShowcase from "./RoadMapShowcase";
-import AboutSummary from "./AboutSummary";
-import BottomNavbar from "./BottomNavbar";
+import InstructorCarousel from "./components/DoctorCarousel";
+import ResumeAnalyzer from "./components/ResumeAnalyzer";
+import InternshipShowcase from "./components/InternshipShowcase";
+import ChatbotShowcase from "./components/ChatbotShowcase";
+import CapstoneShowcase from "./components/CapstoneShowcase";
+import EventsShowcase from "./components/EventsShowcase";
+import RoadMapShowcase from "./components/RoadMapShowcase";
+import AboutSummary from "./components/AboutSummary";
+import BottomNavbar from "./components/BottomNavbar";
 
 import logo from "./assets/Images/Logo2 colored.png";
 
@@ -43,7 +44,7 @@ const Home = () => {
           if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) {
             setIsAdmin(true);
           }
-        } catch {}
+        } catch { /* ignore malformed stored user */ }
       }
     }
   }, []);
@@ -82,7 +83,7 @@ const Home = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ universityId, password })
@@ -153,7 +154,7 @@ const Home = () => {
                 </span>
               </button>
             ) : (
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "12px" }}>
                 <button
                   className="nav-demo-btn-solidroad"
                   onClick={handleLogout}

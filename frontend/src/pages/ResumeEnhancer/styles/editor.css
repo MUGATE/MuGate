@@ -1,0 +1,225 @@
+/* ── Jobsuit-style live resume editor ── */
+.re-editor {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Toolbar */
+.re-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  flex-wrap: wrap;
+}
+.re-editor-tpl-switch {
+  display: inline-flex;
+  background: rgba(148, 163, 184, 0.14);
+  border-radius: 10px;
+  padding: 3px;
+}
+.re-editor-tpl-switch button {
+  border: none;
+  background: none;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.re-editor-tpl-switch button.active {
+  background: #4a90d9;
+  color: #fff;
+}
+.re-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.re-editor-mode,
+.re-editor-export {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.35);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.re-editor-mode:hover,
+.re-editor-export:hover { border-color: #4a90d9; }
+.re-editor-export { background: #2b5ea7; border-color: #2b5ea7; color: #fff; }
+.re-editor-export:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Body: AI panel + document */
+.re-editor-body {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.re-editor-ai {
+  width: 280px;
+  flex-shrink: 0;
+  padding: 18px;
+  border-radius: 16px;
+  position: sticky;
+  top: 16px;
+}
+.re-editor-ai-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #94a3b8;
+  margin: 6px 0 12px;
+}
+.re-editor-ai-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #94a3b8;
+  margin: 10px 0 5px;
+}
+.re-editor-ai-select,
+.re-editor-ai-input {
+  width: 100%;
+  border-radius: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.4);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 8px 10px;
+}
+.re-editor-ai-input { resize: vertical; }
+.re-editor-ai-select:focus,
+.re-editor-ai-input:focus { outline: none; border-color: #4a90d9; }
+.re-editor-ai-btn {
+  width: 100%;
+  margin-top: 12px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4a90d9, #2b5ea7);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.re-editor-ai-btn:hover { opacity: 0.92; }
+.re-editor-ai-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.re-editor-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #4a90d9;
+  line-height: 1.4;
+}
+.re-editor-ai-foot {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Document paper */
+.re-editor-doc-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+.re-editor-doc-paper {
+  width: 100%;
+  max-width: 760px;
+  background: #ffffff;
+  color: #111827;
+  border-radius: 6px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  padding: 48px 54px;
+}
+
+/* Document typography (resembles the generated PDF) */
+.re-doc { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.45; }
+.re-doc-head { text-align: center; margin-bottom: 10px; }
+.re-doc-name { font-size: 26px; font-weight: 700; margin: 0; color: #111827; }
+.re-doc-name-lg { font-size: 30px; }
+.re-doc-contact { font-size: 12px; color: #374151; margin-top: 4px; }
+.re-doc-contact-edit { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
+.re-doc-section { margin-top: 14px; }
+.re-doc-section-title { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; margin: 0; color: #111827; }
+.re-doc-hr { height: 1px; background: #111827; margin: 3px 0 7px; }
+.re-doc-entry { position: relative; margin-bottom: 10px; }
+.re-doc-entry-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.re-doc-org { font-weight: 700; }
+.re-doc-meta { display: inline-flex; gap: 10px; font-size: 11.5px; color: #4b5563; white-space: nowrap; }
+.re-doc-role { font-style: italic; }
+.re-doc-line { font-size: 12.5px; }
+.re-doc-skill-label { font-weight: 700; }
+.re-doc-body { font-size: 12.5px; }
+.re-doc-bullets { margin: 3px 0 0; padding-left: 18px; }
+.re-doc-bullet { position: relative; font-size: 12.5px; margin-bottom: 2px; }
+
+/* Inline editing fields blend into the document */
+.re-edit-input {
+  font: inherit;
+  color: inherit;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: rgba(74, 144, 217, 0.06);
+  padding: 1px 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.re-edit-input:hover { background: rgba(74, 144, 217, 0.12); }
+.re-edit-input:focus { outline: none; border-color: #4a90d9; background: #fff; }
+.re-edit-textarea { resize: none; overflow: hidden; display: block; }
+.re-doc-contact-edit .re-edit-input { width: auto; min-width: 120px; text-align: center; font-size: 12px; }
+.re-doc-meta .re-edit-input { width: auto; min-width: 70px; text-align: right; }
+.re-doc-name .re-edit-input,
+.re-editor-doc-paper .re-doc-name.re-edit-input { text-align: center; font-size: inherit; font-weight: 700; }
+
+/* Add / remove controls */
+.re-edit-add {
+  margin-top: 4px;
+  border: 1px dashed #4a90d9;
+  background: rgba(74, 144, 217, 0.06);
+  color: #2b5ea7;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.re-edit-add:hover { background: rgba(74, 144, 217, 0.14); }
+.re-edit-remove {
+  position: absolute;
+  right: -10px;
+  top: -6px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.8;
+}
+.re-edit-remove:hover { opacity: 1; }
+.re-doc-bullet .re-edit-remove { right: 0; top: 0; width: 16px; height: 16px; font-size: 11px; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .re-editor-body { flex-direction: column; }
+  .re-editor-ai { width: 100%; position: static; }
+  .re-editor-doc-paper { padding: 28px 22px; }
+}

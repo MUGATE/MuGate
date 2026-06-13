@@ -1,3 +1,7 @@
+// Single source of truth for the backend base URL — import this instead of
+// hardcoding "http://localhost:5000" anywhere else.
+export const API_BASE_URL = "http://localhost:5000/api";
+
 export const apiFetch = async (endpoint, options = {}) => {
     const token = localStorage.getItem("mugate_token");
 
@@ -13,8 +17,7 @@ export const apiFetch = async (endpoint, options = {}) => {
         headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const BASE_URL = "http://localhost:5000/api";
-    const url = endpoint.startsWith("http") ? endpoint : `${BASE_URL}${endpoint}`;
+    const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`;
 
     try {
         const response = await fetch(url, {

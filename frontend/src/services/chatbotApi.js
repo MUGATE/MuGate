@@ -32,15 +32,16 @@ const removeAnonSessionId = (sessionId) => {
 
 // ─── API Methods ──────────────────────────────────────────
 
-export const createSession = async (title) => {
+export const createSession = async (title, source = "chat") => {
     const data = await apiFetch("/chatbot/sessions", {
         method: "POST",
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title, source }),
     });
     const session = data.session;
 
-    // If no auth token, store session ID for anonymous recovery
-    if (!localStorage.getItem("mugate_token")) {
+    // Only MuChat sessions are tracked for anonymous recovery; Resume Enhancer
+    // sessions must never appear in the chatbot history.
+    if (source === "chat" && !localStorage.getItem("mugate_token")) {
         storeAnonSessionId(session.id);
     }
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { DndContext, useDroppable, closestCenter } from "@dnd-kit/core";
-import CourseBox from "./CourseBox";
-import CourseModal from "./CourseModal";
+import CourseBox from "./components/CourseBox";
+import CourseModal from "./components/CourseModal";
+import { API_BASE_URL } from "../../utils/api";
 import "./RoadMap.css";
 
 const SemesterCell = ({ id, courses, onEdit, onDelete, isGuest }) => {
@@ -33,7 +34,7 @@ const RoadMap = () => {
   const [courses, setCourses] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true); // loading value not rendered yet; setter kept for future UI
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState(null);
 
@@ -49,7 +50,7 @@ const RoadMap = () => {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const res = await fetch("http://localhost:5000/api/roadmap", {
+        const res = await fetch(`${API_BASE_URL}/roadmap`, {
           headers
         });
         const data = await res.json();
@@ -71,7 +72,7 @@ const RoadMap = () => {
       const token = localStorage.getItem("mugate_token");
       if (!token) return;
 
-      await fetch("http://localhost:5000/api/roadmap", {
+      await fetch(`${API_BASE_URL}/roadmap`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -140,7 +141,7 @@ const RoadMap = () => {
       const token = localStorage.getItem("mugate_token");
       if (!token) return;
 
-      const res = await fetch("http://localhost:5000/api/roadmap/reset", {
+      const res = await fetch(`${API_BASE_URL}/roadmap/reset`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -184,7 +185,7 @@ const RoadMap = () => {
       try {
         const u = JSON.parse(userStr);
         if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
-      } catch {}
+      } catch { /* ignore malformed stored user */ }
     }
     return false;
   })();

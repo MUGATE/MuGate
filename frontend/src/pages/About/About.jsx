@@ -169,7 +169,7 @@ const About = () => {
       try {
         const u = JSON.parse(userStr);
         if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
-      } catch {}
+      } catch { /* ignore malformed stored user */ }
     }
     return false;
   })();

@@ -1,11 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { createSession, sendMessage as sendChatbotMessage } from '../../services/chatbotApi';
+import { generateResumeFile, aiEditResume } from '../../services/resumeApi';
 
 import WelcomeView from './pages/WelcomeView';
 import ResumeAnalyzerPage from './pages/ResumeAnalyzerPage';
 import ResumeBuilderPage from './pages/ResumeBuilderPage';
 import DownloadModal from './components/DownloadModal';
+import usePersistentState from './hooks/usePersistentState';
+import ResumeEditor from './editor/ResumeEditor';
+import { createEmptyResume } from './editor/resumeSchema';
+import { fromLocalForm, fromGlobalForm, toBackendPayload } from './editor/adapters';
 
 // Import modular styling stylesheets
 import './styles/welcome.css';
@@ -60,7 +65,8 @@ const ResumeEnhancerRouter = () => {
   const [showPreview, setShowPreview] = useState(null);
 
   // ─── Local Builder States ───
-  const [localForm, setLocalForm] = useState({ ...INITIAL_LOCAL_FORM });
+  // Form + extra-entry arrays persist to localStorage so a refresh never wipes work.
+  const [localForm, setLocalForm] = usePersistentState('mugate_resume_localForm', { ...INITIAL_LOCAL_FORM });
   const [localMessages, setLocalMessages] = useState([
     { text: 'I can help you build your Lebanese-format CV. What would you like to start with?', isUser: false },
   ]);
@@ -69,12 +75,12 @@ const ResumeEnhancerRouter = () => {
   const [isLocalChatLoading, setIsLocalChatLoading] = useState(false);
   const localChatRef = useRef(null);
 
-  const [localExtraEdu, setLocalExtraEdu] = useState([]);
-  const [localExtraExp, setLocalExtraExp] = useState([]);
-  const [localExtraProjects, setLocalExtraProjects] = useState([]);
+  const [localExtraEdu, setLocalExtraEdu] = usePersistentState('mugate_resume_localExtraEdu', []);
+  const [localExtraExp, setLocalExtraExp] = usePersistentState('mugate_resume_localExtraExp', []);
+  const [localExtraProjects, setLocalExtraProjects] = usePersistentState('mugate_resume_localExtraProjects', []);
 
   // ─── Global Builder States ───
-  const [globalForm, setGlobalForm] = useState({ ...INITIAL_GLOBAL_FORM });
+  const [globalForm, setGlobalForm] = usePersistentState('mugate_resume_globalForm', { ...INITIAL_GLOBAL_FORM });
   const [globalMessages, setGlobalMessages] = useState([
     { text: "Let's build your international CV. Which section would you like to work on first?", isUser: false },
   ]);
@@ -83,8 +89,22 @@ const ResumeEnhancerRouter = () => {
   const [isGlobalChatLoading, setIsGlobalChatLoading] = useState(false);
   const globalChatRef = useRef(null);
 
-  const [globalExtraExp, setGlobalExtraExp] = useState([]);
-  const [globalExtraLead, setGlobalExtraLead] = useState([]);
+  const [globalExtraExp, setGlobalExtraExp] = usePersistentState('mugate_resume_globalExtraExp', []);
+  const [globalExtraLead, setGlobalExtraLead] = usePersistentState('mugate_resume_globalExtraLead', []);
+
+  // ─── Live Editor (Jobsuit-style) ───
+  const [editorData, setEditorData] = usePersistentState('mugate_resume_editorData', createEmptyResume('local'));
+  const [editorReturnMode, setEditorReturnMode] = useState('welcome');
+
+  // Seed the live editor from the current builder form, then switch to it.
+  const openLiveEditor = (fromMode) => {
+    const seed = fromMode === 'global'
+      ? fromGlobalForm(globalForm, { exp: globalExtraExp, lead: globalExtraLead })
+      : fromLocalForm(localForm, { edu: localExtraEdu, exp: localExtraExp, projects: localExtraProjects });
+    setEditorData(seed);
+    setEditorReturnMode(fromMode);
+    setMode('editor');
+  };
 
   // Form Updaters
   const updateLocal = (field, value) => setLocalForm(prev => ({ ...prev, [field]: value }));
@@ -112,6 +132,40 @@ const ResumeEnhancerRouter = () => {
   const removeGlobalLead = i => setGlobalExtraLead(p => p.filter((_, idx) => idx !== i));
   const updateGlobalExtraLead = (i, f, v) => setGlobalExtraLead(p => p.map((e, idx) => idx === i ? { ...e, [f]: v } : e));
 
+  // Helper to run AI edits directly on builder forms
+  const runBuilderAiEdit = useCallback(async (format, text) => {
+    try {
+      const isLocal = format === 'local';
+      const currentForm = isLocal ? localForm : globalForm;
+      const extras = isLocal
+        ? { edu: localExtraEdu, exp: localExtraExp, projects: localExtraProjects }
+        : { exp: globalExtraExp, lead: globalExtraLead };
+
+      const seed = isLocal
+        ? fromLocalForm(currentForm, extras)
+        : fromGlobalForm(currentForm, extras);
+
+      const result = await aiEditResume(seed, text, 'all');
+      if (result && result.changed) {
+        const payload = toBackendPayload(result.resume);
+        if (isLocal) {
+          setLocalForm(payload.formData);
+          setLocalExtraEdu(payload.extras.edu || []);
+          setLocalExtraExp(payload.extras.exp || []);
+          setLocalExtraProjects(payload.extras.projects || []);
+        } else {
+          setGlobalForm(payload.formData);
+          setGlobalExtraExp(payload.extras.exp || []);
+          setGlobalExtraLead(payload.extras.lead || []);
+        }
+        return true;
+      }
+    } catch (err) {
+      console.error('Builder AI edit failed:', err);
+    }
+    return false;
+  }, [localForm, globalForm, localExtraEdu, localExtraExp, localExtraProjects, globalExtraExp, globalExtraLead, setLocalForm, setGlobalForm, setLocalExtraEdu, setLocalExtraExp, setLocalExtraProjects, setGlobalExtraExp, setGlobalExtraLead]);
+
   // Auto-scroll chats
   useEffect(() => {
     if (localChatRef.current) localChatRef.current.scrollTop = localChatRef.current.scrollHeight;
@@ -129,9 +183,11 @@ const ResumeEnhancerRouter = () => {
     setLocalInput('');
     setIsLocalChatLoading(true);
     try {
+      const wasEdited = await runBuilderAiEdit('local', text);
+
       let sid = localSessionId;
       if (!sid) {
-        const session = await createSession('Local CV Builder');
+        const session = await createSession('Local CV Builder', 'resume');
         sid = session.id;
         setLocalSessionId(sid);
         const cvContext = Object.entries(localForm)
@@ -139,17 +195,18 @@ const ResumeEnhancerRouter = () => {
           .map(([k, v]) => `${k}: ${v}`)
           .join('\n');
         if (cvContext) {
-          await sendChatbotMessage(sid, `I am building a Lebanese-format CV. Here is my data:\n${cvContext}\n\nPlease help me with CV advice. Respond concisely.`);
+          await sendChatbotMessage(sid, `I am building a Lebanese-format CV. Here is my data:\n${cvContext}\n\nYou are an advisor. Help me build my CV and suggest improvements. Respond concisely.`);
         }
       }
       const response = await sendChatbotMessage(sid, text);
-      setLocalMessages(prev => [...prev, { text: response.text || 'Sorry, I could not process that request.', isUser: false }]);
+      const prefix = wasEdited ? "✨ [AI applied updates directly to your CV form] " : "";
+      setLocalMessages(prev => [...prev, { text: prefix + (response.text || 'Sorry, I could not process that request.'), isUser: false }]);
     } catch {
       setLocalMessages(prev => [...prev, { text: CHAT_FALLBACK_LOCAL[Math.floor(Math.random() * CHAT_FALLBACK_LOCAL.length)], isUser: false }]);
     } finally {
       setIsLocalChatLoading(false);
     }
-  }, [localInput, localSessionId, localForm, isLocalChatLoading]);
+  }, [localInput, localSessionId, localForm, isLocalChatLoading, runBuilderAiEdit]);
 
   // ── Global Chat Actions ──
   const sendGlobalMessage = useCallback(async () => {
@@ -159,9 +216,11 @@ const ResumeEnhancerRouter = () => {
     setGlobalInput('');
     setIsGlobalChatLoading(true);
     try {
+      const wasEdited = await runBuilderAiEdit('global', text);
+
       let sid = globalSessionId;
       if (!sid) {
-        const session = await createSession('Global CV Builder');
+        const session = await createSession('Global CV Builder', 'resume');
         sid = session.id;
         setGlobalSessionId(sid);
         const cvContext = Object.entries(globalForm)
@@ -169,32 +228,33 @@ const ResumeEnhancerRouter = () => {
           .map(([k, v]) => `${k}: ${v}`)
           .join('\n');
         if (cvContext) {
-          await sendChatbotMessage(sid, `I am building an international CV. Here is my data:\n${cvContext}\n\nPlease help me with CV advice. Respond concisely.`);
+          await sendChatbotMessage(sid, `I am building an international CV. Here is my data:\n${cvContext}\n\nYou are an advisor. Help me build my CV and suggest improvements. Respond concisely.`);
         }
       }
       const response = await sendChatbotMessage(sid, text);
-      setGlobalMessages(prev => [...prev, { text: response.text || 'Sorry, I could not process that request.', isUser: false }]);
+      const prefix = wasEdited ? "✨ [AI applied updates directly to your CV form] " : "";
+      setGlobalMessages(prev => [...prev, { text: prefix + (response.text || 'Sorry, I could not process that request.'), isUser: false }]);
     } catch {
       setGlobalMessages(prev => [...prev, { text: CHAT_FALLBACK_GLOBAL[Math.floor(Math.random() * CHAT_FALLBACK_GLOBAL.length)], isUser: false }]);
     } finally {
       setIsGlobalChatLoading(false);
     }
-  }, [globalInput, globalSessionId, globalForm, isGlobalChatLoading]);
+  }, [globalInput, globalSessionId, globalForm, isGlobalChatLoading, runBuilderAiEdit]);
 
   // ── Unified Document Generator (PDF/DOCX) ──
   const handleDownload = useCallback(async () => {
     const format = showDownloadModal;
     if (!format) return;
     const formData = format === 'local' ? localForm : globalForm;
+    // Extra (dynamically added) entries live in separate arrays and must be sent
+    // alongside formData so the backend renders them. Each format exposes a
+    // different set of repeatable sections.
+    const extras = format === 'local'
+      ? { edu: localExtraEdu, exp: localExtraExp, projects: localExtraProjects }
+      : { exp: globalExtraExp, lead: globalExtraLead };
     setDownloadLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/resume/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ format, formData, fileType: downloadFileType }),
-      });
-      if (!res.ok) throw new Error('Generation failed');
-      const blob = await res.blob();
+      const blob = await generateResumeFile({ format, formData, extras, fileType: downloadFileType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -209,7 +269,7 @@ const ResumeEnhancerRouter = () => {
     } finally {
       setDownloadLoading(false);
     }
-  }, [showDownloadModal, localForm, globalForm, downloadFileType, downloadFileName]);
+  }, [showDownloadModal, localForm, globalForm, localExtraEdu, localExtraExp, localExtraProjects, globalExtraExp, globalExtraLead, downloadFileType, downloadFileName]);
 
   const isAdmin = (() => {
     const userStr = localStorage.getItem("mugate_user");
@@ -217,7 +277,7 @@ const ResumeEnhancerRouter = () => {
       try {
         const u = JSON.parse(userStr);
         if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
-      } catch {}
+      } catch { /* ignore malformed stored user */ }
     }
     return false;
   })();
@@ -312,9 +372,18 @@ const ResumeEnhancerRouter = () => {
               setDownloadFileType('pdf');
               setShowDownloadModal(fmt);
             }}
+            onOpenEditor={() => openLiveEditor(mode)}
             onBack={() => setMode('welcome')}
           />
         </div>
+      )}
+
+      {mode === 'editor' && (
+        <ResumeEditor
+          data={editorData}
+          setData={setEditorData}
+          onBack={() => setMode(editorReturnMode)}
+        />
       )}
 
       {/* Unified Download Configurations overlay */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import LebanonFlag from './LebanonFlag';
 
 const CVTypeModal = ({ onChoose, onBack }) => {
   const [visible, setVisible] = useState(false);
@@ -35,12 +36,7 @@ const CVTypeModal = ({ onChoose, onBack }) => {
         <div className="re-modal-options">
           <button className="re-modal-option-btn re-modal-local" onClick={() => onChoose('local')}>
             <div className="re-modal-btn-icon">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <rect x="2" y="6" width="24" height="16" rx="3" fill="rgba(239,68,68,0.08)" stroke="#ef4444" strokeWidth="1.5"/>
-                <rect x="2" y="6" width="24" height="5.3" fill="rgba(239,68,68,0.15)"/>
-                <rect x="2" y="17.7" width="24" height="4.3" rx="0" fill="rgba(34,197,94,0.15)"/>
-                <path d="M12 14.5l1.5-3 1.5 3" stroke="#16a34a" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <LebanonFlag width={30} height={20} className="re-modal-flag" />
             </div>
             <span className="re-modal-btn-label">Local CV (Lebanon)</span>
             <span className="re-modal-btn-desc">Lebanese market format with photo & personal details</span>

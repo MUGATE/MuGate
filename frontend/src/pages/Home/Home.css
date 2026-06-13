@@ -187,6 +187,8 @@
     align-items: center;
     gap: 28px;
     margin-left: 50px;
+    /* Breathing room so Control doesn't crowd the right-side Logout button */
+    margin-right: 32px;
 }
 
 .branding-logo-box {

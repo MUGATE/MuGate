@@ -4,132 +4,13 @@ import { Link } from 'react-router-dom';
 import { Clock, CalendarDays, PartyPopper } from 'lucide-react';
 import './schedule.css';
 
-/* ── Data ── */
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const ALL_HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM – 9 PM (full range)
+import {
+  DAYS, ALL_HOURS, parseDays, timeToDecimalHour, assignColor, formatHour
+} from './utils/scheduleHelpers';
 
-// Helper to convert typical backend formats like "M,W" or "T,Th" to indices [0, 2]
-const parseDays = (dayString) => {
-  if (!dayString || dayString === "TBA") return [];
-  const map = {
-    'M': 0,
-    'T': 1,
-    'W': 2,
-    'TH': 3,
-    'F': 4
-  };
-  return dayString.split(',').map(d => map[d.trim().toUpperCase()]).filter(d => d !== undefined);
-};
-
-// Map backend times (e.g., "11:00:00" or Date obj) to decimal hours (11.0)
-const timeToDecimalHour = (timeVal) => {
-  if (!timeVal) return null;
-  let str = timeVal.toString();
-  if (timeVal instanceof Date || str.includes('T')) {
-    const d = new Date(timeVal);
-    // MUST use UTC because SQL server saves the exact local time string as purely UTC (e.g. 1970-01-01T08:00:00Z)
-    // and using local getHours() will shift the 8AM based on the browser's timezone (+02:00 -> 10AM).
-    return d.getUTCHours() + (d.getUTCMinutes() / 60);
-  }
-  const parts = str.split(':');
-  if (parts.length >= 2) {
-    return parseInt(parts[0]) + (parseInt(parts[1]) / 60);
-  }
-  return null;
-};
-
-// Stable color assignment for courses
-const COURSE_COLORS = ['blue', 'green', 'yellow', 'peach', 'purple', 'pink', 'teal', 'orange'];
-const assignColor = (courseCode, index) => {
-  return COURSE_COLORS[index % COURSE_COLORS.length];
-};
-
-/* ── Helpers ── */
-const formatHour = (h) => {
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const display = h > 12 ? h - 12 : h === 0 ? 12 : h;
-  return `${display}:00 ${suffix}`;
-};
-
-const formatTime = (h) => {
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  let hour = h % 12;
-  const displayHour = Math.floor(hour) === 0 ? 12 : Math.floor(hour);
-  const minsDecimal = h % 1;
-  const preciseMins = Math.round(minsDecimal * 60).toString().padStart(2, '0');
-  return `${displayHour}:${preciseMins} ${suffix}`;
-};
-
-/* ── Toggle Switch ── */
-const ToggleSwitch = ({ checked, onChange }) => (
-  <label className="toggle-switch">
-    <input type="checkbox" checked={checked} onChange={onChange} />
-    <span className="toggle-slider" />
-  </label>
-);
-
-/* ── Course Block (clean, no edit icon) ── */
-const ROW_HEIGHT = 41;   // CSS height 40px + 1px border = 41px
-
-const CourseBlock = ({ course, slot, onClick, gridStartHour }) => {
-  const topOffset = (slot.startHour - gridStartHour) * ROW_HEIGHT;
-  const blockHeight = slot.duration * ROW_HEIGHT;
-
-  return (
-    <div
-      className={`course-block color-${course.color}`}
-      style={{
-        position: 'absolute',
-        top: `${topOffset}px`,
-        height: `${blockHeight - 2}px`,
-        left: '2px',
-        right: '2px',
-      }}
-      onClick={() => onClick(course)}
-    >
-      <div className="course-name">{course.name}</div>
-      <div className="course-meta">{formatTime(slot.startHour)} · {course.room}</div>
-      <div className="course-instructor">{course.instructor}</div>
-    </div>
-  );
-};
-
-/* ── Course Detail Modal ── */
-const CourseModal = ({ course, onClose }) => {
-  if (!course) return null;
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className={`modal-card color-${course.color}`} onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>×</button>
-        <div className="modal-header">
-          <h3>{course.name}</h3>
-          <span className={`modal-color-dot bg-${course.color}`} />
-        </div>
-        <div className="modal-body">
-          <div className="modal-row">
-            <span className="modal-label">👤 Instructor</span>
-            <span className="modal-value">{course.instructor}</span>
-          </div>
-          <div className="modal-row">
-            <span className="modal-label">📍 Room</span>
-            <span className="modal-value">{course.room}</span>
-          </div>
-          <div className="modal-divider" />
-          <div className="modal-slots-title">📅 Scheduled Sessions</div>
-          {course.slots.map((slot, i) => (
-            <div className="modal-slot" key={i}>
-              <span className="modal-slot-day">{DAYS[slot.day]}</span>
-              <span className="modal-slot-time">
-                {formatTime(slot.startHour)} – {formatTime(slot.endHour)}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
+import ToggleSwitch from './components/ToggleSwitch';
+import CourseBlock from './components/CourseBlock';
+import CourseModal from './components/CourseModal';
 
 /* ===== Main Component ===== */
 const Schedule = () => {
@@ -138,7 +19,7 @@ const Schedule = () => {
     if (saved) {
       try {
         return JSON.parse(saved);
-      } catch (e) { }
+      } catch { /* ignore corrupted saved preferences */ }
     }
     return {
       skip8am: false,
@@ -152,7 +33,6 @@ const Schedule = () => {
   const [visibleCount, setVisibleCount] = useState(0); // How many we have unlocked so far
   const [currentIndex, setCurrentIndex] = useState(0); // Which one we are viewing
   const [courses, setCourses] = useState([]); // UI representation of the current schedule
-  const [studentInfo, setStudentInfo] = useState(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -241,8 +121,7 @@ const Schedule = () => {
     setScheduleVisible(false);
 
     try {
-      // The backend needs a semesterId (e.g., 202410 for Fall 2024). 
-      // Hardcoding for MVP, eventually this should be a dropdown selector.
+      // The backend needs a semesterId (e.g., 38).
       const payload = {
         semesterId: 38,
         preferences: {
@@ -297,11 +176,6 @@ const Schedule = () => {
       parseBackendSchedule(generatedSchedules[nextCount - 1].schedule);
     }
   };
-
-  /* Change instructor - currently disabled since we pull directly from API actual bounds */
-  const changeInstructor = useCallback((courseId, newInstructor) => {
-    // Disabled logic
-  }, []);
 
   /* Save the currently active schedule to the user's profile */
   const handleConfirmSchedule = async () => {
@@ -376,12 +250,11 @@ const Schedule = () => {
       try {
         const u = JSON.parse(userStr);
         if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
-      } catch {}
+      } catch { /* ignore malformed stored user */ }
     }
     return false;
   })();
 
-  /* ── Render ── */
   return (
     <div className="schedule-page">
       {/* Background gradient mesh overlays */}
@@ -509,7 +382,7 @@ const Schedule = () => {
               {/* Top Carousel Paginator */}
               {generatedSchedules.length > 0 ? (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', display: 'flex', gap: '15px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                     <button
                       onClick={handlePrevSchedule}
                       disabled={currentIndex === 0}
@@ -530,7 +403,7 @@ const Schedule = () => {
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
                     </button>
-                    <span>Schedule Option {currentIndex + 1} of {visibleCount}</span>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>Schedule Option {currentIndex + 1} of {visibleCount}</span>
                     <button
                       onClick={handleNextSchedule}
                       disabled={currentIndex === visibleCount - 1}

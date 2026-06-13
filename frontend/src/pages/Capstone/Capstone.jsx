@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import CapstoneSidebar from './CapstoneSidebar';
-import FindPartner from './FindPartner';
-import IdeasDatabase from './IdeasDatabase';
-import AIAdvisor from './AIAdvisor';
+import CapstoneSidebar from './components/CapstoneSidebar';
+import FindPartner from './components/FindPartner';
+import IdeasDatabase from './components/IdeasDatabase/IdeasDatabase';
+import AIAdvisor from './components/AIAdvisor';
 import './capstone.css';
 
 const Capstone = () => {
@@ -29,7 +29,7 @@ const Capstone = () => {
       try {
         const u = JSON.parse(userStr);
         if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
-      } catch {}
+      } catch { /* ignore malformed stored user */ }
     }
     return false;
   })();

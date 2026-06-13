@@ -1,4 +1,5 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle, TabStopType } from "docx";
+import type { ResumeExtras } from "./pdf-generator.service";
 
 const HALF_PAGE = 4680; // ~half page in twips for right-aligned tabs
 
@@ -7,6 +8,12 @@ function dateRange(from: string, to: string): string {
   if (from) return from;
   if (to) return to;
   return "";
+}
+
+/** Safely read a trimmed string from an extra-entry object. */
+function ex(obj: Record<string, string>, key: string): string {
+  const v = obj?.[key];
+  return typeof v === "string" ? v.trim() : "";
 }
 
 function docxSectionHeading(title: string): Paragraph {
@@ -46,8 +53,11 @@ function docxOrgLine(org: string, rightText: string): Paragraph {
   });
 }
 
-function buildLocalDocx(f: Record<string, string>): Paragraph[] {
+function buildLocalDocx(f: Record<string, string>, extras: ResumeExtras = {}): Paragraph[] {
   const paras: Paragraph[] = [];
+  const extraEdu = extras.edu ?? [];
+  const extraExp = extras.exp ?? [];
+  const extraProjects = extras.projects ?? [];
 
   // Header
   if (f.fullName) {
@@ -76,7 +86,7 @@ function buildLocalDocx(f: Record<string, string>): Paragraph[] {
   }
 
   // Education
-  if (f.eduInst1 || f.eduInst2) {
+  if (f.eduInst1 || f.eduInst2 || extraEdu.some(e => ex(e, "inst"))) {
     paras.push(docxSectionHeading("EDUCATION"));
     if (f.eduInst1) {
       const dates = dateRange(f.eduFrom1, f.eduTo1);
@@ -94,10 +104,18 @@ function buildLocalDocx(f: Record<string, string>): Paragraph[] {
       paras.push(docxOrgLine(f.eduInst2, right));
       if (f.eduGpa2) paras.push(new Paragraph({ children: [new TextRun({ text: `GPA / Honors: ${f.eduGpa2}`, size: 20, font: "Calibri" })], spacing: { after: 60 } }));
     }
+    for (const e of extraEdu) {
+      const inst = ex(e, "inst");
+      if (!inst) continue;
+      const right = [ex(e, "loc"), dateRange(ex(e, "from"), ex(e, "to"))].filter(Boolean).join("  |  ");
+      paras.push(docxOrgLine(inst, right));
+      const gpa = ex(e, "gpa");
+      if (gpa) paras.push(new Paragraph({ children: [new TextRun({ text: `GPA / Honors: ${gpa}`, size: 20, font: "Calibri" })], spacing: { after: 60 } }));
+    }
   }
 
   // Experience
-  if (f.expCompany1 || f.expCompany2) {
+  if (f.expCompany1 || f.expCompany2 || extraExp.some(e => ex(e, "company") || ex(e, "pos"))) {
     paras.push(docxSectionHeading("EXPERIENCE"));
     if (f.expCompany1) {
       const dates = dateRange(f.expFrom1, f.expTo1);
@@ -114,13 +132,27 @@ function buildLocalDocx(f: Record<string, string>): Paragraph[] {
       if (f.expBullet2a) paras.push(docxBullet(f.expBullet2a));
       if (f.expBullet2b) paras.push(docxBullet(f.expBullet2b));
     }
+    for (const e of extraExp) {
+      const company = ex(e, "company");
+      const pos = ex(e, "pos");
+      if (!company && !pos) continue;
+      paras.push(docxOrgLine(company, [ex(e, "loc"), dateRange(ex(e, "from"), ex(e, "to"))].filter(Boolean).join("  |  ")));
+      if (pos) paras.push(new Paragraph({ children: [new TextRun({ text: pos, italics: true, size: 20, font: "Calibri" })], spacing: { after: 20 } }));
+      if (ex(e, "bullet1")) paras.push(docxBullet(ex(e, "bullet1")));
+      if (ex(e, "bullet2")) paras.push(docxBullet(ex(e, "bullet2")));
+      if (ex(e, "bullet3")) paras.push(docxBullet(ex(e, "bullet3")));
+    }
   }
 
   // Projects
-  if (f.project1 || f.project2) {
+  if (f.project1 || f.project2 || extraProjects.some(p => ex(p, "text"))) {
     paras.push(docxSectionHeading("PROJECTS / EXTRA CURRICULAR ACTIVITIES"));
     if (f.project1) paras.push(docxBullet(f.project1));
     if (f.project2) paras.push(docxBullet(f.project2));
+    for (const p of extraProjects) {
+      const text = ex(p, "text");
+      if (text) paras.push(docxBullet(text));
+    }
   }
 
   // Skills
@@ -137,8 +169,10 @@ function buildLocalDocx(f: Record<string, string>): Paragraph[] {
   return paras;
 }
 
-function buildGlobalDocx(f: Record<string, string>): Paragraph[] {
+function buildGlobalDocx(f: Record<string, string>, extras: ResumeExtras = {}): Paragraph[] {
   const paras: Paragraph[] = [];
+  const extraExp = extras.exp ?? [];
+  const extraLead = extras.lead ?? [];
 
   // Header
   const name = [f.firstName, f.lastName].filter(Boolean).join(" ");
@@ -178,7 +212,7 @@ function buildGlobalDocx(f: Record<string, string>): Paragraph[] {
   }
 
   // Experience
-  if (f.expOrg1 || f.expOrg2) {
+  if (f.expOrg1 || f.expOrg2 || extraExp.some(e => ex(e, "org") || ex(e, "title"))) {
     paras.push(docxSectionHeading("EXPERIENCE"));
     if (f.expOrg1) {
       paras.push(docxOrgLine(f.expOrg1, [f.expLoc1, f.expDates1].filter(Boolean).join("  |  ")));
@@ -196,15 +230,35 @@ function buildGlobalDocx(f: Record<string, string>): Paragraph[] {
       if (f.expB2c) paras.push(docxBullet(f.expB2c));
       if (f.expB2d) paras.push(docxBullet(f.expB2d));
     }
+    for (const e of extraExp) {
+      const org = ex(e, "org");
+      const title = ex(e, "title");
+      if (!org && !title) continue;
+      paras.push(docxOrgLine(org, [ex(e, "loc"), ex(e, "dates")].filter(Boolean).join("  |  ")));
+      if (title) paras.push(new Paragraph({ children: [new TextRun({ text: title, italics: true, size: 20, font: "Calibri" })], spacing: { after: 20 } }));
+      if (ex(e, "b1")) paras.push(docxBullet(ex(e, "b1")));
+      if (ex(e, "b2")) paras.push(docxBullet(ex(e, "b2")));
+      if (ex(e, "b3")) paras.push(docxBullet(ex(e, "b3")));
+      if (ex(e, "b4")) paras.push(docxBullet(ex(e, "b4")));
+    }
   }
 
   // Leadership
-  if (f.leadOrg || f.leadRole) {
+  if (f.leadOrg || f.leadRole || extraLead.some(l => ex(l, "org") || ex(l, "role"))) {
     paras.push(docxSectionHeading("LEADERSHIP & ACTIVITIES"));
     if (f.leadOrg) paras.push(docxOrgLine(f.leadOrg, [f.leadLoc, f.leadDates].filter(Boolean).join("  |  ")));
     if (f.leadRole) paras.push(new Paragraph({ children: [new TextRun({ text: f.leadRole, italics: true, size: 20, font: "Calibri" })], spacing: { after: 20 } }));
     if (f.leadB1) paras.push(docxBullet(f.leadB1));
     if (f.leadB2) paras.push(docxBullet(f.leadB2));
+    for (const l of extraLead) {
+      const org = ex(l, "org");
+      const role = ex(l, "role");
+      if (!org && !role) continue;
+      paras.push(docxOrgLine(org, [ex(l, "loc"), ex(l, "dates")].filter(Boolean).join("  |  ")));
+      if (role) paras.push(new Paragraph({ children: [new TextRun({ text: role, italics: true, size: 20, font: "Calibri" })], spacing: { after: 20 } }));
+      if (ex(l, "b1")) paras.push(docxBullet(ex(l, "b1")));
+      if (ex(l, "b2")) paras.push(docxBullet(ex(l, "b2")));
+    }
   }
 
   // Skills
@@ -220,14 +274,14 @@ function buildGlobalDocx(f: Record<string, string>): Paragraph[] {
   return paras;
 }
 
-export async function generateResumeDocx(format: "local" | "global", formData: Record<string, string>): Promise<Buffer> {
+export async function generateResumeDocx(format: "local" | "global", formData: Record<string, string>, extras: ResumeExtras = {}): Promise<Buffer> {
   const safe: Record<string, string> = {};
   for (const key of Object.keys(formData)) {
     const val = formData[key];
     safe[key] = typeof val === "string" ? val.trim() : "";
   }
 
-  const paragraphs = format === "local" ? buildLocalDocx(safe) : buildGlobalDocx(safe);
+  const paragraphs = format === "local" ? buildLocalDocx(safe, extras) : buildGlobalDocx(safe, extras);
 
   const doc = new Document({
     sections: [{

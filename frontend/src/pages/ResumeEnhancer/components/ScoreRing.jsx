@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const ScoreRing = ({ score = 85, maxScore = 100 }) => {
   const [animated, setAnimated] = useState(0);
@@ -34,6 +34,7 @@ const ScoreRing = ({ score = 85, maxScore = 100 }) => {
     );
     if (ringRef.current) observer.observe(ringRef.current);
     return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

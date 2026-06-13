@@ -13,7 +13,7 @@ export const ACTION_VERBS = [
 /**
  * Check if the resume text has a section with meaningful content
  */
-function sectionExists(text, keywords, minimumContent = false) {
+function sectionExists(text, keywords) {
   const lower = text.toLowerCase();
   return keywords.some(k => lower.includes(k));
 }
@@ -37,7 +37,7 @@ function hasEmailAddress(text) {
  */
 function hasPhoneNumber(text) {
   // 1. Strip all spaces, dashes, dots, brackets, and plus signs
-  const clean = text.replace(/[\s\-\.\(\)\+]/g, '');
+  const clean = text.replace(/[\s\-.()+]/g, '');
   
   // 2. Check for standard Lebanese patterns:
   // e.g., 96170123456, 03123456, 71123456, 76123456
@@ -52,7 +52,7 @@ function hasPhoneNumber(text) {
  * Check if experience bullets use action verbs with good variety
  */
 function evaluateActionVerbs(text, lines) {
-  const bulletLines = lines.filter(l => /^[\s]*[•\-\*▪]/.test(l) || /^[\s]*\d+[\.\)]/.test(l));
+  const bulletLines = lines.filter(l => /^[\s]*[•\-*▪]/.test(l) || /^[\s]*\d+[.)]/.test(l));
   if (bulletLines.length === 0) {
     // If no explicit bullets are found, scan all lines for verb presence
     const words = text.toLowerCase().split(/\s+/);
@@ -68,7 +68,7 @@ function evaluateActionVerbs(text, lines) {
 
   const usedVerbs = new Set();
   const actionVerbCount = bulletLines.filter(l => {
-    const firstWords = l.replace(/^[\s•\-\*▪\d\.\)]+/, '').trim().split(/\s+/).slice(0, 2);
+    const firstWords = l.replace(/^[\s•\-*▪\d.)]+/, '').trim().split(/\s+/).slice(0, 2);
     const found = firstWords.some(w => {
       const root = w.toLowerCase().replace(/ed$|ing$|s$/, '');
       if (ACTION_VERBS.includes(root)) {
@@ -102,7 +102,7 @@ function hasMeaningfulSummary(text) {
 /**
  * Check if quantified achievements/numbers are present in bullet points
  */
-function hasQuantifiedMetrics(text, lines) {
+function hasQuantifiedMetrics(text) {
   // Check for percentages, dollar amounts, numbers with units
   const metricPatterns = [
     /\d+%/,
@@ -164,7 +164,7 @@ export function analyzeResumeText(text) {
   });
 
   // 6. Quantified achievements
-  const hasMetrics = hasQuantifiedMetrics(text, lines);
+  const hasMetrics = hasQuantifiedMetrics(text);
   checks.push({ name: 'metrics', pass: hasMetrics, weight: 12, suggestion: 'Quantify your achievements with numbers, percentages, or dollar amounts (e.g., "Increased sales by 25%").' });
 
   // 7. Professional summary / objective

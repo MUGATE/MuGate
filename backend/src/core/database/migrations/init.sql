@@ -156,6 +156,7 @@ CREATE TABLE ChatSessions (
     id              UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
     userId          UNIQUEIDENTIFIER NULL,           -- NULL if anonymous/public mode
     title           NVARCHAR(255)    NULL,
+    source          NVARCHAR(20)     NOT NULL DEFAULT 'chat', -- 'chat' (MuChat) | 'resume' (Resume Enhancer) — keeps feature histories separate
     isPinned        BIT              NOT NULL DEFAULT 0,
     isActive        BIT              NOT NULL DEFAULT 1,
     createdAt       DATETIME2        NOT NULL DEFAULT GETDATE(),

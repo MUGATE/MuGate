@@ -12,13 +12,14 @@ export class ChatbotMemoryService {
      * Creates a new chat session. Enforces session slot limits.
      * If limit is reached, auto-deletes the oldest unpinned session.
      */
-    static async createSession(userId: string | null, title?: string, isPinned: boolean = false): Promise<ChatSession> {
+    static async createSession(userId: string | null, title?: string, isPinned: boolean = false, source: string = "chat"): Promise<ChatSession> {
 
-        // If authenticated user, check limits
+        // If authenticated user, check limits (per source, so Resume sessions never evict MuChat sessions)
         if (userId) {
             const sessionsCountResult = await pool.request()
                 .input("userId", userId)
-                .query("SELECT COUNT(*) as count FROM ChatSessions WHERE userId = @userId AND isActive = 1");
+                .input("source", source)
+                .query("SELECT COUNT(*) as count FROM ChatSessions WHERE userId = @userId AND isActive = 1 AND source = @source");
 
             const count = sessionsCountResult.recordset[0].count;
 
@@ -26,9 +27,10 @@ export class ChatbotMemoryService {
                 // Find oldest unpinned session to delete (or mark inactive)
                 const oldestResult = await pool.request()
                     .input("userId", userId)
+                    .input("source", source)
                     .query(`
-                        SELECT TOP 1 id FROM ChatSessions 
-                        WHERE userId = @userId AND isPinned = 0 AND isActive = 1 
+                        SELECT TOP 1 id FROM ChatSessions
+                        WHERE userId = @userId AND isPinned = 0 AND isActive = 1 AND source = @source
                         ORDER BY updatedAt ASC
                     `);
 
@@ -45,10 +47,11 @@ export class ChatbotMemoryService {
             .input("userId", userId)
             .input("title", title || "New Chat")
             .input("isPinned", isPinned ? 1 : 0)
+            .input("source", source)
             .query(`
-                INSERT INTO ChatSessions (userId, title, isPinned)
+                INSERT INTO ChatSessions (userId, title, isPinned, source)
                 OUTPUT INSERTED.*
-                VALUES (@userId, @title, @isPinned)
+                VALUES (@userId, @title, @isPinned, @source)
             `);
 
         return insertResult.recordset[0];
@@ -60,7 +63,7 @@ export class ChatbotMemoryService {
     static async getSessions(userId: string): Promise<ChatSession[]> {
         const result = await pool.request()
             .input("userId", userId)
-            .query("SELECT * FROM ChatSessions WHERE userId = @userId AND isActive = 1 ORDER BY isPinned DESC, updatedAt DESC");
+            .query("SELECT * FROM ChatSessions WHERE userId = @userId AND isActive = 1 AND source = 'chat' ORDER BY isPinned DESC, updatedAt DESC");
         return result.recordset;
     }
 
@@ -142,7 +145,7 @@ export class ChatbotMemoryService {
             params.push(`@${paramName}`);
         });
         const result = await request.query(
-            `SELECT * FROM ChatSessions WHERE id IN (${params.join(",")}) AND isActive = 1 ORDER BY isPinned DESC, updatedAt DESC`
+            `SELECT * FROM ChatSessions WHERE id IN (${params.join(",")}) AND isActive = 1 AND source = 'chat' ORDER BY isPinned DESC, updatedAt DESC`
         );
         return result.recordset;
     }

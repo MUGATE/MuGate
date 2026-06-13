@@ -3,6 +3,7 @@ import ScoreRing from '../components/ScoreRing';
 import SuggestionCard from '../components/SuggestionCard';
 import CVField, { CVSection, CVRow } from '../components/CVField';
 import ChatInterface from '../components/ChatInterface';
+import LebanonFlag from '../components/LebanonFlag';
 
 import '../styles/builder.css';
 import '../styles/chat.css';
@@ -54,6 +55,7 @@ const ResumeBuilderPage = ({
   showPreview,
   setShowPreview,
   openDownloadModal,
+  onOpenEditor,
   onBack,
 }) => {
   const isLocal = type === 'local';
@@ -286,7 +288,14 @@ const ResumeBuilderPage = ({
         <div className="re-suggestions-card re-glass">
           <h3 className="re-section-title">Tips for {isLocal ? 'Local' : 'Global'} CV</h3>
           <div className="suggestions-list">
-            {tipsList.map((text, i) => <SuggestionCard key={i} index={i} text={text} />)}
+            {tipsList.map((text, i) => (
+              <SuggestionCard
+                key={i}
+                index={i}
+                text={text}
+                onClick={() => setInput(`How do I: ${text}`)}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -303,7 +312,7 @@ const ResumeBuilderPage = ({
             <h2 className="cv-form-title">
               {isLocal ? 'Local' : 'Global'} CV Builder{' '}
               <span className={`re-cv-badge re-cv-badge-${type}`}>
-                {isLocal ? 'Lebanon' : 'International'}
+                {isLocal ? <><LebanonFlag width={20} height={14} className="re-flag-lb" /> Lebanon</> : 'International'}
               </span>
             </h2>
           </div>
@@ -578,14 +587,19 @@ const ResumeBuilderPage = ({
               </>
             )}
 
-            <div className="cv-download-section">
-              <button className="cv-download-btn" onClick={() => openDownloadModal(type)}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M10 3v10m0 0l-4-4m4 4l4-4M3 15v2h14v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Review & Download CV
+          </div>
+          <div className="cv-download-section">
+            {onOpenEditor && (
+              <button className="cv-download-btn cv-editor-btn" onClick={onOpenEditor} type="button">
+                ✨ Open Live Editor
               </button>
-            </div>
+            )}
+            <button className="cv-download-btn" onClick={() => openDownloadModal(type)}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M10 3v10m0 0l-4-4m4 4l4-4M3 15v2h14v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Review & Download CV
+            </button>
           </div>
         </div>
       </div>

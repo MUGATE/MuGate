@@ -27,7 +27,7 @@
     "open": "^11.0.0",
     "pdf-parse": "^2.4.5",
     "pdfkit": "^0.17.2",
-    "playwright": "^1.58.2",
+    "playwright": "^1.60.0",
     "uuid": "^14.0.0"
   },
   "devDependencies": {

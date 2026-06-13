@@ -10,6 +10,8 @@ import { ChatbotAnalyticsService } from "./chatbot.analytics.service";
 import { KnowledgeService } from "./knowledge.service";
 import { ClassifierService, QuestionType } from "./classifier.service";
 
+import { pool } from "../../../../core/database/connection";
+
 export class ChatbotService {
 
     /**
@@ -34,6 +36,29 @@ export class ChatbotService {
         }
 
         try {
+            // Check session source
+            const sessionResult = await pool.request()
+                .input("sessionId", sessionId)
+                .query("SELECT source FROM ChatSessions WHERE id = @sessionId AND isActive = 1");
+            const isResumeSession = sessionResult.recordset.length > 0 && sessionResult.recordset[0].source === "resume";
+
+            if (isResumeSession) {
+                const systemPrompt = `You are a professional, clear, and comprehensive AI resume optimizer and advisor for MuGate. You assist the student in reviewing, writing, and formatting their resume.
+You should provide constructive, direct feedback on their resume content, vocabulary, metrics, and structure.
+If they ask to add, change, remove, or modify something in their resume, write or rewrite the requested text/bullet points clearly and cleanly. Respond concisely and professionally in Markdown format.`;
+
+                const history = await ChatbotMemoryService.getSessionHistory(sessionId, userId);
+                await ChatbotMemoryService.saveMessage(sessionId, "user", messageContent, 0);
+
+                const startGenTime = Date.now();
+                const aiResponse = await AiProvider.generateResponse(systemPrompt, history, messageContent);
+                const durationMs = Date.now() - startGenTime;
+
+                await ChatbotMemoryService.saveMessage(sessionId, "assistant", aiResponse.text, aiResponse.tokensUsed);
+                ChatbotAnalyticsService.logQuery("RESUME_CHAT", false, durationMs);
+                return aiResponse;
+            }
+
             // 2. Classify the question
             const questionType = ClassifierService.classify(messageContent);
             logger.info(`Question classified as: ${ClassifierService.describe(questionType)}`);
@@ -102,8 +127,8 @@ export class ChatbotService {
     /**
      * Creates a new chat session. If userId is provided, it's authenticated. Otherwise public.
      */
-    static async createSession(userId: string | null, title?: string, isPinned: boolean = false, userName?: string): Promise<ChatSession> {
-        const session = await ChatbotMemoryService.createSession(userId, title, isPinned);
+    static async createSession(userId: string | null, title?: string, isPinned: boolean = false, userName?: string, source: string = "chat"): Promise<ChatSession> {
+        const session = await ChatbotMemoryService.createSession(userId, title, isPinned, source);
 
         // Welcome message
         const welcomeMessage = getGreeting(userName);

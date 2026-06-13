@@ -1,11 +1,13 @@
 import React, { useState, useRef, useCallback } from 'react';
 import mammoth from 'mammoth';
 import { createSession, sendMessage as sendChatbotMessage, uploadFile as uploadChatbotFile } from '../../../services/chatbotApi';
+import { analyzeResume as analyzeResumeApi, editResumeFile } from '../../../services/resumeApi';
 import { analyzeResumeText } from '../utils/analyzeResume';
 import ScoreRing from '../components/ScoreRing';
 import SuggestionCard from '../components/SuggestionCard';
 import PdfViewer from '../components/PdfViewer';
 import ChatInterface from '../components/ChatInterface';
+import AnalysisBreakdown from '../components/AnalysisBreakdown';
 
 import '../styles/analyzer.css';
 import '../styles/chat.css';
@@ -43,6 +45,11 @@ const ResumeAnalyzerPage = ({ onBack }) => {
   const [resumeHtml, setResumeHtml] = useState('');
   const [resumeScore, setResumeScore] = useState(0);
   const [resumeSuggestions, setResumeSuggestions] = useState([]);
+
+  // ── AI explainable analysis (backend /api/resume/analyze) ──
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [jobDescription, setJobDescription] = useState('');
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [appliedSuggestions, setAppliedSuggestions] = useState(new Set());
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [chatSessionId, setChatSessionId] = useState(null);
@@ -90,21 +97,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     if (!targetFile || !instructionsToApply) return;
     setIsEditingDocument(true);
     try {
-      const formData = new FormData();
-      formData.append('file', targetFile);
-      formData.append('instructions', instructionsToApply);
-
-      const res = await fetch('http://localhost:5000/api/resume/edit', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || 'Edit failed');
-      }
-
-      const blob = await res.blob();
+      const blob = await editResumeFile(targetFile, instructionsToApply);
       const editedFile = new File([blob], targetFile.name, {
         type: targetFile.type,
       });
@@ -152,6 +145,22 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     }
   }, []);
 
+  // ── Backend AI analysis (progressive enhancement over the local scorer) ──
+  // Always safe: on failure we simply keep the local heuristic score + suggestions.
+  const runAiAnalysis = useCallback(async (text, jd) => {
+    if (!text || !text.trim()) return;
+    setIsReanalyzing(true);
+    try {
+      const analysis = await analyzeResumeApi(text, jd || '');
+      setAiAnalysis(analysis);
+      if (typeof analysis.overallScore === 'number') setResumeScore(analysis.overallScore);
+    } catch (e) {
+      console.error('AI analysis failed, keeping local score:', e);
+    } finally {
+      setIsReanalyzing(false);
+    }
+  }, []);
+
   // File Upload
   const handleFile = useCallback(async (file) => {
     if (!file) return;
@@ -168,6 +177,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     setIsAnalyzing(true);
     setAppliedSuggestions(new Set());
     setResumeHtml('');
+    setAiAnalysis(null);
 
     if (file.type !== 'application/pdf') {
       try {
@@ -180,7 +190,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     }
 
     try {
-      const session = await createSession('Resume Analysis');
+      const session = await createSession('Resume Analysis', 'resume');
       const sid = session.id;
       setChatSessionId(sid);
       const uploadResult = await uploadChatbotFile(
@@ -195,12 +205,14 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       setResumeSuggestions(analysis.suggestions);
       setMessages([
         {
-          text: `I've analyzed your resume and scored it ${analysis.score}/100. I found ${
+          text: `I've analyzed your resume! I found ${
             analysis.suggestions.length
           } area${analysis.suggestions.length !== 1 ? 's' : ''} for improvement. Check the suggestions on the left, or ask me anything!`,
           isUser: false,
         },
       ]);
+      // Fire deeper explainable AI analysis (refines the score + breakdown when ready).
+      runAiAnalysis(aiText, '');
     } catch (err) {
       console.error('Analysis error:', err);
       try {
@@ -211,12 +223,13 @@ const ResumeAnalyzerPage = ({ onBack }) => {
         setResumeSuggestions(analysis.suggestions);
         setMessages([
           {
-            text: `Scored your resume ${analysis.score}/100 (local analysis). Found ${
+            text: `I've analyzed your resume locally. Found ${
               analysis.suggestions.length
             } suggestion${analysis.suggestions.length !== 1 ? 's' : ''}.`,
             isUser: false,
           },
         ]);
+        runAiAnalysis(text, '');
       } catch {
         setResumeScore(0);
         setResumeSuggestions([]);
@@ -225,7 +238,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     } finally {
       setIsAnalyzing(false);
     }
-  }, []);
+  }, [runAiAnalysis]);
 
   const generateInteractivePrompt = (suggestionId, suggestionText) => {
     const instruction = INTERACTIVE_PROMPTS[suggestionId] ||
@@ -286,7 +299,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     try {
       let sid = chatSessionId;
       if (!sid) {
-        const session = await createSession('Resume Enhancement');
+        const session = await createSession('Resume Enhancement', 'resume');
         sid = session.id;
         setChatSessionId(sid);
         const ctx = resumeText
@@ -345,7 +358,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       try {
         let sid = chatSessionId;
         if (!sid) {
-          const session = await createSession('Resume Enhancement');
+          const session = await createSession('Resume Enhancement', 'resume');
           sid = session.id;
           setChatSessionId(sid);
         }
@@ -381,7 +394,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     try {
       let sid = chatSessionId;
       if (!sid) {
-        const session = await createSession('Resume Enhancement');
+        const session = await createSession('Resume Enhancement', 'resume');
         sid = session.id;
         setChatSessionId(sid);
       }
@@ -523,6 +536,8 @@ const ResumeAnalyzerPage = ({ onBack }) => {
                   setResumeScore(0);
                   setResumeSuggestions([]);
                   setAppliedSuggestions(new Set());
+                  setAiAnalysis(null);
+                  setJobDescription('');
                 }}
                 title="Remove file"
               >
@@ -544,12 +559,31 @@ const ResumeAnalyzerPage = ({ onBack }) => {
                       </svg>
                     </div>
                     <p className="doc-embed-name">{uploadedFile.name}</p>
-                    <p className="doc-embed-hint">Analyzing your document...</p>
+                    <p className="doc-embed-hint">{isAnalyzing ? 'Analyzing your document...' : 'Preview not available for this format.'}</p>
                   </div>
                 )}
               </div>
             </div>
           </div>
+        )}
+
+        {uploadedFile && isReanalyzing && !aiAnalysis && (
+          <div className="re-analysis re-glass" style={{ marginTop: 16, padding: '16px 20px' }}>
+            <div className="re-analyzing-inline">
+              <div className="re-analyzing-spinner-sm" />
+              <span>Running AI analysis…</span>
+            </div>
+          </div>
+        )}
+
+        {aiAnalysis && (
+          <AnalysisBreakdown
+            analysis={aiAnalysis}
+            jobDescription={jobDescription}
+            setJobDescription={setJobDescription}
+            onReanalyze={() => runAiAnalysis(resumeText, jobDescription)}
+            isAnalyzing={isReanalyzing}
+          />
         )}
       </div>
 

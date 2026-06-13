@@ -36,8 +36,22 @@ function dateRange(from: string, to: string): string {
   return "";
 }
 
+/** Dynamically-added repeatable entries sent alongside the flat formData. */
+export interface ResumeExtras {
+  edu?: Array<Record<string, string>>;
+  exp?: Array<Record<string, string>>;
+  projects?: Array<Record<string, string>>;
+  lead?: Array<Record<string, string>>;
+}
+
+/** Safely read a trimmed string from an extra-entry object. */
+function ex(obj: Record<string, string>, key: string): string {
+  const v = obj?.[key];
+  return typeof v === "string" ? v.trim() : "";
+}
+
 /* ── LOCAL CV DRAWING (AUB / Lebanon format) ── */
-function buildLocalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>) {
+function buildLocalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>, extras: ResumeExtras = {}) {
   // Header
   if (f.fullName) {
     doc.font("Helvetica-Bold").fontSize(18).fillColor("#000000").text(f.fullName, MARGIN, MARGIN, { align: "center", width: CONTENT_W });
@@ -61,7 +75,8 @@ function buildLocalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>) {
   }
 
   // Education
-  const hasEdu = f.eduInst1 || f.eduDegree1 || f.eduInst2;
+  const extraEdu = extras.edu ?? [];
+  const hasEdu = f.eduInst1 || f.eduDegree1 || f.eduInst2 || extraEdu.some(e => ex(e, "inst"));
   if (hasEdu) {
     sectionTitle(doc, "EDUCATION");
 
@@ -90,10 +105,25 @@ function buildLocalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>) {
       if (f.eduGpa2) doc.font("Helvetica").fontSize(10).text(`GPA / Honors: ${f.eduGpa2}`, MARGIN, doc.y, { width: CONTENT_W });
       doc.moveDown(0.3);
     }
+
+    for (const e of extraEdu) {
+      const inst = ex(e, "inst");
+      if (!inst) continue;
+      const dates = dateRange(ex(e, "from"), ex(e, "to"));
+      doc.font("Helvetica-Bold").fontSize(10).text(inst, MARGIN, doc.y, { width: CONTENT_W });
+      const loc = ex(e, "loc");
+      if (loc || dates) {
+        doc.font("Helvetica").fontSize(9).text([loc, dates].filter(Boolean).join("  |  "), MARGIN, doc.y, { width: CONTENT_W, align: "right" });
+      }
+      const gpa = ex(e, "gpa");
+      if (gpa) doc.font("Helvetica").fontSize(10).text(`GPA / Honors: ${gpa}`, MARGIN, doc.y, { width: CONTENT_W });
+      doc.moveDown(0.3);
+    }
   }
 
   // Experience
-  const hasExp = f.expCompany1 || f.expPos1 || f.expCompany2;
+  const extraExp = extras.exp ?? [];
+  const hasExp = f.expCompany1 || f.expPos1 || f.expCompany2 || extraExp.some(e => ex(e, "company") || ex(e, "pos"));
   if (hasExp) {
     sectionTitle(doc, "EXPERIENCE");
 
@@ -121,13 +151,32 @@ function buildLocalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>) {
       bulletLine(doc, f.expBullet2b);
       doc.moveDown(0.3);
     }
+
+    for (const e of extraExp) {
+      const company = ex(e, "company");
+      const pos = ex(e, "pos");
+      if (!company && !pos) continue;
+      const dates = dateRange(ex(e, "from"), ex(e, "to"));
+      if (company) doc.font("Helvetica-Bold").fontSize(10).text(company, MARGIN, doc.y, { width: CONTENT_W });
+      const loc = ex(e, "loc");
+      if (loc || dates) {
+        doc.font("Helvetica").fontSize(9).text([loc, dates].filter(Boolean).join("  |  "), MARGIN, doc.y, { width: CONTENT_W, align: "right" });
+      }
+      if (pos) doc.font("Helvetica-Oblique").fontSize(10).text(pos, MARGIN, doc.y, { width: CONTENT_W });
+      bulletLine(doc, ex(e, "bullet1"));
+      bulletLine(doc, ex(e, "bullet2"));
+      bulletLine(doc, ex(e, "bullet3"));
+      doc.moveDown(0.3);
+    }
   }
 
   // Projects / Extra Curricular
-  if (f.project1 || f.project2) {
+  const extraProjects = extras.projects ?? [];
+  if (f.project1 || f.project2 || extraProjects.some(p => ex(p, "text"))) {
     sectionTitle(doc, "PROJECTS / EXTRA CURRICULAR ACTIVITIES");
     bulletLine(doc, f.project1);
     bulletLine(doc, f.project2);
+    for (const p of extraProjects) bulletLine(doc, ex(p, "text"));
     doc.moveDown(0.3);
   }
 
@@ -144,7 +193,7 @@ function buildLocalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>) {
 }
 
 /* ── GLOBAL CV DRAWING (Harvard format) ── */
-function buildGlobalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>) {
+function buildGlobalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>, extras: ResumeExtras = {}) {
   // Header
   const name = [f.firstName, f.lastName].filter(Boolean).join(" ");
   if (name) {
@@ -197,7 +246,8 @@ function buildGlobalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>) {
   }
 
   // Experience
-  const hasExp = f.expOrg1 || f.expTitle1 || f.expOrg2;
+  const extraExp = extras.exp ?? [];
+  const hasExp = f.expOrg1 || f.expTitle1 || f.expOrg2 || extraExp.some(e => ex(e, "org") || ex(e, "title"));
   if (hasExp) {
     sectionTitle(doc, "EXPERIENCE");
 
@@ -226,10 +276,29 @@ function buildGlobalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>) {
       bulletLine(doc, f.expB2d);
       doc.moveDown(0.3);
     }
+
+    for (const e of extraExp) {
+      const org = ex(e, "org");
+      const title = ex(e, "title");
+      if (!org && !title) continue;
+      if (org) doc.font("Helvetica-Bold").fontSize(10).text(org, MARGIN, doc.y, { width: CONTENT_W });
+      const loc = ex(e, "loc");
+      const dates = ex(e, "dates");
+      if (loc || dates) {
+        doc.font("Helvetica").fontSize(9).text([loc, dates].filter(Boolean).join("  |  "), MARGIN, doc.y, { width: CONTENT_W, align: "right" });
+      }
+      if (title) doc.font("Helvetica-Oblique").fontSize(10).text(title, MARGIN, doc.y, { width: CONTENT_W });
+      bulletLine(doc, ex(e, "b1"));
+      bulletLine(doc, ex(e, "b2"));
+      bulletLine(doc, ex(e, "b3"));
+      bulletLine(doc, ex(e, "b4"));
+      doc.moveDown(0.3);
+    }
   }
 
   // Leadership & Activities
-  if (f.leadOrg || f.leadRole) {
+  const extraLead = extras.lead ?? [];
+  if (f.leadOrg || f.leadRole || extraLead.some(l => ex(l, "org") || ex(l, "role"))) {
     sectionTitle(doc, "LEADERSHIP & ACTIVITIES");
     if (f.leadOrg) doc.font("Helvetica-Bold").fontSize(10).text(f.leadOrg, MARGIN, doc.y, { width: CONTENT_W });
     if (f.leadLoc || f.leadDates) {
@@ -238,7 +307,23 @@ function buildGlobalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>) {
     if (f.leadRole) doc.font("Helvetica-Oblique").fontSize(10).text(f.leadRole, MARGIN, doc.y, { width: CONTENT_W });
     bulletLine(doc, f.leadB1);
     bulletLine(doc, f.leadB2);
-    doc.moveDown(0.3);
+    if (f.leadOrg || f.leadRole) doc.moveDown(0.3);
+
+    for (const l of extraLead) {
+      const org = ex(l, "org");
+      const role = ex(l, "role");
+      if (!org && !role) continue;
+      if (org) doc.font("Helvetica-Bold").fontSize(10).text(org, MARGIN, doc.y, { width: CONTENT_W });
+      const loc = ex(l, "loc");
+      const dates = ex(l, "dates");
+      if (loc || dates) {
+        doc.font("Helvetica").fontSize(9).text([loc, dates].filter(Boolean).join("  |  "), MARGIN, doc.y, { width: CONTENT_W, align: "right" });
+      }
+      if (role) doc.font("Helvetica-Oblique").fontSize(10).text(role, MARGIN, doc.y, { width: CONTENT_W });
+      bulletLine(doc, ex(l, "b1"));
+      bulletLine(doc, ex(l, "b2"));
+      doc.moveDown(0.3);
+    }
   }
 
   // Skills & Interests
@@ -253,7 +338,7 @@ function buildGlobalPdf(doc: PDFKit.PDFDocument, f: Record<string, string>) {
 }
 
 /* ── PUBLIC ENDPOINT wrapper ── */
-export function generateResumePdf(format: "local" | "global", formData: Record<string, string>): Promise<Buffer> {
+export function generateResumePdf(format: "local" | "global", formData: Record<string, string>, extras: ResumeExtras = {}): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: "LETTER",
@@ -272,8 +357,8 @@ export function generateResumePdf(format: "local" | "global", formData: Record<s
       safe[key] = typeof val === "string" ? val.trim() : "";
     }
 
-    if (format === "local") buildLocalPdf(doc, safe);
-    else buildGlobalPdf(doc, safe);
+    if (format === "local") buildLocalPdf(doc, safe, extras);
+    else buildGlobalPdf(doc, safe, extras);
 
     doc.end();
   });

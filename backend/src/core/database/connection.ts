@@ -16,6 +16,9 @@ const poolConnect = pool.connect()
 
                 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'lastActiveAt')
                 ALTER TABLE Users ADD lastActiveAt DATETIME2 NULL;
+
+                IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('ChatSessions') AND name = 'source')
+                ALTER TABLE ChatSessions ADD source NVARCHAR(20) NOT NULL DEFAULT 'chat';
             `);
             console.log("✅ Admin migration executed successfully.");
         } catch (migrationErr: any) {

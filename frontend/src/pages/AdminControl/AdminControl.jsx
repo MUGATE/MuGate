@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserPlus, Trash2, Shield, Activity, RefreshCw } from "lucide-react";
 import * as adminApi from "../../services/adminApi";
@@ -12,7 +12,7 @@ const broadcast = () => {
     const ch = new BroadcastChannel("mugate_admin_updates");
     ch.postMessage({ type: "admin_changed" });
     ch.close();
-  } catch {}
+  } catch { /* BroadcastChannel unsupported — cross-tab sync skipped */ }
 };
 
 const AdminControl = () => {
@@ -85,7 +85,7 @@ const AdminControl = () => {
       const channel = new BroadcastChannel("mugate_admin_updates");
       channel.onmessage = () => loadData();
       return () => channel.close();
-    } catch {}
+    } catch { /* BroadcastChannel unsupported — cross-tab sync skipped */ }
   }, [loadData]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────

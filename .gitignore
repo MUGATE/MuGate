@@ -2,6 +2,11 @@ node_modules/
 dist/
 .env
 
+# Logs & caches (never commit)
+*.log
+scrape_log.txt
+.vite/
+
 backend/src/config/env.ts
 backend/.env
 backend/package-lock.json

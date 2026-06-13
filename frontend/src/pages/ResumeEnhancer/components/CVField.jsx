@@ -12,14 +12,24 @@ const CVField = ({ label, value, onChange, placeholder, multiline }) => {
   return (
     <div className="cv-field">
       {label && <label className="cv-field-label">{label}</label>}
-      <textarea
-        ref={ref}
-        className={`cv-field-input${multiline ? ' cv-textarea' : ''}`}
-        value={value}
-        onChange={e => { onChange(e.target.value); autoResize(e.target); }}
-        placeholder={placeholder}
-        rows={1}
-      />
+      {multiline ? (
+        <textarea
+          ref={ref}
+          className="cv-field-input cv-textarea"
+          value={value}
+          onChange={e => { onChange(e.target.value); autoResize(e.target); }}
+          placeholder={placeholder}
+          rows={1}
+        />
+      ) : (
+        <input
+          type="text"
+          className="cv-field-input"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+        />
+      )}
     </div>
   );
 };

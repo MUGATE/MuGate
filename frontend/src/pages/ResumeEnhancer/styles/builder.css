@@ -61,10 +61,22 @@
 }
 
 .re-cv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 8px;
+  vertical-align: middle;
+}
+.re-flag-lb {
+  display: block;
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
 }
 .re-cv-badge-local {
   background: rgba(239, 68, 68, 0.1);
@@ -258,11 +270,18 @@
 
 /* Download CV Section */
 .cv-download-section {
-  margin-top: 24px;
-  padding-top: 20px;
+  padding: 16px 24px 24px;
+  background: rgba(255, 255, 255, 0.4);
   border-top: 1px solid rgba(100, 140, 200, 0.12);
   display: flex;
   justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.cv-editor-btn {
+  background: linear-gradient(135deg, #4a90d9, #2b5ea7) !important;
 }
 
 .cv-download-btn {
