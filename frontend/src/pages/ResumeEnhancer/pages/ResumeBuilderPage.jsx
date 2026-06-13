@@ -310,7 +310,7 @@ const ResumeBuilderPage = ({
               Back
             </button>
             <h2 className="cv-form-title">
-              {isLocal ? 'Local' : 'Global'} CV Builder{' '}
+              <span className="cv-form-title-text">{isLocal ? 'Local' : 'Global'} CV Builder</span>
               <span className={`re-cv-badge re-cv-badge-${type}`}>
                 {isLocal ? <><LebanonFlag width={20} height={14} className="re-flag-lb" /> Lebanon</> : 'International'}
               </span>

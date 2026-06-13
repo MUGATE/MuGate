@@ -127,8 +127,27 @@
   color: #4a90d9;
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px 10px;
   margin: 0;
+  min-width: 0;
+}
+/* Keep "Local CV Builder" on one line; let the badge wrap below if needed. */
+.cv-form-title-text {
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .cv-form-header {
+    padding: 16px 16px 12px;
+    gap: 10px;
+  }
+  .cv-form-title {
+    font-size: 15px;
+  }
+  .re-cv-back-btn {
+    flex-shrink: 0;
+  }
 }
 
 .cv-form-body {
