@@ -117,6 +117,21 @@
 }
 .re-editor-ai-btn:hover { opacity: 0.92; }
 .re-editor-ai-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.re-editor-ai-undo {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #2b5ea7;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.re-editor-ai-undo:hover { background: #f1f5f9; }
+.re-editor-ai-undo:disabled { opacity: 0.55; cursor: not-allowed; }
 .re-editor-note {
   margin: 10px 0 0;
   font-size: 12px;

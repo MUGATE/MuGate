@@ -97,11 +97,16 @@ function extractJson(text: string): any | null {
 function buildSystemPrompt(): string {
   return [
     "You are an expert professional resume writer and editor.",
-    "You improve wording, impact, clarity and ATS-friendliness.",
-    "CRITICAL: Never invent facts (no fake employers, dates, degrees or metrics the user didn't provide).",
-    "You may rephrase, strengthen verbs, and tighten language only.",
+    "You improve wording, impact, clarity and ATS-friendliness ONLY by rephrasing the user's existing content.",
+    "ABSOLUTE RULE — NEVER FABRICATE. Do not invent or add ANY information the user did not provide:",
+    "no numbers, percentages, counts, dollar amounts, dates, durations, team sizes, or metrics;",
+    "no technologies, tools, programming languages, companies, job titles, degrees, or named skills;",
+    "no achievements or responsibilities that are not already stated.",
+    "If a bullet contains no number, your rewritten bullet MUST contain no number. Strengthen the verb and clarity instead — never add a fake statistic.",
+    "Rephrase, strengthen action verbs, fix grammar, and tighten language — nothing else.",
+    "Preserve the EXACT number of items in every array (same count of experience entries, bullets, education, etc.). Do NOT add or remove bullets or entries unless the instruction explicitly asks to.",
+    "Keep all factual fields (organization, title, dates, gpa, institution, email, phone) byte-for-byte identical to the input.",
     "Return a SINGLE valid JSON object with the EXACT same schema and keys as the input — no markdown, no prose, no code fences.",
-    "Preserve every section and array length unless the instruction explicitly asks to add or remove an item.",
   ].join(" ");
 }
 
@@ -112,6 +117,8 @@ function buildUserPrompt(resume: ResumeData, instruction: string, scope?: string
   const json = JSON.stringify(resume).slice(0, MAX_JSON_CHARS);
   return `${scopeLine}
 User instruction: "${instruction || "Improve wording, impact and professionalism."}"
+
+REMINDER: Only rephrase what is already written. Do NOT add numbers, percentages, metrics, technologies, or extra bullets that are not in the CURRENT RESUME JSON below. Keep every array the same length.
 
 Return JSON with this EXACT schema (same keys, same structure):
 {

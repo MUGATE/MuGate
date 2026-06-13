@@ -173,6 +173,14 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       alert('Please upload a PDF, DOC, or DOCX file.');
       return;
     }
+    if (file.size === 0) {
+      alert('That file appears to be empty. Please upload a valid resume.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('That file is too large. Please upload a resume under 10 MB.');
+      return;
+    }
     setUploadedFile(file);
     setIsAnalyzing(true);
     setAppliedSuggestions(new Set());
@@ -200,6 +208,19 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       );
       const aiText = uploadResult.text || '';
       setResumeText(aiText);
+      // Guard: a scanned/image-only or empty document yields little or no text —
+      // tell the user clearly instead of scoring an empty resume.
+      if (aiText.trim().length < 30) {
+        setResumeScore(0);
+        setResumeSuggestions([]);
+        setMessages([
+          {
+            text: "I couldn't read any text from this file — it may be a scanned image or an empty document. Please upload a text-based PDF or DOCX.",
+            isUser: false,
+          },
+        ]);
+        return;
+      }
       const analysis = analyzeResumeText(aiText);
       setResumeScore(analysis.score);
       setResumeSuggestions(analysis.suggestions);

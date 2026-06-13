@@ -33,6 +33,8 @@ const ResumeEditor = ({ data, setData, onBack }) => {
   const [aiLoading, setAiLoading] = useState(false);
   const [note, setNote] = useState('');
   const [exporting, setExporting] = useState(false);
+  // Undo history — snapshots taken before each AI edit so the user can revert.
+  const [history, setHistory] = useState([]);
 
   // ── Manual edit operations (immutable, instant live preview) ──
   const update = useCallback((path, value) => setData((d) => setByPath(d, path, value)), [setData]);
@@ -64,11 +66,15 @@ const ResumeEditor = ({ data, setData, onBack }) => {
   const runAi = useCallback(async () => {
     setAiLoading(true);
     setNote('');
+    const snapshot = data; // capture current state so the AI edit can be undone
     try {
       const result = await aiEditResume(data, aiInstruction, aiScope);
+      if (result.changed) {
+        setHistory((h) => [...h, snapshot].slice(-25));
+      }
       setData(normalizeResume(result.resume));
       setNote(result.changed
-        ? `AI improved your ${aiScope === 'all' ? 'CV' : aiScope}.`
+        ? `AI improved your ${aiScope === 'all' ? 'CV' : aiScope}. You can undo this change.`
         : 'AI is unavailable right now — your CV is unchanged.');
     } catch (e) {
       console.error('AI edit failed:', e);
@@ -77,6 +83,14 @@ const ResumeEditor = ({ data, setData, onBack }) => {
       setAiLoading(false);
     }
   }, [data, aiInstruction, aiScope, setData]);
+
+  // ── Undo the most recent AI edit, restoring the prior CV state ──
+  const undoAi = useCallback(() => {
+    if (!history.length) return;
+    setData(normalizeResume(history[history.length - 1]));
+    setHistory((h) => h.slice(0, -1));
+    setNote('Reverted to the version before the last AI change.');
+  }, [history, setData]);
 
   // ── Export via the EXISTING generate endpoint (content matches the preview) ──
   const handleExport = useCallback(async (fileType) => {
@@ -151,6 +165,11 @@ const ResumeEditor = ({ data, setData, onBack }) => {
           <button className="re-editor-ai-btn" disabled={aiLoading} onClick={runAi}>
             {aiLoading ? 'Improving…' : '✨ Improve with AI'}
           </button>
+          {history.length > 0 && (
+            <button className="re-editor-ai-undo" disabled={aiLoading} onClick={undoAi}>
+              ↩ Undo AI change{history.length > 1 ? ` (${history.length})` : ''}
+            </button>
+          )}
           {note && <p className="re-editor-note">{note}</p>}
           <p className="re-editor-ai-foot">{editable ? 'Editing mode — click any field to type.' : 'Preview mode.'}</p>
         </aside>
