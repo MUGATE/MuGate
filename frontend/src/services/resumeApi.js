@@ -61,6 +61,27 @@ export async function parseResumeFile(resumeText, template = 'local') {
 }
 
 /**
+ * Convert an uploaded resume FILE into a structured editable resume in one hop.
+ * The backend extracts the full raw text server-side, then parses it.
+ * @param {File} file  the uploaded PDF/DOCX
+ * @param {'local'|'global'} template  target CV format
+ * @returns {Promise<{resume: object, text: string}>}
+ */
+export async function convertResumeFile(file, template = 'local') {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('template', template);
+  const res = await fetch(`${RESUME_API_BASE}/convert`, { method: 'POST', body: formData });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Convert failed (${res.status})`);
+  }
+  const data = await res.json();
+  if (!data?.success || !data.resume) throw new Error('Malformed convert response');
+  return { resume: data.resume, text: data.text || '' };
+}
+
+/**
  * Generate a PDF/DOCX from CV form data via the backend.
  * @param {object} payload  { format, formData, extras, fileType }
  * @returns {Promise<Blob>} the generated document

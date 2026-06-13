@@ -201,6 +201,16 @@
 .re-doc-name .re-edit-input,
 .re-editor-doc-paper .re-doc-name.re-edit-input { text-align: center; font-size: inherit; font-weight: 700; }
 
+/* Editable mode: stack the header row so long institution/organization names
+   and verbose dates are never truncated. Preview mode keeps the compact
+   one-line resume look. */
+.re-editor-doc-paper.editing .re-doc-entry-row { flex-wrap: wrap; align-items: stretch; gap: 4px 10px; }
+.re-editor-doc-paper.editing .re-doc-org { flex: 1 1 100%; width: 100%; }
+.re-editor-doc-paper.editing .re-doc-meta { flex: 1 1 100%; justify-content: flex-start; white-space: normal; gap: 10px; }
+.re-editor-doc-paper.editing .re-doc-meta .re-edit-input { width: auto; flex: 1 1 0; min-width: 140px; text-align: left; }
+.re-editor-doc-paper.editing .re-doc-meta .re-edit-input:last-child { flex: 2 1 0; }
+.re-editor-doc-paper.editing .re-doc-contact-edit .re-edit-input { min-width: 150px; }
+
 /* Add / remove controls */
 .re-edit-add {
   margin-top: 4px;

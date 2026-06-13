@@ -216,15 +216,18 @@ export async function parseResumeText(
   if (!rawText || !rawText.trim()) return fallback;
 
   const system = [
-    "You are a precise resume parser.",
+    "You are a precise resume parser. Your job is to capture EVERYTHING in the resume — do not summarise or drop content.",
     "Extract the candidate's REAL information from the raw resume text into the JSON schema.",
-    "CRITICAL: Use ONLY information explicitly present in the text. Never invent names, emails, phone numbers, employers, titles, dates, degrees, metrics, or skills.",
-    "If a field is not present in the text, leave it as an empty string (and omit array items you cannot fill).",
-    "Split each role's responsibilities into separate bullet strings; do not merge them.",
+    "CRITICAL: Use ONLY information explicitly present in the text. Never invent or guess names, emails, phone numbers, employers, titles, dates, degrees, metrics, or skills.",
+    "Capture EVERY education entry as a separate item in the education array (university, secondary academy/bootcamp, etc.) — include institution, degree, dates, GPA/honors and coursework when present.",
+    "Capture EVERY job, internship, teaching, or work role as a separate experience item, with ALL of its bullet points split into separate strings (never merge bullets, never omit bullets).",
+    "Put clubs, volunteering, and extracurricular activities into the leadership array (organization, role, dates, bullets). Put personal/technical projects into the projects array.",
+    "Map skills into the skills object (languages, computer/technical tools, etc.). Keep the objective/summary if one is present.",
+    "If a field is genuinely not in the text, leave it as an empty string — but do not leave a whole section empty if the text contains it.",
     "Return ONLY a single valid JSON object matching the schema — no markdown, no prose, no code fences.",
   ].join(" ");
 
-  const user = `Parse the following resume into this EXACT JSON schema (same keys; set "template" to "${template}"):
+  const user = `Parse the following resume COMPLETELY into this EXACT JSON schema (same keys; set "template" to "${template}"). Include every education entry, every experience entry with every bullet, every activity, every project, and all skills found in the text:
 ${SCHEMA_LITERAL}
 
 RAW RESUME TEXT:

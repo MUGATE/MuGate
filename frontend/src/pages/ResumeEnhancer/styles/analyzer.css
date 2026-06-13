@@ -120,6 +120,48 @@
 }
 .re-convert-btn:hover { opacity: 0.92; }
 
+/* Format-choice popup (Local / Global) shown right after upload */
+.re-format-modal { max-width: 440px; }
+.re-format-options {
+  display: flex;
+  gap: 14px;
+  margin-top: 20px;
+}
+.re-format-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 14px;
+  border: 1.5px solid rgba(120, 140, 170, 0.22);
+  border-radius: 16px;
+  background: #fafcfe;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.re-format-option:hover {
+  border-color: #4a90d9;
+  box-shadow: 0 6px 18px rgba(74, 144, 217, 0.18);
+  transform: translateY(-2px);
+}
+.re-format-flag { font-size: 26px; line-height: 1; display: flex; }
+.re-format-name { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+.re-format-desc { font-size: 11.5px; color: #64748b; text-align: center; }
+
+/* Converting / preparing placeholder (between upload and editable CV) */
+.re-converting-card { align-items: center; justify-content: center; }
+.re-converting-inner {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.re-converting-title { font-size: 15px; font-weight: 700; color: #2b5ea7; }
+.re-converting-sub { font-size: 12.5px; color: #64748b; }
+
 /* In-place editable CV (Enhance CV → converted template) */
 .re-cv-edit-card {
   flex: 1 1 auto;

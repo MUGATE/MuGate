@@ -1,13 +1,12 @@
 import React, { useState, useRef, useCallback } from 'react';
-import mammoth from 'mammoth';
-import { createSession, sendMessage as sendChatbotMessage, uploadFile as uploadChatbotFile } from '../../../services/chatbotApi';
-import { analyzeResume as analyzeResumeApi, editResumeFile, parseResumeFile, aiEditResume, generateResumeFile } from '../../../services/resumeApi';
+import { createSession, sendMessage as sendChatbotMessage } from '../../../services/chatbotApi';
+import { analyzeResume as analyzeResumeApi, editResumeFile, convertResumeFile, aiEditResume, generateResumeFile } from '../../../services/resumeApi';
 import { toBackendPayload } from '../editor/adapters';
 import { analyzeResumeText } from '../utils/analyzeResume';
 import ScoreRing from '../components/ScoreRing';
 import SuggestionCard from '../components/SuggestionCard';
-import PdfViewer from '../components/PdfViewer';
 import ChatInterface from '../components/ChatInterface';
+import LebanonFlag from '../components/LebanonFlag';
 import AnalysisBreakdown from '../components/AnalysisBreakdown';
 import LocalTemplate from '../editor/templates/LocalTemplate';
 import GlobalTemplate from '../editor/templates/GlobalTemplate';
@@ -57,7 +56,6 @@ const ResumeAnalyzerPage = ({ onBack }) => {
   const fileInputRef = useRef(null);
 
   const [resumeText, setResumeText] = useState('');
-  const [resumeHtml, setResumeHtml] = useState('');
   const [resumeScore, setResumeScore] = useState(0);
   const [resumeSuggestions, setResumeSuggestions] = useState([]);
 
@@ -79,6 +77,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
 
   // ── Convert uploaded resume → editable Local/Global CV (in-place editor) ──
   const [isConverting, setIsConverting] = useState(false);
+  const [showFormatModal, setShowFormatModal] = useState(false); // Local/Global popup on upload
   const [cvData, setCvData] = useState(null);       // structured resume once converted
   const [cvTemplate, setCvTemplate] = useState('local');
 
@@ -187,16 +186,6 @@ const ResumeAnalyzerPage = ({ onBack }) => {
 
       setUploadedFile(editedFile);
 
-      if (editedFile.type !== 'application/pdf') {
-        try {
-          const arrayBuffer = await editedFile.arrayBuffer();
-          const result = await mammoth.convertToHtml({ arrayBuffer });
-          setResumeHtml(result.value);
-        } catch (convErr) {
-          console.error('Mammoth conversion error after edit:', convErr);
-        }
-      }
-
       setMessages(prev => [
         ...prev,
         {
@@ -257,27 +246,36 @@ const ResumeAnalyzerPage = ({ onBack }) => {
 
   // ── Convert the uploaded resume into an editable Local/Global CV and open the
   // live editor (manual + AI editing). Replaces the brittle text-edit flow. ──
-  const convertAndEdit = useCallback(async (template) => {
-    if (!resumeText || !resumeText.trim() || isConverting) return;
+  // User picked Local/Global in the popup → convert the FILE (full server-side
+  // text extraction + structured parse), then run the score/suggestions analysis.
+  const chooseFormat = useCallback(async (template) => {
+    if (!uploadedFile || isConverting) return;
+    setShowFormatModal(false);
+    setCvTemplate(template);
     setIsConverting(true);
+    setIsAnalyzing(true);
     try {
-      const resume = await parseResumeFile(resumeText, template);
+      const { resume, text } = await convertResumeFile(uploadedFile, template);
       setCvData(normalizeResume(resume));
-      setCvTemplate(template);
-      setMessages((prev) => [...prev, {
+      setResumeText(text);
+      setMessages([{
         text: `✓ Converted to a ${template === 'global' ? 'Global' : 'Local'} CV. Edit any field directly, click a suggestion to apply it, or tell me what to change (e.g. "change my name to ...").`,
         isUser: false,
       }]);
+      runAiAnalysis(text, '');
     } catch (err) {
       console.error('Resume convert failed:', err);
-      alert('Could not convert this resume into an editable CV. Please try again.');
+      alert(err?.message || 'Could not convert this resume into an editable CV. Please try again.');
+      setUploadedFile(null);
     } finally {
       setIsConverting(false);
+      setIsAnalyzing(false);
     }
-  }, [resumeText, isConverting]);
+  }, [uploadedFile, isConverting, runAiAnalysis]);
 
-  // File Upload
-  const handleFile = useCallback(async (file) => {
+  // File Upload — validate, then immediately ask the user to pick a format.
+  // The actual extraction + conversion + analysis runs once they choose (chooseFormat).
+  const handleFile = useCallback((file) => {
     if (!file) return;
     const validTypes = [
       'application/pdf',
@@ -296,75 +294,17 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       alert('That file is too large. Please upload a resume under 10 MB.');
       return;
     }
+    // Reset prior state and open the Local/Global popup.
     setUploadedFile(file);
-    setIsAnalyzing(true);
-    setAppliedSuggestions(new Set());
-    setResumeHtml('');
+    setCvData(null);
+    setResumeText('');
+    setResumeScore(0);
+    setResumeSuggestions([]);
     setAiAnalysis(null);
-
-    if (file.type !== 'application/pdf') {
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.convertToHtml({ arrayBuffer });
-        setResumeHtml(result.value);
-      } catch (convErr) {
-        console.error('Mammoth error:', convErr);
-      }
-    }
-
-    try {
-      const session = await createSession('Resume Analysis', 'resume');
-      const sid = session.id;
-      setChatSessionId(sid);
-      const uploadResult = await uploadChatbotFile(
-        sid,
-        file,
-        'Analyze this resume. Extract text, assess strengths/weaknesses.'
-      );
-      const aiText = uploadResult.text || '';
-      setResumeText(aiText);
-      // Guard: a scanned/image-only or empty document yields little or no text —
-      // tell the user clearly instead of scoring an empty resume.
-      if (aiText.trim().length < 30) {
-        setResumeScore(0);
-        setResumeSuggestions([]);
-        setMessages([
-          {
-            text: "I couldn't read any text from this file — it may be a scanned image or an empty document. Please upload a text-based PDF or DOCX.",
-            isUser: false,
-          },
-        ]);
-        return;
-      }
-      setMessages([
-        {
-          text: "I've analyzed your resume! Building your detailed report — your score and suggestions will appear in a moment.",
-          isUser: false,
-        },
-      ]);
-      // The AI analysis is the single source of truth for score + suggestions.
-      runAiAnalysis(aiText, '');
-    } catch (err) {
-      console.error('Analysis error:', err);
-      try {
-        const text = await file.text();
-        setResumeText(text);
-        setMessages([
-          {
-            text: "I've analyzed your resume! Building your detailed report…",
-            isUser: false,
-          },
-        ]);
-        runAiAnalysis(text, '');
-      } catch {
-        setResumeScore(0);
-        setResumeSuggestions([]);
-        setMessages([{ text: 'Could not analyze the file.', isUser: false }]);
-      }
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [runAiAnalysis]);
+    setAppliedSuggestions(new Set());
+    setMessages(INITIAL_MESSAGES);
+    setShowFormatModal(true);
+  }, []);
 
   const generateInteractivePrompt = (suggestionId, suggestionText) => {
     const instruction = INTERACTIVE_PROMPTS[suggestionId] ||
@@ -671,85 +611,11 @@ const ResumeAnalyzerPage = ({ onBack }) => {
             </div>
           </div>
         ) : (
-          <div className="re-preview-card re-glass">
-            <div className="preview-header">
-              <div className="preview-file-info">
-                <div className="preview-file-icon">
-                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                    <rect x="4" y="2" width="20" height="24" rx="4" fill="rgba(74,144,217,0.1)" stroke="#4a90d9" strokeWidth="1.5" />
-                    <path d="M10 10h8M10 14h8M10 18h5" stroke="#4a90d9" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="preview-filename">{uploadedFile.name}</p>
-                  <p className="preview-filesize">{(uploadedFile.size / 1024).toFixed(1)} KB</p>
-                </div>
-              </div>
-              <button
-                className="preview-remove"
-                onClick={() => {
-                  setUploadedFile(null);
-                  setResumeHtml('');
-                  setResumeText('');
-                  setResumeScore(0);
-                  setResumeSuggestions([]);
-                  setAppliedSuggestions(new Set());
-                  setAiAnalysis(null);
-                  setJobDescription('');
-                }}
-                title="Remove file"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="preview-body">
-              <div className="preview-document preview-document-embed">
-                {uploadedFile.type === 'application/pdf' ? (
-                  <PdfViewer file={uploadedFile} />
-                ) : resumeHtml ? (
-                  <div className="doc-mammoth-preview" dangerouslySetInnerHTML={{ __html: resumeHtml }} />
-                ) : (
-                  <div className="doc-embed-fallback">
-                    <div className="doc-embed-icon">
-                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                        <rect x="8" y="4" width="32" height="40" rx="6" fill="rgba(74,144,217,0.08)" stroke="#4a90d9" strokeWidth="2" />
-                        <path d="M16 16h16M16 22h16M16 28h10" stroke="#4a90d9" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                    </div>
-                    <p className="doc-embed-name">{uploadedFile.name}</p>
-                    <p className="doc-embed-hint">{isAnalyzing ? 'Analyzing your document...' : 'Preview not available for this format.'}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {uploadedFile && resumeText.trim().length >= 30 && !cvData && (
-          <div className="re-convert-card re-glass">
-            <div className="re-convert-info">
-              <span className="re-convert-title">✨ Edit this resume — choose a format</span>
-              <span className="re-convert-sub">We'll fill an editable CV with your details. Then edit it manually, click suggestions, or tell the AI what to change.</span>
-            </div>
-            {isConverting ? (
-              <div className="re-analyzing-inline">
-                <div className="re-analyzing-spinner-sm" />
-                <span>Converting…</span>
-              </div>
-            ) : (
-              <div className="re-convert-actions">
-                <button className="re-convert-btn" onClick={() => convertAndEdit('local')} type="button">Local CV</button>
-                <button className="re-convert-btn" onClick={() => convertAndEdit('global')} type="button">Global CV</button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {uploadedFile && isReanalyzing && !aiAnalysis && !cvData && (
-          <div className="re-analysis re-glass" style={{ marginTop: 16, padding: '16px 20px' }}>
-            <div className="re-analyzing-inline">
-              <div className="re-analyzing-spinner-sm" />
-              <span>Running AI analysis…</span>
+          <div className="re-preview-card re-glass re-converting-card">
+            <div className="re-converting-inner">
+              <div className="re-analyzing-spinner" />
+              <p className="re-converting-title">{isConverting ? 'Reading & converting your CV…' : 'Preparing your CV…'}</p>
+              <p className="re-converting-sub">{uploadedFile.name}</p>
             </div>
           </div>
         )}
@@ -776,6 +642,37 @@ const ResumeAnalyzerPage = ({ onBack }) => {
         isEditingDocument={isEditingDocument}
       />
       </div>
+
+      {/* Format-choice popup shown right after upload, before conversion/analysis */}
+      {showFormatModal && (
+        <div className="re-modal-overlay show">
+          <div className="re-modal-card show re-format-modal">
+            <button
+              className="re-modal-back"
+              onClick={() => { setShowFormatModal(false); setUploadedFile(null); }}
+              aria-label="Cancel"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M13 4L5 12M5 4l8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+            <h2 className="re-modal-title">Choose your CV format</h2>
+            <p className="re-modal-subtitle">We'll read your resume and fill an editable CV — you can switch or edit afterwards.</p>
+            <div className="re-format-options">
+              <button className="re-format-option" type="button" onClick={() => chooseFormat('local')}>
+                <span className="re-format-flag"><LebanonFlag width={30} height={20} /></span>
+                <span className="re-format-name">Local CV</span>
+                <span className="re-format-desc">Lebanese-format résumé</span>
+              </button>
+              <button className="re-format-option" type="button" onClick={() => chooseFormat('global')}>
+                <span className="re-format-flag re-format-globe">🌐</span>
+                <span className="re-format-name">Global CV</span>
+                <span className="re-format-desc">International CV</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

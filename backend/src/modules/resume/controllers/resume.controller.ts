@@ -4,6 +4,7 @@ import { generateResumeDocx } from "../services/docx-generator.service";
 import { editResumeDocument } from "../services/editor.service";
 import { analyzeResume } from "../services/analyzer.service";
 import { aiEditResume, parseResumeText } from "../services/ai-editor.service";
+import { extractResumeText } from "../services/text-extract.service";
 
 /**
  * Controller for generating resumes in PDF or DOCX formats
@@ -112,6 +113,33 @@ export async function parseResumeController(req: Request, res: Response) {
   } catch (err: any) {
     console.error("Resume parse error:", err);
     res.status(500).json({ success: false, message: "Failed to parse resume" });
+  }
+}
+
+/**
+ * Controller for converting an uploaded resume FILE into a structured, editable
+ * resume in one hop: extracts the FULL raw text server-side (no lossy AI
+ * summarisation), then parses it into the chosen Local/Global template.
+ * Body (multipart): file, template ('local' | 'global').
+ */
+export async function convertResumeController(req: Request, res: Response) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "File is required" });
+    }
+    const template = req.body.template === "global" ? "global" : "local";
+    const text = await extractResumeText(req.file);
+    if (!text || text.trim().length < 20) {
+      return res.status(422).json({
+        success: false,
+        message: "Could not read text from this file — it may be a scanned image or empty.",
+      });
+    }
+    const resume = await parseResumeText(text, template);
+    res.json({ success: true, resume, text });
+  } catch (err: any) {
+    console.error("Resume convert error:", err);
+    res.status(500).json({ success: false, message: err?.message || "Failed to convert resume" });
   }
 }
 
