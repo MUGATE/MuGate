@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import mammoth from 'mammoth';
 import { createSession, sendMessage as sendChatbotMessage, uploadFile as uploadChatbotFile } from '../../../services/chatbotApi';
-import { analyzeResume as analyzeResumeApi, editResumeFile } from '../../../services/resumeApi';
+import { analyzeResume as analyzeResumeApi, editResumeFile, parseResumeFile } from '../../../services/resumeApi';
 import { analyzeResumeText } from '../utils/analyzeResume';
 import ScoreRing from '../components/ScoreRing';
 import SuggestionCard from '../components/SuggestionCard';
@@ -34,7 +34,7 @@ const INTERACTIVE_PROMPTS = {
   projects: "Ask the user to describe 1-2 projects or activities they've worked on. Keep it brief — just ask what projects they'd like to add.",
 };
 
-const ResumeAnalyzerPage = ({ onBack }) => {
+const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
@@ -61,6 +61,9 @@ const ResumeAnalyzerPage = ({ onBack }) => {
   // ── AI Document Editing ──
   const [isEditingDocument, setIsEditingDocument] = useState(false);
   const [lastAIInstructions, setLastAIInstructions] = useState('');
+
+  // ── Convert uploaded resume → editable Local/Global CV (live editor) ──
+  const [isConverting, setIsConverting] = useState(false);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -171,6 +174,22 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       setIsReanalyzing(false);
     }
   }, []);
+
+  // ── Convert the uploaded resume into an editable Local/Global CV and open the
+  // live editor (manual + AI editing). Replaces the brittle text-edit flow. ──
+  const convertAndEdit = useCallback(async (template) => {
+    if (!resumeText || !resumeText.trim() || isConverting) return;
+    setIsConverting(true);
+    try {
+      const resume = await parseResumeFile(resumeText, template);
+      if (onEditExtracted) onEditExtracted(resume);
+    } catch (err) {
+      console.error('Resume convert failed:', err);
+      alert('Could not convert this resume into an editable CV. Please try again.');
+    } finally {
+      setIsConverting(false);
+    }
+  }, [resumeText, isConverting, onEditExtracted]);
 
   // File Upload
   const handleFile = useCallback(async (file) => {
@@ -583,6 +602,26 @@ const ResumeAnalyzerPage = ({ onBack }) => {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {uploadedFile && resumeText.trim().length >= 30 && (
+          <div className="re-convert-card re-glass">
+            <div className="re-convert-info">
+              <span className="re-convert-title">✨ Edit this resume</span>
+              <span className="re-convert-sub">Turn it into an editable CV — then fine-tune it manually or with AI.</span>
+            </div>
+            {isConverting ? (
+              <div className="re-analyzing-inline">
+                <div className="re-analyzing-spinner-sm" />
+                <span>Converting…</span>
+              </div>
+            ) : (
+              <div className="re-convert-actions">
+                <button className="re-convert-btn" onClick={() => convertAndEdit('local')} type="button">Local CV</button>
+                <button className="re-convert-btn" onClick={() => convertAndEdit('global')} type="button">Global CV</button>
+              </div>
+            )}
           </div>
         )}
 

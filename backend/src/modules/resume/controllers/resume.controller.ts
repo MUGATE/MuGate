@@ -3,7 +3,7 @@ import { generateResumePdf } from "../services/pdf-generator.service";
 import { generateResumeDocx } from "../services/docx-generator.service";
 import { editResumeDocument } from "../services/editor.service";
 import { analyzeResume } from "../services/analyzer.service";
-import { aiEditResume } from "../services/ai-editor.service";
+import { aiEditResume, parseResumeText } from "../services/ai-editor.service";
 
 /**
  * Controller for generating resumes in PDF or DOCX formats
@@ -92,6 +92,26 @@ export async function aiEditResumeController(req: Request, res: Response) {
   } catch (err: any) {
     console.error("AI resume edit error:", err);
     res.status(500).json({ success: false, message: "Failed to edit resume" });
+  }
+}
+
+/**
+ * Controller for parsing raw resume text into a structured, editable resume.
+ * Body: { resumeText: string, template?: 'local' | 'global' }
+ * Always 200 with a resume — returns an empty structured resume on AI failure.
+ */
+export async function parseResumeController(req: Request, res: Response) {
+  try {
+    const { resumeText, template } = req.body;
+    if (!resumeText || typeof resumeText !== "string" || !resumeText.trim()) {
+      return res.status(400).json({ success: false, message: "resumeText is required" });
+    }
+    const tpl = template === "global" ? "global" : "local";
+    const resume = await parseResumeText(resumeText, tpl);
+    res.json({ success: true, resume });
+  } catch (err: any) {
+    console.error("Resume parse error:", err);
+    res.status(500).json({ success: false, message: "Failed to parse resume" });
   }
 }
 

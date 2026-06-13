@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { generateResume, editResume, analyzeResumeController, aiEditResumeController } from "./controllers/resume.controller";
+import { generateResume, editResume, analyzeResumeController, aiEditResumeController, parseResumeController } from "./controllers/resume.controller";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -13,6 +13,9 @@ router.post("/analyze", analyzeResumeController);
 
 // POST /api/resume/ai-edit — structured AI rewrite of a resume / section (editor)
 router.post("/ai-edit", aiEditResumeController);
+
+// POST /api/resume/parse — parse raw resume text into structured editable JSON
+router.post("/parse", parseResumeController);
 
 // POST /api/resume/edit
 router.post("/edit", upload.single("file"), editResume);

@@ -43,6 +43,24 @@ export async function aiEditResume(resume, instruction = '', scope = 'all') {
 }
 
 /**
+ * Parse raw resume text into a structured, editable resume (Local or Global).
+ * @param {string} resumeText  extracted plain text of the uploaded resume
+ * @param {'local'|'global'} template  target CV format
+ * @returns {Promise<object>} normalized resume data for the live editor
+ */
+export async function parseResumeFile(resumeText, template = 'local') {
+  const res = await fetch(`${RESUME_API_BASE}/parse`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resumeText, template }),
+  });
+  if (!res.ok) throw new Error(`Parse failed (${res.status})`);
+  const data = await res.json();
+  if (!data?.success || !data.resume) throw new Error('Malformed parse response');
+  return data.resume;
+}
+
+/**
  * Generate a PDF/DOCX from CV form data via the backend.
  * @param {object} payload  { format, formData, extras, fileType }
  * @returns {Promise<Blob>} the generated document

@@ -182,3 +182,63 @@ export async function aiEditResume(
 
   return { resume: current, changed: false, source: "unchanged", tokensUsed: 0 };
 }
+
+// ── Resume parser: raw extracted text → structured normalized ResumeData ───────
+// Used by the Enhance-CV flow so an uploaded PDF/DOCX can be turned into an
+// editable Local/Global CV (manually + AI editable) instead of brittle text edits.
+
+const SCHEMA_LITERAL = `{
+  "template": "local",
+  "personal": { "fullName": "", "email": "", "phone": "", "address": "", "linkedin": "" },
+  "summary": "",
+  "education": [{ "institution": "", "location": "", "degree": "", "minor": "", "dates": "", "gradDate": "", "gpa": "", "coursework": "" }],
+  "experience": [{ "organization": "", "location": "", "title": "", "dates": "", "bullets": ["", ""] }],
+  "projects": [{ "text": "" }],
+  "leadership": [{ "organization": "", "location": "", "role": "", "dates": "", "bullets": ["", ""] }],
+  "skills": { "languages": "", "computer": "", "research": "", "technical": "", "soft": "", "laboratory": "", "interests": "" }
+}`;
+
+function emptyResume(template: "local" | "global"): ResumeData {
+  return {
+    template,
+    personal: { fullName: "", email: "", phone: "", address: "", linkedin: "" },
+    summary: "",
+    education: [], experience: [], projects: [], leadership: [],
+    skills: { languages: "", computer: "", research: "", technical: "", soft: "", laboratory: "", interests: "" },
+  };
+}
+
+export async function parseResumeText(
+  rawText: string,
+  template: "local" | "global"
+): Promise<ResumeData> {
+  const fallback = emptyResume(template);
+  if (!rawText || !rawText.trim()) return fallback;
+
+  const system = [
+    "You are a precise resume parser.",
+    "Extract the candidate's REAL information from the raw resume text into the JSON schema.",
+    "CRITICAL: Use ONLY information explicitly present in the text. Never invent names, emails, phone numbers, employers, titles, dates, degrees, metrics, or skills.",
+    "If a field is not present in the text, leave it as an empty string (and omit array items you cannot fill).",
+    "Split each role's responsibilities into separate bullet strings; do not merge them.",
+    "Return ONLY a single valid JSON object matching the schema — no markdown, no prose, no code fences.",
+  ].join(" ");
+
+  const user = `Parse the following resume into this EXACT JSON schema (same keys; set "template" to "${template}"):
+${SCHEMA_LITERAL}
+
+RAW RESUME TEXT:
+${rawText.slice(0, MAX_JSON_CHARS)}`;
+
+  try {
+    const { text } = await AiProvider.generateResponse(system, [], user);
+    const parsed = extractJson(text);
+    if (parsed) {
+      return normalizeResume({ ...parsed, template }, fallback);
+    }
+    logger.warn("Resume parser: unparseable output, returning empty resume.");
+  } catch (err: any) {
+    logger.error(`Resume parser failed: ${err?.message}. Returning empty resume.`);
+  }
+  return fallback;
+}
