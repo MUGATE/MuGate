@@ -121,7 +121,35 @@
 .re-convert-btn:hover { opacity: 0.92; }
 
 /* Format-choice popup (Local / Global) shown right after upload */
-.re-format-modal { max-width: 440px; }
+.re-format-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000; /* below the navbar (1001) so the navbar stays sharp */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.30);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  animation: re-overlay-fade 0.28s ease both;
+}
+@keyframes re-overlay-fade { from { opacity: 0; } to { opacity: 1; } }
+.re-format-modal {
+  width: 440px;
+  max-width: 92vw;
+  padding: 34px 32px 30px;
+  text-align: center;
+  position: relative;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid rgba(74, 144, 217, 0.15);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  animation: re-pop-in 0.36s cubic-bezier(0.34, 1.46, 0.5, 1) both;
+}
+@keyframes re-pop-in {
+  from { transform: scale(0.82) translateY(24px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
 .re-format-options {
   display: flex;
   gap: 14px;
@@ -206,10 +234,14 @@
   display: flex;
   justify-content: center;
   padding: 22px;
-  background: #eef2f7;
+  background: #ffffff;
 }
-/* A touch wider here than the standalone editor for a bigger CV appearance. */
-.re-cv-edit-body .re-editor-doc-paper { max-width: 820px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); }
+/* Wide CV that fills the middle; subtle border instead of a tinted page bg. */
+.re-cv-edit-body .re-editor-doc-paper {
+  max-width: 920px;
+  box-shadow: none;
+  border: 1px solid rgba(120, 140, 170, 0.18);
+}
 
 /* Themed scrollbars across the Enhance CV panels */
 .re-center-col,

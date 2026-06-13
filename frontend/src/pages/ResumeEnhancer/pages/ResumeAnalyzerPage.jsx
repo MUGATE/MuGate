@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createSession, sendMessage as sendChatbotMessage } from '../../../services/chatbotApi';
 import { analyzeResume as analyzeResumeApi, editResumeFile, convertResumeFile, aiEditResume, generateResumeFile } from '../../../services/resumeApi';
 import { toBackendPayload } from '../editor/adapters';
@@ -48,6 +48,43 @@ const INTERACTIVE_PROMPTS = {
   projects: "Ask the user to describe 1-2 projects or activities they've worked on. Keep it brief — just ask what projects they'd like to add.",
 };
 
+// Flatten the structured CV into plain text so the analyzer can re-score it
+// dynamically after each edit/suggestion.
+const cvToText = (d) => {
+  if (!d) return '';
+  const parts = [];
+  if (d.personal?.fullName) parts.push(d.personal.fullName);
+  const contact = [d.personal?.email, d.personal?.phone, d.personal?.address, d.personal?.linkedin].filter(Boolean).join(' | ');
+  if (contact) parts.push(contact);
+  if (d.summary) parts.push('OBJECTIVE\n' + d.summary);
+  if (d.education?.length) {
+    parts.push('EDUCATION');
+    d.education.forEach((e) => parts.push([e.institution, e.degree, e.minor, e.dates, e.gradDate, e.gpa, e.coursework].filter(Boolean).join(' ')));
+  }
+  if (d.experience?.length) {
+    parts.push('EXPERIENCE');
+    d.experience.forEach((e) => {
+      parts.push([e.title, e.organization, e.location, e.dates].filter(Boolean).join(' '));
+      (e.bullets || []).forEach((b) => b && parts.push('- ' + b));
+    });
+  }
+  if (d.leadership?.length) {
+    parts.push('LEADERSHIP / ACTIVITIES');
+    d.leadership.forEach((e) => {
+      parts.push([e.role, e.organization, e.location, e.dates].filter(Boolean).join(' '));
+      (e.bullets || []).forEach((b) => b && parts.push('- ' + b));
+    });
+  }
+  if (d.projects?.length) {
+    parts.push('PROJECTS');
+    d.projects.forEach((p) => p.text && parts.push('- ' + p.text));
+  }
+  const sk = d.skills || {};
+  const skills = ['languages', 'computer', 'technical', 'research', 'soft', 'laboratory', 'interests'].map((k) => sk[k]).filter(Boolean).join(', ');
+  if (skills) parts.push('SKILLS\n' + skills);
+  return parts.join('\n');
+};
+
 const ResumeAnalyzerPage = ({ onBack }) => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -80,6 +117,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
   const [showFormatModal, setShowFormatModal] = useState(false); // Local/Global popup on upload
   const [cvData, setCvData] = useState(null);       // structured resume once converted
   const [cvTemplate, setCvTemplate] = useState('local');
+  const skipAnalyzeRef = useRef(false);             // skip the re-score effect for the initial conversion
 
   // Manual-edit ops for the in-place editable template (immutable updates).
   const cvUpdate = useCallback((path, value) => setCvData((d) => setByPath(d, path, value)), []);
@@ -256,6 +294,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     setIsAnalyzing(true);
     try {
       const { resume, text } = await convertResumeFile(uploadedFile, template);
+      skipAnalyzeRef.current = true; // this initial analysis is run explicitly below
       setCvData(normalizeResume(resume));
       setResumeText(text);
       setMessages([{
@@ -272,6 +311,16 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       setIsAnalyzing(false);
     }
   }, [uploadedFile, isConverting, runAiAnalysis]);
+
+  // Dynamic re-scoring: whenever the structured CV changes (manual edit, AI chat
+  // edit, or an applied suggestion), re-run the analysis so the Resume Score and
+  // suggestions reflect the improvement. Debounced so it fires after edits settle.
+  useEffect(() => {
+    if (!cvData) return undefined;
+    if (skipAnalyzeRef.current) { skipAnalyzeRef.current = false; return undefined; }
+    const t = setTimeout(() => { runAiAnalysis(cvToText(cvData), jobDescription); }, 1300);
+    return () => clearTimeout(t);
+  }, [cvData, jobDescription, runAiAnalysis]);
 
   // File Upload — validate, then immediately ask the user to pick a format.
   // The actual extraction + conversion + analysis runs once they choose (chooseFormat).
@@ -645,8 +694,8 @@ const ResumeAnalyzerPage = ({ onBack }) => {
 
       {/* Format-choice popup shown right after upload, before conversion/analysis */}
       {showFormatModal && (
-        <div className="re-modal-overlay show">
-          <div className="re-modal-card show re-format-modal">
+        <div className="re-format-overlay">
+          <div className="re-format-modal">
             <button
               className="re-modal-back"
               onClick={() => { setShowFormatModal(false); setUploadedFile(null); }}
