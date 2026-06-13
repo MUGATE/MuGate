@@ -1,8 +1,8 @@
 /* ===== AI Chat Component Styles ===== */
 
 .re-right-col {
-  width: 200px;
-  min-width: 190px;
+  width: 205px;
+  min-width: 195px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;

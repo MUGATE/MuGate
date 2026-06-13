@@ -85,6 +85,51 @@ const cvToText = (d) => {
   return parts.join('\n');
 };
 
+// Deterministic, INSTANT resume score from the structured CV (0–100). Used for
+// live feedback while editing — rewards completeness + quality (action verbs,
+// metrics, all sections) so a strong, complete CV reaches 100 and removing
+// content lowers the score immediately.
+const ACTION_VERBS = /\b(develop(?:ed)?|built?|design(?:ed)?|manag(?:ed)?|led|create(?:d)?|implement(?:ed)?|improv(?:ed)?|increas(?:ed)?|reduc(?:ed)?|launch(?:ed)?|organiz(?:ed)?|analyz(?:ed)?|engineer(?:ed)?|optimiz(?:ed)?|deliver(?:ed)?|coordinat(?:ed)?|assist(?:ed)?|support(?:ed)?|provid(?:ed)?|collaborat(?:ed)?|automat(?:ed)?|maintain(?:ed)?|wrote|test(?:ed)?|achiev(?:ed)?)\b/i;
+const scoreCv = (d) => {
+  if (!d) return 0;
+  let s = 0;
+  const p = d.personal || {};
+  // Contact (15)
+  if (p.fullName?.trim()) s += 3;
+  if (p.email?.trim()) s += 4;
+  if (p.phone?.trim()) s += 3;
+  if (p.address?.trim()) s += 2;
+  if (p.linkedin?.trim()) s += 3;
+  // Summary / objective (10)
+  if (d.summary?.trim()) s += d.summary.trim().length >= 60 ? 10 : 5;
+  // Education (15)
+  const edu = (d.education || []).filter((e) => e.institution?.trim());
+  if (edu.length >= 1) s += 8;
+  if (edu.some((e) => e.degree?.trim())) s += 4;
+  if (edu.some((e) => e.gpa?.trim() || e.gradDate?.trim() || e.dates?.trim())) s += 3;
+  // Experience (30)
+  const exp = (d.experience || []).filter((e) => e.title?.trim() || e.organization?.trim());
+  const bullets = exp.flatMap((e) => (e.bullets || []).filter((b) => b && b.trim()));
+  if (exp.length >= 1) s += 8;
+  if (exp.length >= 2) s += 4;
+  if (bullets.length >= 2) s += 6;
+  if (bullets.length >= 4) s += 4;
+  if (bullets.some((b) => ACTION_VERBS.test(b))) s += 4;
+  if (bullets.some((b) => /\d/.test(b))) s += 4;
+  // Projects / leadership (12)
+  const proj = (d.projects || []).filter((x) => x.text?.trim());
+  const lead = (d.leadership || []).filter((e) => e.organization?.trim() || e.role?.trim());
+  if (proj.length + lead.length >= 1) s += 6;
+  if (proj.length + lead.length >= 2) s += 6;
+  // Skills (18)
+  const sk = d.skills || {};
+  const skillVals = ['languages', 'computer', 'technical', 'research', 'soft', 'laboratory', 'interests'].map((k) => sk[k]).filter((v) => v && v.trim());
+  if (skillVals.length >= 1) s += 6;
+  if (skillVals.length >= 2) s += 6;
+  if (skillVals.length >= 3) s += 6;
+  return Math.max(0, Math.min(100, Math.round(s)));
+};
+
 const ResumeAnalyzerPage = ({ onBack }) => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -259,23 +304,21 @@ const ResumeAnalyzerPage = ({ onBack }) => {
   // suggestions. The naive local heuristic is only an offline fallback (it gave
   // false positives like "add a phone number" when the CV already had one, and
   // a score that conflicted with the AI score). ──
+  // The AI refreshes only the qualitative SUGGESTIONS. The numeric score is
+  // computed instantly from the structured CV (scoreCv) so it stays responsive.
   const runAiAnalysis = useCallback(async (text, jd) => {
     if (!text || !text.trim()) return;
     setIsReanalyzing(true);
     try {
       const analysis = await analyzeResumeApi(text, jd || '');
       setAiAnalysis(analysis);
-      if (typeof analysis.overallScore === 'number') setResumeScore(analysis.overallScore);
-      // Drive the "Suggestions for Improvement" panel from the AI's accurate,
-      // content-aware recommendations so it never contradicts the resume.
       const recs = Array.isArray(analysis.topRecommendations) ? analysis.topRecommendations : [];
       if (recs.length) {
         setResumeSuggestions(recs.map((t, i) => ({ id: `ai-rec-${i}`, text: t, weight: 0 })));
       }
     } catch (e) {
-      console.error('AI analysis failed, using local heuristic fallback:', e);
+      console.error('AI suggestions failed, using local fallback:', e);
       const local = analyzeResumeText(text);
-      setResumeScore(local.score);
       setResumeSuggestions(local.suggestions);
     } finally {
       setIsReanalyzing(false);
@@ -312,13 +355,17 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     }
   }, [uploadedFile, isConverting, runAiAnalysis]);
 
-  // Dynamic re-scoring: whenever the structured CV changes (manual edit, AI chat
-  // edit, or an applied suggestion), re-run the analysis so the Resume Score and
-  // suggestions reflect the improvement. Debounced so it fires after edits settle.
+  // Instant score: recompute the deterministic Resume Score on every CV change
+  // (manual edit, applied suggestion, AI chat edit) — no waiting, always logical.
+  useEffect(() => {
+    if (cvData) setResumeScore(scoreCv(cvData));
+  }, [cvData]);
+
+  // Debounced AI suggestions refresh so the recommendations track the CV too.
   useEffect(() => {
     if (!cvData) return undefined;
     if (skipAnalyzeRef.current) { skipAnalyzeRef.current = false; return undefined; }
-    const t = setTimeout(() => { runAiAnalysis(cvToText(cvData), jobDescription); }, 1300);
+    const t = setTimeout(() => { runAiAnalysis(cvToText(cvData), jobDescription); }, 1500);
     return () => clearTimeout(t);
   }, [cvData, jobDescription, runAiAnalysis]);
 
@@ -569,10 +616,10 @@ const ResumeAnalyzerPage = ({ onBack }) => {
         <div className="re-score-card re-glass">
           <h3 className="re-section-title">Resume Score</h3>
           <ScoreRing score={resumeScore} />
-          {(isAnalyzing || (isReanalyzing && !aiAnalysis)) && (
+          {isAnalyzing && !cvData && (
             <div className="re-analyzing-overlay">
               <div className="re-analyzing-spinner" />
-              <span className="re-analyzing-text">Analyzing...</span>
+              <span className="re-analyzing-text">Reading…</span>
             </div>
           )}
         </div>
@@ -583,7 +630,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
               <div className="suggestions-placeholder">
                 <p className="suggestions-placeholder-text">Upload your resume to get personalized suggestions.</p>
               </div>
-            ) : (isAnalyzing || (isReanalyzing && !aiAnalysis)) ? (
+            ) : ((isAnalyzing || isReanalyzing) && resumeSuggestions.length === 0) ? (
               <div className="suggestions-placeholder">
                 <div className="re-analyzing-inline">
                   <div className="re-analyzing-spinner-sm" />
@@ -680,16 +727,18 @@ const ResumeAnalyzerPage = ({ onBack }) => {
         )}
       </div>
 
-      <ChatInterface
-        messages={messages}
-        input={inputValue}
-        setInput={setInputValue}
-        sendMessage={sendMessage}
-        isLoading={isChatLoading}
-        lastAIInstructions={lastAIInstructions}
-        applyAIEdits={applyAIEdits}
-        isEditingDocument={isEditingDocument}
-      />
+      <div className="re-right-col">
+        <ChatInterface
+          messages={messages}
+          input={inputValue}
+          setInput={setInputValue}
+          sendMessage={sendMessage}
+          isLoading={isChatLoading}
+          lastAIInstructions={lastAIInstructions}
+          applyAIEdits={applyAIEdits}
+          isEditingDocument={isEditingDocument}
+        />
+      </div>
       </div>
 
       {/* Format-choice popup shown right after upload, before conversion/analysis */}
