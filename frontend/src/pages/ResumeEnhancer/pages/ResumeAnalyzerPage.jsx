@@ -441,19 +441,16 @@ const ResumeAnalyzerPage = ({ onBack }) => {
   }, [appliedSuggestions, chatSessionId, resumeScore, extractInstructions, applyEditsDirectly, uploadedFile]);
 
   return (
-    <div className="re-layout">
-      {/* Back button */}
-      <button
-        onClick={onBack}
-        className="re-cv-back-btn"
-        style={{ position: 'absolute', top: '-60px', left: '0', zIndex: 100 }}
-      >
+    <div className="re-analyzer-page">
+      {/* Back to the welcome/dashboard view */}
+      <button onClick={onBack} className="re-cv-back-btn re-analyzer-back">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
           <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         Back to Dashboard
       </button>
 
+      <div className="re-layout">
       <div className="re-left-col">
         <div className="re-score-card re-glass">
           <h3 className="re-section-title">Resume Score</h3>
@@ -618,6 +615,7 @@ const ResumeAnalyzerPage = ({ onBack }) => {
         applyAIEdits={applyAIEdits}
         isEditingDocument={isEditingDocument}
       />
+      </div>
     </div>
   );
 };

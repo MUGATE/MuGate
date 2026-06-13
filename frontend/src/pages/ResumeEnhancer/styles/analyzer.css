@@ -1,5 +1,26 @@
 /* ===== Resume Analyzer Page Components ===== */
 
+/* Wrapper so the "Back to Dashboard" control sits in normal flow (visible)
+   above the three columns instead of being hidden behind the navbar. */
+.re-analyzer-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  max-width: 1500px;
+  width: calc(100% - 80px);
+  margin: 0 auto;
+}
+.re-analyzer-page > .re-layout {
+  width: 100%;
+  margin: 0;
+  min-height: 0;
+}
+.re-analyzer-back {
+  align-self: flex-start;
+  margin: 12px 0 0;
+}
+
 .re-left-col {
   width: 260px;
   min-width: 240px;
