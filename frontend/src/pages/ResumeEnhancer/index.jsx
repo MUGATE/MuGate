@@ -327,11 +327,6 @@ const ResumeEnhancerRouter = () => {
       {mode === 'enhance' && (
         <ResumeAnalyzerPage
           onBack={() => setMode('welcome')}
-          onEditExtracted={(resumeData) => {
-            setEditorData(resumeData);
-            setEditorReturnMode('enhance');
-            setMode('editor');
-          }}
         />
       )}
 

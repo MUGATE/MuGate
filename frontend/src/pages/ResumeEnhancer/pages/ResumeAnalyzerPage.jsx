@@ -1,16 +1,31 @@
 import React, { useState, useRef, useCallback } from 'react';
 import mammoth from 'mammoth';
 import { createSession, sendMessage as sendChatbotMessage, uploadFile as uploadChatbotFile } from '../../../services/chatbotApi';
-import { analyzeResume as analyzeResumeApi, editResumeFile, parseResumeFile } from '../../../services/resumeApi';
+import { analyzeResume as analyzeResumeApi, editResumeFile, parseResumeFile, aiEditResume, generateResumeFile } from '../../../services/resumeApi';
+import { toBackendPayload } from '../editor/adapters';
 import { analyzeResumeText } from '../utils/analyzeResume';
 import ScoreRing from '../components/ScoreRing';
 import SuggestionCard from '../components/SuggestionCard';
 import PdfViewer from '../components/PdfViewer';
 import ChatInterface from '../components/ChatInterface';
 import AnalysisBreakdown from '../components/AnalysisBreakdown';
+import LocalTemplate from '../editor/templates/LocalTemplate';
+import GlobalTemplate from '../editor/templates/GlobalTemplate';
+import {
+  normalizeResume, setByPath,
+  emptyEducation, emptyExperience, emptyLeadership, emptyProject,
+} from '../editor/resumeSchema';
 
 import '../styles/analyzer.css';
 import '../styles/chat.css';
+import '../styles/editor.css';
+
+const EMPTY_ITEM = {
+  education: emptyEducation,
+  experience: emptyExperience,
+  leadership: emptyLeadership,
+  projects: emptyProject,
+};
 
 const INITIAL_MESSAGES = [
   { text: 'How can I assist you with your resume?', isUser: false },
@@ -34,7 +49,7 @@ const INTERACTIVE_PROMPTS = {
   projects: "Ask the user to describe 1-2 projects or activities they've worked on. Keep it brief — just ask what projects they'd like to add.",
 };
 
-const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
+const ResumeAnalyzerPage = ({ onBack }) => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [messages, setMessages] = useState(INITIAL_MESSAGES);
@@ -62,8 +77,73 @@ const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
   const [isEditingDocument, setIsEditingDocument] = useState(false);
   const [lastAIInstructions, setLastAIInstructions] = useState('');
 
-  // ── Convert uploaded resume → editable Local/Global CV (live editor) ──
+  // ── Convert uploaded resume → editable Local/Global CV (in-place editor) ──
   const [isConverting, setIsConverting] = useState(false);
+  const [cvData, setCvData] = useState(null);       // structured resume once converted
+  const [cvTemplate, setCvTemplate] = useState('local');
+
+  // Manual-edit ops for the in-place editable template (immutable updates).
+  const cvUpdate = useCallback((path, value) => setCvData((d) => setByPath(d, path, value)), []);
+  const cvAddItem = useCallback((section) => setCvData((d) => ({
+    ...d, [section]: [...d[section], (EMPTY_ITEM[section] || (() => ({})))()],
+  })), []);
+  const cvRemoveItem = useCallback((section, idx) => setCvData((d) => ({
+    ...d, [section]: d[section].filter((_, i) => i !== idx),
+  })), []);
+  const cvAddBullet = useCallback((section, idx) => setCvData((d) => {
+    const arr = [...d[section]];
+    arr[idx] = { ...arr[idx], bullets: [...(arr[idx].bullets || []), ''] };
+    return { ...d, [section]: arr };
+  }), []);
+  const cvRemoveBullet = useCallback((section, idx, bi) => setCvData((d) => {
+    const arr = [...d[section]];
+    arr[idx] = { ...arr[idx], bullets: (arr[idx].bullets || []).filter((_, i) => i !== bi) };
+    return { ...d, [section]: arr };
+  }), []);
+  const cvOps = { update: cvUpdate, addItem: cvAddItem, removeItem: cvRemoveItem, addBullet: cvAddBullet, removeBullet: cvRemoveBullet };
+  const [isExportingCv, setIsExportingCv] = useState(false);
+
+  // Download the enhanced CV (content matches the editable preview).
+  const handleExportCv = useCallback(async (fileType) => {
+    if (!cvData) return;
+    setIsExportingCv(true);
+    try {
+      const { format, formData, extras } = toBackendPayload({ ...cvData, template: cvTemplate });
+      const blob = await generateResumeFile({ format, formData, extras, fileType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(cvData.personal?.fullName || 'My Resume').trim()}.${fileType}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Could not export the CV. Make sure the backend is running.');
+    } finally {
+      setIsExportingCv(false);
+    }
+  }, [cvData, cvTemplate]);
+
+  // Apply an AI edit to the STRUCTURED CV. Shows only a short confirmation —
+  // never echoes the CV back into the chat (uses aiEditResume on JSON).
+  const runChatEdit = useCallback(async (instruction) => {
+    if (!cvData) return;
+    setIsChatLoading(true);
+    try {
+      const result = await aiEditResume(cvData, instruction, 'all');
+      if (result && result.changed) {
+        setCvData(normalizeResume(result.resume));
+        setMessages((prev) => [...prev, { text: '✓ Done — I applied that to your CV.', isUser: false }]);
+      } else {
+        setMessages((prev) => [...prev, { text: "I couldn't apply that. Try rephrasing — e.g. \"change my email to ...\" or \"make the summary more concise\".", isUser: false }]);
+      }
+    } catch {
+      setMessages((prev) => [...prev, { text: 'Something went wrong applying that change. Please try again.', isUser: false }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  }, [cvData]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -182,14 +262,19 @@ const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
     setIsConverting(true);
     try {
       const resume = await parseResumeFile(resumeText, template);
-      if (onEditExtracted) onEditExtracted(resume);
+      setCvData(normalizeResume(resume));
+      setCvTemplate(template);
+      setMessages((prev) => [...prev, {
+        text: `✓ Converted to a ${template === 'global' ? 'Global' : 'Local'} CV. Edit any field directly, click a suggestion to apply it, or tell me what to change (e.g. "change my name to ...").`,
+        isUser: false,
+      }]);
     } catch (err) {
       console.error('Resume convert failed:', err);
       alert('Could not convert this resume into an editable CV. Please try again.');
     } finally {
       setIsConverting(false);
     }
-  }, [resumeText, isConverting, onEditExtracted]);
+  }, [resumeText, isConverting]);
 
   // File Upload
   const handleFile = useCallback(async (file) => {
@@ -305,6 +390,15 @@ const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
     const text = inputValue.trim();
     if (!text || isChatLoading) return;
 
+    // Once the CV is converted, the chat edits the STRUCTURED CV directly.
+    // "change my name to X" actually applies; the CV is never echoed back.
+    if (cvData) {
+      setMessages((prev) => [...prev, { text, isUser: true }]);
+      setInputValue('');
+      await runChatEdit(text);
+      return;
+    }
+
     if (activeSuggestionFlow && activeSuggestionFlow.awaitingUserInput) {
       setActiveSuggestionFlow(prev => ({ ...prev, collectedValue: text, awaitingUserInput: false }));
       setMessages(prev => [...prev, { text, isUser: true }]);
@@ -369,7 +463,7 @@ const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
     } finally {
       setIsChatLoading(false);
     }
-  }, [inputValue, chatSessionId, isChatLoading, resumeText, resumeScore, resumeSuggestions, extractInstructions, applyEditsDirectly, activeSuggestionFlow, uploadedFile]);
+  }, [inputValue, chatSessionId, isChatLoading, resumeText, resumeScore, resumeSuggestions, extractInstructions, applyEditsDirectly, activeSuggestionFlow, uploadedFile, cvData, runChatEdit]);
 
   // Apply Document Edits (Manual Fallback)
   const applyAIEdits = useCallback(async () => {
@@ -382,6 +476,15 @@ const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
   // Suggestion click
   const handleSuggestionClick = useCallback(async (suggestion) => {
     if (appliedSuggestions.has(suggestion.id)) return;
+
+    // Once converted, clicking a suggestion AUTO-APPLIES it to the structured CV.
+    if (cvData) {
+      setAppliedSuggestions(prev => new Set([...prev, suggestion.id]));
+      setMessages(prev => [...prev, { text: `Apply: "${suggestion.text}"`, isUser: true }]);
+      await runChatEdit(suggestion.text);
+      return;
+    }
+
     setAppliedSuggestions(prev => new Set([...prev, suggestion.id]));
     setResumeScore(prev => Math.min(100, prev + suggestion.weight));
 
@@ -458,7 +561,9 @@ const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
     } finally {
       setIsChatLoading(false);
     }
-  }, [appliedSuggestions, chatSessionId, resumeScore, extractInstructions, applyEditsDirectly, uploadedFile]);
+  }, [appliedSuggestions, chatSessionId, resumeScore, extractInstructions, applyEditsDirectly, uploadedFile, cvData, runChatEdit]);
+
+  const CvTemplate = cvTemplate === 'global' ? GlobalTemplate : LocalTemplate;
 
   return (
     <div className="re-analyzer-page">
@@ -550,6 +655,21 @@ const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
               </div>
             </div>
           </div>
+        ) : cvData ? (
+          <div className="re-cv-edit-card re-glass">
+            <div className="re-cv-edit-head">
+              <span className="re-cv-edit-label">Editable {cvTemplate === 'global' ? 'Global' : 'Local'} CV — click any field to edit</span>
+              <div className="re-cv-edit-actions">
+                <button className="re-cv-edit-export" type="button" disabled={isExportingCv} onClick={() => handleExportCv('pdf')}>{isExportingCv ? '…' : 'PDF'}</button>
+                <button className="re-cv-edit-export" type="button" disabled={isExportingCv} onClick={() => handleExportCv('docx')}>{isExportingCv ? '…' : 'DOCX'}</button>
+              </div>
+            </div>
+            <div className="re-cv-edit-body">
+              <div className="re-editor-doc-paper editing">
+                <CvTemplate data={cvData} editable ops={cvOps} />
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="re-preview-card re-glass">
             <div className="preview-header">
@@ -605,11 +725,11 @@ const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
           </div>
         )}
 
-        {uploadedFile && resumeText.trim().length >= 30 && (
+        {uploadedFile && resumeText.trim().length >= 30 && !cvData && (
           <div className="re-convert-card re-glass">
             <div className="re-convert-info">
-              <span className="re-convert-title">✨ Edit this resume</span>
-              <span className="re-convert-sub">Turn it into an editable CV — then fine-tune it manually or with AI.</span>
+              <span className="re-convert-title">✨ Edit this resume — choose a format</span>
+              <span className="re-convert-sub">We'll fill an editable CV with your details. Then edit it manually, click suggestions, or tell the AI what to change.</span>
             </div>
             {isConverting ? (
               <div className="re-analyzing-inline">
@@ -625,7 +745,7 @@ const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
           </div>
         )}
 
-        {uploadedFile && isReanalyzing && !aiAnalysis && (
+        {uploadedFile && isReanalyzing && !aiAnalysis && !cvData && (
           <div className="re-analysis re-glass" style={{ marginTop: 16, padding: '16px 20px' }}>
             <div className="re-analyzing-inline">
               <div className="re-analyzing-spinner-sm" />
@@ -634,7 +754,7 @@ const ResumeAnalyzerPage = ({ onBack, onEditExtracted }) => {
           </div>
         )}
 
-        {aiAnalysis && (
+        {aiAnalysis && !cvData && (
           <AnalysisBreakdown
             analysis={aiAnalysis}
             jobDescription={jobDescription}
