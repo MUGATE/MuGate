@@ -1,0 +1,16 @@
+flowchart TD
+    START([Student opens Resume Enhancer]) --> WELCOME{Choose path}
+    WELCOME -->|Build CV| FORMAT{Local or Global?}
+    WELCOME -->|Analyze| UPLOAD[Upload PDF/DOCX]
+    FORMAT --> FORM[Fill builder form]
+    FORM --> PERSIST[Persist to localStorage]
+    FORM --> EDITOR{Open Live Editor?}
+    EDITOR -->|Yes| LIVE[Inline edit + AI rewrite]
+    EDITOR -->|No| REVIEW[Review preview]
+    LIVE --> EXPORT
+    REVIEW --> EXPORT[POST /api/resume/generate]
+    UPLOAD --> CONVERT[POST /api/resume/convert]
+    CONVERT --> SCORE[Heuristic + AI analyze]
+    SCORE --> AIEDIT[Optional AI edit]
+    AIEDIT --> EXPORT
+    EXPORT --> DOWNLOAD[PDF or DOCX download]

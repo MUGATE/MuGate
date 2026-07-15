@@ -1,18 +1,18 @@
 /* ══════════════════════════════════════════════════
    EVENTS SHOWCASE — SPLIT LAYOUT REDESIGN
    Events (left) + Competitions (right)
-   Theme: amber/gold events, red competitions
+   Theme: white / blue events, light purple competitions
    ══════════════════════════════════════════════════ */
 
 .events-showcase-section {
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background: linear-gradient(168deg, #ffffff 0%, #fafafa 40%, #f5f3ef 100%);
+    background: linear-gradient(168deg, var(--color-page) 0%, var(--color-surface-muted) 40%, var(--color-surface-light) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 100px 80px;
+    padding: 100px var(--page-gutter);
     overflow: hidden;
 }
 
@@ -28,14 +28,14 @@
 .esc-bg-orb-1 {
     width: 500px;
     height: 500px;
-    background: radial-gradient(circle, rgba(230, 168, 23, 0.25) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(43, 94, 167, 0.18) 0%, transparent 70%);
     top: -100px;
     left: -100px;
 }
 .esc-bg-orb-2 {
     width: 400px;
     height: 400px;
-    background: radial-gradient(circle, rgba(217, 74, 74, 0.2) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.16) 0%, transparent 70%);
     bottom: -80px;
     right: -60px;
 }
@@ -46,7 +46,7 @@
     flex-direction: column;
     align-items: center;
     gap: 56px;
-    max-width: 1300px;
+    max-width: var(--page-max-width);
     width: 100%;
     position: relative;
     z-index: 1;
@@ -62,7 +62,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: clamp(2.4rem, 5vw, 3.6rem);
     font-weight: 700;
-    color: #1a1a1a;
+    color: var(--color-text);
     letter-spacing: -0.03em;
     line-height: 1.15;
     margin: 0 0 20px;
@@ -70,14 +70,14 @@
 }
 
 .events-headline-accent {
-    background: linear-gradient(135deg, #e6a817 0%, #f0c040 100%);
+    background: linear-gradient(135deg, #2b5ea7 0%, #4a90d9 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
 .esc-headline-comp {
-    background: linear-gradient(135deg, #d94a4a 0%, #e86b6b 100%);
+    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -140,20 +140,20 @@
 }
 
 .esc-panel-icon-events {
-    background: linear-gradient(135deg, #fdf0d0 0%, #f5d780 100%);
-    color: #b8860b;
+    background: linear-gradient(135deg, #e8f0fa 0%, #dbeafe 100%);
+    color: #2b5ea7;
 }
 
 .esc-panel-icon-comp {
-    background: linear-gradient(135deg, #fde0e0 0%, #f5a0a0 100%);
-    color: #b83030;
+    background: linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%);
+    color: #7c3aed;
 }
 
 .esc-panel-title {
     font-family: "SolidroadCustom", sans-serif;
     font-size: 1.15rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: var(--color-text);
     letter-spacing: -0.02em;
     margin: 0;
     flex: 1;
@@ -168,8 +168,8 @@
     min-width: 28px;
     height: 28px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #fdf0d0, #f5d780);
-    color: #b8860b;
+    background: linear-gradient(135deg, #e8f0fa, #dbeafe);
+    color: #2b5ea7;
     font-family: "Matter", sans-serif;
     font-size: 0.8rem;
     font-weight: 700;
@@ -177,8 +177,8 @@
 }
 
 .esc-panel-count-comp {
-    background: linear-gradient(135deg, #fde0e0, #f5a0a0);
-    color: #b83030;
+    background: linear-gradient(135deg, #f3e8ff, #ede9fe);
+    color: #7c3aed;
 }
 
 /* ══════════════════════════════════════════════════
@@ -209,8 +209,8 @@
 
 .esc-event-card:hover {
     transform: translateY(-3px) scale(1.005);
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.07);
-    border-color: rgba(230, 168, 23, 0.2);
+    box-shadow: 0 12px 36px rgba(43, 94, 167, 0.08);
+    border-color: rgba(43, 94, 167, 0.2);
 }
 
 /* Date badge */
@@ -222,8 +222,8 @@
     width: 52px;
     min-height: 52px;
     border-radius: 14px;
-    background: linear-gradient(135deg, #fdf5e0 0%, #faebc0 100%);
-    border: 1px solid rgba(230, 168, 23, 0.15);
+    background: linear-gradient(135deg, #eef4fc 0%, #dbeafe 100%);
+    border: 1px solid rgba(43, 94, 167, 0.12);
     flex-shrink: 0;
     padding: 6px 4px;
 }
@@ -232,7 +232,7 @@
     font-family: "Matter", sans-serif;
     font-size: 0.6rem;
     font-weight: 700;
-    color: #b8860b;
+    color: #2b5ea7;
     letter-spacing: 0.06em;
     line-height: 1;
 }
@@ -241,7 +241,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: 1.3rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: var(--color-text);
     line-height: 1.1;
 }
 
@@ -293,7 +293,7 @@
 }
 
 .esc-status-live {
-    background: rgba(217, 74, 74, 0.1);
+    background: rgba(217, 74, 74, 0.08);
     color: #c53030;
 }
 
@@ -332,7 +332,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: 0.85rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: var(--color-text);
     letter-spacing: -0.02em;
     margin: 0;
     line-height: 1.25;
@@ -441,7 +441,7 @@
     padding: 18px;
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(217, 74, 74, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.1);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -454,8 +454,8 @@
 
 .esc-comp-card:hover {
     transform: translateY(-4px) scale(1.008);
-    box-shadow: 0 16px 48px rgba(217, 74, 74, 0.1);
-    border-color: rgba(217, 74, 74, 0.2);
+    box-shadow: 0 16px 48px rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.22);
 }
 
 /* Gradient glow behind competition cards */
@@ -473,13 +473,13 @@
 }
 
 .esc-comp-card-0 .esc-comp-glow {
-    background: radial-gradient(circle, rgba(217, 74, 74, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
 }
 .esc-comp-card-1 .esc-comp-glow {
-    background: radial-gradient(circle, rgba(230, 168, 23, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(74, 144, 217, 0.15) 0%, transparent 70%);
 }
 .esc-comp-card-2 .esc-comp-glow {
-    background: radial-gradient(circle, rgba(74, 144, 217, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(167, 139, 250, 0.15) 0%, transparent 70%);
 }
 
 .esc-comp-card:hover .esc-comp-glow {
@@ -500,7 +500,7 @@
     gap: 5px;
     padding: 3px 10px;
     border-radius: 8px;
-    background: linear-gradient(135deg, #d94a4a 0%, #e86b6b 100%);
+    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
     color: #ffffff;
     font-family: "Matter", sans-serif;
     font-size: 0.65rem;
@@ -513,7 +513,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: 0.88rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: var(--color-text);
     letter-spacing: -0.02em;
     margin: 0;
     line-height: 1.25;
@@ -622,7 +622,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: 0.9rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: var(--color-text);
 }
 
 .esc-stat-label {
@@ -658,7 +658,7 @@
     gap: 6px;
     padding: 8px 14px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #d94a4a 0%, #c53030 100%);
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
     color: #ffffff;
     font-family: "Matter", sans-serif;
     font-size: 0.82rem;
@@ -671,8 +671,8 @@
 
 .esc-comp-cta:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(217, 74, 74, 0.25);
-    background: linear-gradient(135deg, #c53030 0%, #b02828 100%);
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.28);
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
 }
 
 /* ══════════════════════════════════════════════════
@@ -686,8 +686,8 @@
     padding: 12px 20px;
     border-radius: 12px;
     background: transparent;
-    border: 1px solid rgba(230, 168, 23, 0.2);
-    color: #b8860b;
+    border: 1px solid rgba(43, 94, 167, 0.2);
+    color: #2b5ea7;
     font-family: "Matter", sans-serif;
     font-size: 0.85rem;
     font-weight: 600;
@@ -696,19 +696,19 @@
 }
 
 .esc-view-all:hover {
-    background: rgba(230, 168, 23, 0.06);
-    border-color: rgba(230, 168, 23, 0.35);
+    background: rgba(43, 94, 167, 0.06);
+    border-color: rgba(43, 94, 167, 0.35);
     transform: translateY(-1px);
 }
 
 .esc-view-all-comp {
-    border-color: rgba(217, 74, 74, 0.2);
-    color: #c53030;
+    border-color: rgba(139, 92, 246, 0.22);
+    color: #7c3aed;
 }
 
 .esc-view-all-comp:hover {
-    background: rgba(217, 74, 74, 0.05);
-    border-color: rgba(217, 74, 74, 0.35);
+    background: rgba(139, 92, 246, 0.06);
+    border-color: rgba(139, 92, 246, 0.35);
 }
 
 /* ══════════════════════════════════════════════════
@@ -774,7 +774,7 @@
 
 @media (max-width: 900px) {
     .events-showcase-section {
-        padding: 80px 24px;
+        padding: 80px var(--page-gutter);
     }
 
     .events-showcase-inner {
@@ -837,7 +837,7 @@
 
 @media (max-width: 480px) {
     .events-showcase-section {
-        padding: 60px 16px;
+        padding: 60px var(--page-gutter);
     }
 
     .events-headline {

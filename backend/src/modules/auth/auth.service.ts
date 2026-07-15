@@ -4,6 +4,7 @@ import { encrypt } from "../../core/security/encryption.util";
 import { PortalScraper } from "../system/scraper/portal.scraper";
 import { HistoryService } from "../history/history.service";
 import { logger } from "../../core/logger/logger";
+import { isAdminUser } from "../../core/middleware/admin.middleware";
 
 export class AuthService {
     /**
@@ -17,6 +18,10 @@ export class AuthService {
     static async login(universityId: string, password: string) {
                 // 1. Verify credentials against the actual University Portal and scrape student name
         const portalResult = await PortalScraper.verifyCredentials(universityId, password);
+
+        if (portalResult.error) {
+            throw new Error(portalResult.error);
+        }
 
         if (!portalResult.valid) {
             throw new Error("Invalid university ID or password. Authentication failed at MU Portal.");
@@ -34,21 +39,28 @@ export class AuthService {
         // 3. Auto-Registration: If user doesn't exist, create them.
         if (!user) {
             const defaultEmail = `${universityId}@mu.edu.lb`;
-            // We use a random placeholder for password hash since they login via SSO
             const placeholderHash = "SSO_PORTAL_AUTH";
 
-                        const insertResult = await pool.request()
-                .input("email", defaultEmail)
-                .input("passwordHash", placeholderHash)
-                .input("name", scrapedName || `Student ${universityId}`)
-                .input("universityId", universityId)
-                .query(`
-                    INSERT INTO Users (email, passwordHash, name, universityId)
-                    OUTPUT INSERTED.id, INSERTED.email, INSERTED.name, INSERTED.universityId
-                    VALUES (@email, @passwordHash, @name, @universityId)
-                `);
-
-            user = insertResult.recordset[0];
+            try {
+                const insertResult = await pool.request()
+                    .input("email", defaultEmail)
+                    .input("passwordHash", placeholderHash)
+                    .input("name", scrapedName || `Student ${universityId}`)
+                    .input("universityId", universityId)
+                    .query(`
+                        INSERT INTO Users (email, passwordHash, name, universityId)
+                        VALUES (@email, @passwordHash, @name, @universityId)
+                        RETURNING id, email, name, universityId
+                    `);
+                user = insertResult.recordset[0];
+            } catch (insertErr: any) {
+                // Concurrent first-login race: re-select after unique conflict
+                const again = await pool.request()
+                    .input("universityId", universityId)
+                    .query("SELECT * FROM Users WHERE universityId = @universityId");
+                user = again.recordset[0];
+                if (!user) throw insertErr;
+            }
         }
 
         // 3b. Update the user's name if we scraped a real name from the portal
@@ -70,17 +82,12 @@ export class AuthService {
             .input("eUser", encryptedUsername)
             .input("ePass", encryptedPassword)
             .query(`
-                IF EXISTS (SELECT 1 FROM PortalCredentials WHERE userId = @userId)
-                BEGIN
-                    UPDATE PortalCredentials 
-                    SET encryptedUsername = @eUser, encryptedPassword = @ePass, updatedAt = GETDATE()
-                    WHERE userId = @userId
-                END
-                ELSE
-                BEGIN
-                    INSERT INTO PortalCredentials (userId, encryptedUsername, encryptedPassword)
-                    VALUES (@userId, @eUser, @ePass)
-                END
+                INSERT INTO PortalCredentials (userId, encryptedUsername, encryptedPassword)
+                VALUES (@userId, @eUser, @ePass)
+                ON CONFLICT (userId) DO UPDATE SET
+                    encryptedUsername = EXCLUDED.encryptedUsername,
+                    encryptedPassword = EXCLUDED.encryptedPassword,
+                    updatedAt = NOW()
             `);
 
         // 5. Auto-scrape the student's academic history so the generator knows what they passed
@@ -91,19 +98,26 @@ export class AuthService {
             logger.warn(`Non-fatal: Failed to sync history on login for ${user.id}: ${historyErr.message}`);
         }
 
+        // 5b. Re-read GPA after sync so login payload is current
+        let gpa: number | null = null;
+        try {
+            const summary = await HistoryService.getAcademicSummary(user.id);
+            gpa = summary.gpa;
+        } catch (gpaErr: any) {
+            logger.warn(`Non-fatal: Failed to read GPA for ${user.id}: ${gpaErr.message}`);
+        }
+
         // 6. Generate and return MuGate JWT
         const payload: TokenPayload = { userId: user.id, email: user.email, name: user.name, universityId: user.universityId };
         const token = generateToken(payload);
 
-        // 7. Check if user is an admin (super admin or in Admins table)
-        let isAdmin = user.universityId === "101230004";
-        if (!isAdmin) {
-            try {
-                const adminCheck = await pool.request()
-                    .input("universityId", user.universityId)
-                    .query("SELECT 1 FROM Admins WHERE universityId = @universityId");
-                isAdmin = adminCheck.recordset.length > 0;
-            } catch {}
+        // 7. Check if user is an admin (super admin via env or Admins table)
+        let isAdmin = false;
+        try {
+            isAdmin = await isAdminUser({ universityId: user.universityId });
+        } catch (adminErr: any) {
+            logger.warn(`Admin check failed for ${user.id}: ${adminErr.message}`);
+            isAdmin = false;
         }
 
         return {
@@ -113,7 +127,8 @@ export class AuthService {
                 email: user.email,
                 name: user.name,
                 universityId: user.universityId,
-                isAdmin
+                isAdmin,
+                gpa,
             }
         };
     }

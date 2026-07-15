@@ -207,25 +207,61 @@ const ResumeAnalyzerPage = ({ onBack }) => {
     }
   }, [cvData, cvTemplate]);
 
-  // Apply an AI edit to the STRUCTURED CV. Shows only a short confirmation —
-  // never echoes the CV back into the chat (uses aiEditResume on JSON).
+  // Apply an AI edit to the STRUCTURED CV and report whether it actually landed.
+  // Verifies via the backend (Local/Global form restrictions included). Never
+  // echoes the full CV back into chat.
   const runChatEdit = useCallback(async (instruction) => {
     if (!cvData) return;
     setIsChatLoading(true);
     try {
       const result = await aiEditResume(cvData, instruction, 'all');
-      if (result && result.changed) {
+
+      if (result?.changed) {
         setCvData(normalizeResume(result.resume));
-        setMessages((prev) => [...prev, { text: '✓ Done — I applied that to your CV.', isUser: false }]);
-      } else {
-        setMessages((prev) => [...prev, { text: "I couldn't apply that. Try rephrasing — e.g. \"change my email to ...\" or \"make the summary more concise\".", isUser: false }]);
+        setMessages((prev) => [...prev, {
+          text: result.message || '✓ Changes have been applied.',
+          isUser: false,
+        }]);
+        return;
       }
+
+      // Advice / question (not an edit) → real chatbot reply instead of a fake "applied".
+      if (result?.reason === 'no_edit_requested') {
+        try {
+          let sid = chatSessionId;
+          if (!sid) {
+            const session = await createSession('Resume Enhancement', 'resume');
+            sid = session.id;
+            setChatSessionId(sid);
+          }
+          const response = await sendChatbotMessage(
+            sid,
+            `[CV FORMAT: ${cvTemplate === 'global' ? 'Global' : 'Local'}]\nUser: ${instruction}\n\nAnswer helpfully and briefly. If they need an edit, tell them exactly how to ask (e.g. change my email to ...). Do not pretend you already edited the CV.`
+          );
+          setMessages((prev) => [...prev, {
+            text: response.text || result.message || "Ask me to change a specific field and I'll apply it.",
+            isUser: false,
+          }]);
+          return;
+        } catch {
+          /* fall through to result.message */
+        }
+      }
+
+      setMessages((prev) => [...prev, {
+        text: result?.message
+          || "Those changes can't be applied. Try rephrasing — e.g. \"change my email to ...\" or \"make the experience bullets more concise\".",
+        isUser: false,
+      }]);
     } catch {
-      setMessages((prev) => [...prev, { text: 'Something went wrong applying that change. Please try again.', isUser: false }]);
+      setMessages((prev) => [...prev, {
+        text: "Those changes can't be applied — something went wrong. Please try again.",
+        isUser: false,
+      }]);
     } finally {
       setIsChatLoading(false);
     }
-  }, [cvData]);
+  }, [cvData, chatSessionId, cvTemplate]);
 
   const handleDragOver = (e) => {
     e.preventDefault();

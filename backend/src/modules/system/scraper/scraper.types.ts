@@ -55,6 +55,7 @@ export interface KnowledgePage {
     subcategory: string | null;
     language: string;
     wordCount: number;
+    sourceDomain?: string | null;
     lastScrapedAt: Date;
     isActive: boolean;
     createdAt: Date;
@@ -70,6 +71,9 @@ export interface KnowledgeChunk {
     keywords: string | null;
     category: KnowledgeCategory;
     title: string | null;
+    entityType?: string | null;
+    chromaSyncedAt?: Date | null;
+    embeddingModel?: string | null;
     createdAt: Date;
 }
 
@@ -102,6 +106,7 @@ export interface ScraperConfig {
     maxDepth: number;
     delayMs: number;
     timeoutMs: number;
+    seedUrls?: string[];
     includePatterns?: RegExp[];
     excludePatterns?: RegExp[];
 }

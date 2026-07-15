@@ -7,11 +7,11 @@
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background: linear-gradient(to bottom, #ffffff 0%, #f5f5f5 100%);
+    background: linear-gradient(to bottom, var(--color-surface-muted) 0%, var(--color-page) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 100px 80px;
+    padding: 100px var(--page-gutter);
     overflow: hidden;
 }
 
@@ -21,7 +21,7 @@
     display: flex;
     align-items: center;
     gap: 100px;
-    max-width: 1300px;
+    max-width: var(--page-max-width);
     width: 100%;
 }
 
@@ -108,7 +108,7 @@
     font-family: "Matter", sans-serif;
     font-size: 0.82rem;
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--color-text);
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -203,7 +203,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: clamp(2.4rem, 4.5vw, 3.5rem);
     font-weight: 700;
-    color: #1a1a1a;
+    color: var(--color-text);
     letter-spacing: -0.03em;
     line-height: 1.15;
     margin: 0 0 28px;
@@ -257,7 +257,7 @@
     font-family: "Matter", sans-serif;
     font-size: 1.02rem;
     font-weight: 500;
-    color: #2d3748;
+    color: var(--color-text-secondary);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -326,7 +326,7 @@
 
 @media (max-width: 1100px) {
     .resume-analyzer-section {
-        padding: 80px 40px;
+        padding: 80px var(--page-gutter);
     }
 
     .resume-analyzer-inner {

@@ -1,0 +1,33 @@
+flowchart LR
+    subgraph actors [Actors]
+        STU((Student))
+        ADM((Administrator))
+        ANON((Anonymous User))
+    end
+
+    subgraph mugate [MuGate System]
+        UC1[Login via MU Portal]
+        UC2[MuChat AI Assistant]
+        UC3[Resume Analyze and Build]
+        UC4[Schedule Generator]
+        UC5[Capstone Hub]
+        UC6[Internship Reviews]
+        UC7[Events Discovery]
+        UC8[Degree Roadmap]
+        UC9[Admin Management]
+        UC10[Knowledge Base Scrape]
+    end
+
+    STU --> UC1
+    STU --> UC2
+    STU --> UC3
+    STU --> UC4
+    STU --> UC5
+    STU --> UC6
+    STU --> UC7
+    STU --> UC8
+    ADM --> UC9
+    ADM --> UC10
+    ANON --> UC2
+    ANON --> UC7
+    ANON --> UC8

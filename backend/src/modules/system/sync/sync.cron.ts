@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { logger } from "../../../core/logger/logger";
 import { CoursesService } from "../../academic/courses/courses.service";
 import { ScraperService } from "../scraper/scraper.service";
+import { RagSyncService } from "../../ai/rag/rag-sync.service";
 import fs from "fs";
 import path from "path";
 
@@ -18,13 +19,14 @@ const runCourseSync = async () => {
 
         const creds = JSON.parse(fs.readFileSync(credentialsPath, "utf-8"));
 
-        if (!creds.email || !creds.password || !creds.semesterId) {
-            logger.warn("CRON: Invalid credentials file. Missing email, password, or semesterId. Skipping sync.");
+        if (!creds.email || !creds.password) {
+            logger.warn("CRON: Invalid credentials file. Missing email or password. Skipping sync.");
             return;
         }
 
-        await CoursesService.syncCoursesGlobal(creds.email, creds.password, creds.semesterId);
-        logger.info("CRON: Automated course sync completed successfully.");
+        const semesterId = creds.semesterId != null ? Number(creds.semesterId) : undefined;
+        const syncedSemester = await CoursesService.syncCoursesGlobal(creds.email, creds.password, semesterId);
+        logger.info(`CRON: Automated course sync completed for semester ${syncedSemester}.`);
     } catch (error: any) {
         logger.error(`CRON: Automated course sync failed: ${error.message}`);
     }
@@ -46,23 +48,51 @@ const runKnowledgeBaseSync = async () => {
     }
 };
 
+const runVectorSync = async () => {
+    logger.info("CRON: Starting vector sync safety net...");
+    try {
+        const synced = await RagSyncService.syncUnsyncedChunks(100);
+        logger.info(`CRON: Vector sync complete — ${synced} chunks synced.`);
+    } catch (error: any) {
+        logger.error(`CRON: Vector sync failed: ${error.message}`);
+    }
+};
+
+const runSitemapRefresh = async () => {
+    logger.info("CRON: Starting weekly sitemap refresh...");
+    try {
+        if (ScraperService.running) {
+            logger.warn("CRON: Scraper already running. Skipping sitemap refresh.");
+            return;
+        }
+        const added = await ScraperService.refreshSitemap();
+        logger.info(`CRON: Sitemap refresh queued ${added} URLs.`);
+    } catch (error: any) {
+        logger.error(`CRON: Sitemap refresh failed: ${error.message}`);
+    }
+};
+
 /**
  * Initializes the CRON jobs for the application
  */
 export const initCronJobs = () => {
     logger.info("Initializing background CRON jobs...");
 
-    // Schedule course sync to run every 3 hours 
-    // Format: "0 */3 * * *" -> minute 0, every 3rd hour
     cron.schedule("0 */3 * * *", () => {
         runCourseSync();
     });
 
-    // Schedule knowledge base sync to run daily at 3:00 AM
-    // Format: "0 3 * * *" -> at 03:00 every day
     cron.schedule("0 3 * * *", () => {
         runKnowledgeBaseSync();
     });
 
-    logger.info("CRON jobs active: Course Sync (Every 3 hours), Knowledge Base Sync (Daily at 3 AM).");
+    cron.schedule("0 4 * * *", () => {
+        runVectorSync();
+    });
+
+    cron.schedule("0 2 * * 0", () => {
+        runSitemapRefresh();
+    });
+
+    logger.info("CRON jobs active: Course Sync (3h), KB Sync (daily 3AM), Vector Sync (daily 4AM), Sitemap (Sun 2AM).");
 };

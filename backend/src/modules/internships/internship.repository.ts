@@ -1,4 +1,4 @@
-import { pool, poolConnect } from "../../core/database/connection";
+import { pool, poolConnect, usePostgres } from "../../core/database/connection";
 import { logger } from "../../core/logger/logger";
 
 export interface InternshipReview {
@@ -33,51 +33,55 @@ export class InternshipRepository {
     static async ensureTable(): Promise<void> {
         try {
             await poolConnect;
-            
-            // 1. Ensure Companies table exists
-            await pool.request().query(`
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Companies' AND xtype='U')
-                CREATE TABLE Companies (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    name NVARCHAR(255) NOT NULL,
-                    description NVARCHAR(MAX) NULL,
-                    colors NVARCHAR(255) NULL,
-                    scale FLOAT NOT NULL DEFAULT 0.02,
-                    svgString NVARCHAR(MAX) NULL,
-                    email NVARCHAR(255) NULL,
-                    phone NVARCHAR(255) NULL,
-                    website NVARCHAR(255) NULL,
-                    forceWhiteBack BIT NOT NULL DEFAULT 0,
-                    forceBlackBack BIT NOT NULL DEFAULT 0,
-                    isMetallic BIT NOT NULL DEFAULT 0
-                )
-            `);
-            
-            // Ensure forceBlackBack column exists
-            await pool.request().query(`
-                IF NOT EXISTS (
-                    SELECT * FROM sys.columns 
-                    WHERE object_id = OBJECT_ID('Companies') AND name = 'forceBlackBack'
-                )
-                ALTER TABLE Companies ADD forceBlackBack BIT NOT NULL DEFAULT 0;
-            `);
-            
-            logger.info("Companies table ensured.");
 
-            // 2. Ensure InternshipReviews table exists
-            await pool.request().query(`
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='InternshipReviews' AND xtype='U')
-                CREATE TABLE InternshipReviews (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    companyId INT NOT NULL,
-                    userId NVARCHAR(255) NOT NULL,
-                    userName NVARCHAR(255) NOT NULL,
-                    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
-                    feedback NVARCHAR(MAX) NOT NULL,
-                    createdAt DATETIME2 DEFAULT GETDATE()
-                )
-            `);
-            logger.info("InternshipReviews table ensured.");
+            if (!usePostgres) {
+                // 1. Ensure Companies table exists
+                await pool.request().query(`
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Companies' AND xtype='U')
+                    CREATE TABLE Companies (
+                        id INT IDENTITY(1,1) PRIMARY KEY,
+                        name NVARCHAR(255) NOT NULL,
+                        description NVARCHAR(MAX) NULL,
+                        colors NVARCHAR(255) NULL,
+                        scale FLOAT NOT NULL DEFAULT 0.02,
+                        svgString NVARCHAR(MAX) NULL,
+                        email NVARCHAR(255) NULL,
+                        phone NVARCHAR(255) NULL,
+                        website NVARCHAR(255) NULL,
+                        forceWhiteBack BIT NOT NULL DEFAULT 0,
+                        forceBlackBack BIT NOT NULL DEFAULT 0,
+                        isMetallic BIT NOT NULL DEFAULT 0
+                    )
+                `);
+
+                // Ensure forceBlackBack column exists
+                await pool.request().query(`
+                    IF NOT EXISTS (
+                        SELECT * FROM sys.columns 
+                        WHERE object_id = OBJECT_ID('Companies') AND name = 'forceBlackBack'
+                    )
+                    ALTER TABLE Companies ADD forceBlackBack BIT NOT NULL DEFAULT 0;
+                `);
+
+                logger.info("Companies table ensured.");
+
+                // 2. Ensure InternshipReviews table exists
+                await pool.request().query(`
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='InternshipReviews' AND xtype='U')
+                    CREATE TABLE InternshipReviews (
+                        id INT IDENTITY(1,1) PRIMARY KEY,
+                        companyId INT NOT NULL,
+                        userId NVARCHAR(255) NOT NULL,
+                        userName NVARCHAR(255) NOT NULL,
+                        rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+                        feedback NVARCHAR(MAX) NOT NULL,
+                        createdAt DATETIME2 DEFAULT GETDATE()
+                    )
+                `);
+                logger.info("InternshipReviews table ensured.");
+            } else {
+                logger.info("Companies/InternshipReviews ensured (Postgres schema).");
+            }
 
             // 3. Seed Companies if empty
             const countResult = await pool.request().query("SELECT COUNT(*) AS cnt FROM Companies");
@@ -312,8 +316,8 @@ export class InternshipRepository {
             .input("isMetallic", company.isMetallic ? 1 : 0)
             .query(`
                 INSERT INTO Companies (name, description, colors, scale, svgString, email, phone, website, forceWhiteBack, forceBlackBack, isMetallic)
-                OUTPUT INSERTED.*
                 VALUES (@name, @description, @colors, @scale, @svgString, @email, @phone, @website, @forceWhiteBack, @forceBlackBack, @isMetallic)
+                RETURNING *
             `);
         const row = result.recordset[0];
         return {
@@ -381,7 +385,7 @@ export class InternshipRepository {
 
         if (updates.length === 0) return null;
 
-        updateQuery += updates.join(", ") + " OUTPUT INSERTED.* WHERE id = @id";
+        updateQuery += updates.join(", ") + " WHERE id = @id RETURNING *";
         const result = await request.query(updateQuery);
         const row = result.recordset[0];
         if (!row) return null;
@@ -439,12 +443,13 @@ export class InternshipRepository {
                 FROM InternshipReviews
                 GROUP BY companyId
             ) s
-            OUTER APPLY (
-                SELECT TOP 1 feedback
+            LEFT JOIN LATERAL (
+                SELECT feedback
                 FROM InternshipReviews r
                 WHERE r.companyId = s.companyId
                 ORDER BY r.createdAt DESC
-            ) latest
+                LIMIT 1
+            ) latest ON TRUE
         `);
         return result.recordset;
     }
@@ -462,8 +467,8 @@ export class InternshipRepository {
             .input("feedback", review.feedback)
             .query(`
                 INSERT INTO InternshipReviews (companyId, userId, userName, rating, feedback)
-                OUTPUT INSERTED.*
                 VALUES (@companyId, @userId, @userName, @rating, @feedback)
+                RETURNING *
             `);
         return result.recordset[0];
     }
@@ -504,8 +509,8 @@ export class InternshipRepository {
             .query(`
                 UPDATE InternshipReviews
                 SET rating = @rating, feedback = @feedback
-                OUTPUT INSERTED.*
                 WHERE id = @id AND userId = @userId
+                RETURNING *
             `);
         return result.recordset[0] || null;
     }

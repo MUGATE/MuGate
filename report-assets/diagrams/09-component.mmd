@@ -1,0 +1,41 @@
+flowchart TB
+    subgraph frontend [Frontend Modules]
+        HOME[Home + Auth UI]
+        CHAT[Chatbot Pages]
+        RESUME[ResumeEnhancer]
+        SCHED[Schedule]
+        CAP[Capstone]
+        INT[Internship 3D]
+        EVT[Events]
+        RM[RoadMap]
+        ADM_UI[AdminControl]
+        PROF[Profile]
+    end
+
+    subgraph services [Frontend Services]
+        API_UTIL[utils/api.js]
+        RES_API[resumeApi.js]
+        CHAT_API[chatbotApi.js]
+        OTHERS[capstone events internship admin scraper APIs]
+    end
+
+    subgraph backend [Backend Modules]
+        AUTH_M[auth]
+        AI_M[ai/chatbot + ai/rag]
+        RES_M[resume]
+        GEN_M[scheduling/generator]
+        SYS_M[system/scraper + sync]
+        FEAT_M[capstone events internships roadmap history academic]
+    end
+
+    HOME --> API_UTIL
+    CHAT --> CHAT_API
+    RESUME --> RES_API
+    SCHED --> API_UTIL
+    CAP --> OTHERS
+    API_UTIL --> AUTH_M
+    CHAT_API --> AI_M
+    RES_API --> RES_M
+    API_UTIL --> GEN_M
+    OTHERS --> FEAT_M
+    ADM_UI --> SYS_M

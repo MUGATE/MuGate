@@ -24,21 +24,19 @@ export class CoursesController {
     static async syncCourses(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?.userId;
-            const semesterId = req.body.semesterId;
-
             if (!userId) {
                 res.status(401).json({ success: false, message: "Unauthorized" });
                 return;
             }
 
-            if (!semesterId) {
-                res.status(400).json({ success: false, message: "semesterId is required in the body" });
-                return;
-            }
+            const semesterId = req.body.semesterId != null ? Number(req.body.semesterId) : undefined;
+            const syncedSemesterId = await CoursesService.syncCoursesFromPortal(userId, semesterId);
 
-            await CoursesService.syncCoursesFromPortal(userId, semesterId);
-
-            res.json({ success: true, message: `Courses for semester ${semesterId} synced successfully` });
+            res.json({
+                success: true,
+                message: `Courses for semester ${syncedSemesterId} synced successfully`,
+                semesterId: syncedSemesterId,
+            });
         } catch (err: any) {
             res.status(500).json({ success: false, message: err.message || "Failed to sync courses" });
         }

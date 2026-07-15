@@ -1,9 +1,21 @@
 /* ── Jobsuit-style live resume editor ── */
+/* Must fill the remaining viewport under the navbar and scroll internally —
+   .resume-page is height:100vh + overflow:hidden, so without flex/min-height
+   the CV paper gets clipped with no way to scroll. */
 .re-editor {
-  width: 100%;
+  width: calc(100% - 2 * var(--page-gutter, 24px));
+  max-width: var(--page-max-width-wide, 1400px);
+  margin: 0 auto;
+  padding: 12px 0 20px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
 }
 
 /* Toolbar */
@@ -15,6 +27,7 @@
   padding: 10px 16px;
   border-radius: 14px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 .re-editor-tpl-switch {
   display: inline-flex;
@@ -25,7 +38,7 @@
 .re-editor-tpl-switch button {
   border: none;
   background: none;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   font-size: 13px;
   font-weight: 600;
   padding: 6px 14px;
@@ -44,9 +57,9 @@
 }
 .re-editor-mode,
 .re-editor-export {
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background: rgba(15, 23, 42, 0.35);
-  color: #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 600;
   padding: 7px 14px;
@@ -55,15 +68,34 @@
   transition: all 0.2s;
 }
 .re-editor-mode:hover,
-.re-editor-export:hover { border-color: #4a90d9; }
-.re-editor-export { background: #2b5ea7; border-color: #2b5ea7; color: #fff; }
+.re-editor-export:hover { border-color: #4a90d9; color: #2b5ea7; }
+.re-editor-export {
+  background: linear-gradient(135deg, #4a90d9, #2b5ea7);
+  border-color: transparent;
+  color: #fff;
+}
+.re-editor-export:hover { color: #fff; opacity: 0.92; }
 .re-editor-export:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Body: AI panel + document */
+/* Body: AI panel + document — scrollable so tall CVs never clip */
 .re-editor-body {
   display: flex;
   gap: 16px;
   align-items: flex-start;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(74, 144, 217, 0.45) transparent;
+}
+.re-editor-body::-webkit-scrollbar { width: 8px; }
+.re-editor-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(#4a90d9, #2b5ea7);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 .re-editor-ai {
   width: 280px;
@@ -71,12 +103,12 @@
   padding: 18px;
   border-radius: 16px;
   position: sticky;
-  top: 16px;
+  top: 0;
 }
 .re-editor-ai-hint {
   font-size: 12px;
   line-height: 1.5;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   margin: 6px 0 12px;
 }
 .re-editor-ai-label {
@@ -85,19 +117,20 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #94a3b8;
+  color: var(--color-text-muted);
   margin: 10px 0 5px;
 }
 .re-editor-ai-select,
 .re-editor-ai-input {
   width: 100%;
   border-radius: 9px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(15, 23, 42, 0.4);
-  color: #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: 13px;
   font-family: inherit;
   padding: 8px 10px;
+  box-sizing: border-box;
 }
 .re-editor-ai-input { resize: vertical; }
 .re-editor-ai-select:focus,
@@ -120,9 +153,9 @@
 .re-editor-ai-undo {
   width: 100%;
   margin-top: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-border-strong);
   border-radius: 10px;
-  background: #fff;
+  background: var(--color-surface);
   color: #2b5ea7;
   font-size: 12.5px;
   font-weight: 600;
@@ -130,18 +163,18 @@
   cursor: pointer;
   transition: background 0.2s, opacity 0.2s;
 }
-.re-editor-ai-undo:hover { background: #f1f5f9; }
+.re-editor-ai-undo:hover { background: var(--color-bg); }
 .re-editor-ai-undo:disabled { opacity: 0.55; cursor: not-allowed; }
 .re-editor-note {
   margin: 10px 0 0;
   font-size: 12px;
-  color: #4a90d9;
+  color: #2b5ea7;
   line-height: 1.4;
 }
 .re-editor-ai-foot {
   margin: 12px 0 0;
   font-size: 11px;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 /* Document paper */
@@ -150,26 +183,28 @@
   min-width: 0;
   display: flex;
   justify-content: center;
+  padding-bottom: 24px;
 }
 .re-editor-doc-paper {
   width: 100%;
   max-width: 760px;
-  background: #ffffff;
-  color: #111827;
+  background: var(--color-surface);
+  color: var(--color-text);
   border-radius: 6px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(120, 140, 170, 0.18);
   padding: 48px 54px;
 }
 
 /* Document typography (resembles the generated PDF) */
 .re-doc { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.45; }
 .re-doc-head { text-align: center; margin-bottom: 10px; }
-.re-doc-name { font-size: 26px; font-weight: 700; margin: 0; color: #111827; }
+.re-doc-name { font-size: 26px; font-weight: 700; margin: 0; color: var(--color-text); }
 .re-doc-name-lg { font-size: 30px; }
 .re-doc-contact { font-size: 12px; color: #374151; margin-top: 4px; }
 .re-doc-contact-edit { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
 .re-doc-section { margin-top: 14px; }
-.re-doc-section-title { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; margin: 0; color: #111827; }
+.re-doc-section-title { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; margin: 0; color: var(--color-text); }
 .re-doc-hr { height: 1px; background: #111827; margin: 3px 0 7px; }
 .re-doc-entry { position: relative; margin-bottom: 10px; }
 .re-doc-entry-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
@@ -194,7 +229,7 @@
   box-sizing: border-box;
 }
 .re-edit-input:hover { background: rgba(74, 144, 217, 0.12); }
-.re-edit-input:focus { outline: none; border-color: #4a90d9; background: #fff; }
+.re-edit-input:focus { outline: none; border-color: #4a90d9; background: var(--color-surface); }
 .re-edit-textarea { resize: none; overflow: hidden; display: block; }
 .re-doc-contact-edit .re-edit-input { width: auto; min-width: 120px; text-align: center; font-size: 12px; }
 .re-doc-meta .re-edit-input { width: auto; min-width: 70px; text-align: right; }
@@ -244,7 +279,31 @@
 
 /* Responsive */
 @media (max-width: 900px) {
-  .re-editor-body { flex-direction: column; }
-  .re-editor-ai { width: 100%; position: static; }
-  .re-editor-doc-paper { padding: 28px 22px; }
+  .re-editor {
+    width: calc(100% - 2 * var(--page-gutter, 16px));
+    padding: 8px 0 16px;
+  }
+  .re-editor-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .re-editor-ai {
+    width: 100%;
+    position: static;
+  }
+  .re-editor-doc-paper {
+    padding: 28px 22px;
+  }
+}
+
+@media (max-width: 640px) {
+  .re-editor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .re-editor-tpl-switch,
+  .re-editor-actions {
+    width: 100%;
+    justify-content: center;
+  }
 }

@@ -1,0 +1,31 @@
+# MuGate monorepo — only upload what the mobile EAS build needs.
+.git/
+backend/
+frontend/
+supabase/
+scripts/
+report-assets/
+.vite/
+.vscode/
+*.docx
+**/*.md
+**/node_modules/
+**/.expo/
+**/.git/
+**/*.log
+**/dist/
+**/coverage/
+**/.env
+**/.env.*
+!**/.env.example
+
+# Mobile extras (reinstalled / not needed on server)
+mobile/node_modules/
+mobile/.expo/
+mobile/scripts/
+mobile/.claude/
+mobile/android/
+mobile/ios/
+mobile/*.apk
+mobile/*.aab
+mobile/eas-archive-check/

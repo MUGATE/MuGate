@@ -1,8 +1,10 @@
 /* ===== AI Chat Component Styles ===== */
 
 .re-right-col {
-  width: 205px;
-  min-width: 195px;
+  /* Fluid chat panel: wider on desktop, still leaves room for the CV preview */
+  width: clamp(280px, 26vw, 360px);
+  min-width: 260px;
+  max-width: 100%;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -253,8 +255,9 @@
 /* Responsive Columns */
 @media (max-width: 1100px) {
   .re-right-col {
-    width: 340px;
-    min-width: 280px;
+    width: clamp(280px, 38vw, 380px);
+    min-width: 260px;
+    max-width: 100%;
     overflow: visible;
     min-height: auto;
   }
@@ -269,6 +272,7 @@
   .re-right-col {
     width: 100%;
     min-width: unset;
+    max-width: none;
     overflow: visible;
     min-height: auto;
   }
@@ -277,4 +281,24 @@
     flex: none;
     overflow: hidden;
   }
+}
+
+[data-theme="dark"] .chat-subtitle {
+  color: #c5d0e0 !important;
+}
+[data-theme="dark"] .re-section-title,
+[data-theme="dark"] .chat-header .re-section-title {
+  color: #f8fafc !important;
+}
+[data-theme="dark"] .chat-input {
+  color: #f8fafc;
+  background: #243352;
+  border-color: rgba(170, 195, 235, 0.35);
+}
+[data-theme="dark"] .chat-input::placeholder {
+  color: #94a3b8;
+}
+[data-theme="dark"] .chat-header,
+[data-theme="dark"] .chat-input-area {
+  border-color: rgba(255, 255, 255, 0.1);
 }

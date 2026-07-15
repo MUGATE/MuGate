@@ -1,8 +1,11 @@
 import { HistoryRepository } from "./history.repository";
 import { PortalScraper } from "../system/scraper/portal.scraper";
-import { pool } from "../../core/database/connection";
+import { pool, DbSql } from "../../core/database/connection";
 import { decrypt } from "../../core/security/encryption.util";
 import { logger } from "../../core/logger/logger";
+import { normalizeAcademicStatus } from "../../core/utils/academic-status.util";
+import { CS_CURRICULUM } from "../scheduling/generator/curriculum";
+import { isCompletedStatus } from "../../core/utils/academic-status.util";
 
 export class HistoryService {
     static async getStudentHistory(userId: string) {
@@ -16,8 +19,50 @@ export class HistoryService {
     }
 
     static async checkEligibility(userId: string, courseId: string) {
-        // TODO: Check prerequisites against completed courses
-        return { eligible: true, missingPrereqs: [] };
+        const courseCode = String(courseId || "").trim().toUpperCase();
+        if (!courseCode) {
+            return { eligible: false, missingPrereqs: [] as string[] };
+        }
+
+        const curriculum = CS_CURRICULUM.find(
+            (c) => c.courseCode.toUpperCase() === courseCode
+        );
+
+        const history = await HistoryRepository.findByUserId(userId);
+        const completed = new Set(
+            history
+                .filter((row: any) => isCompletedStatus(row.status))
+                .map((row: any) => String(row.courseCode || "").toUpperCase())
+        );
+
+        if (!curriculum) {
+            // Unknown course — allow only if not already completed
+            return {
+                eligible: !completed.has(courseCode),
+                missingPrereqs: [] as string[],
+            };
+        }
+
+        const missingPrereqs = curriculum.prerequisites.filter(
+            (code) => !completed.has(code.toUpperCase())
+        );
+
+        return {
+            eligible: missingPrereqs.length === 0 && !completed.has(courseCode),
+            missingPrereqs,
+        };
+    }
+
+    static async getAcademicSummary(userId: string) {
+        const result = await pool.request()
+            .input("userId", userId)
+            .query("SELECT gpa, gpaUpdatedAt FROM Users WHERE id = @userId");
+
+        const row = result.recordset[0];
+        return {
+            gpa: row?.gpa != null ? Number(row.gpa) : null,
+            gpaUpdatedAt: row?.gpaUpdatedAt ?? null,
+        };
     }
 
     static async syncStudentHistoryFromPortal(userId: string) {
@@ -37,20 +82,27 @@ export class HistoryService {
         const passwordString = decrypt(creds.encryptedPassword);
 
         // 2. Run the Playwright Scraper
-        const historyData = await PortalScraper.extractHistory(universityIdString, passwordString);
+        const scrapeResult = await PortalScraper.extractHistory(universityIdString, passwordString);
+        const historyData = scrapeResult?.courses ?? [];
+        const scrapedGpa = scrapeResult?.gpa ?? null;
 
         if (!historyData || historyData.length === 0) {
             logger.warn(`No history found for user ${userId}`);
+            // Still persist GPA if we scraped it without course rows
+            if (scrapedGpa != null) {
+                await this.persistGpa(userId, scrapedGpa);
+            }
             return;
         }
 
         // 3. UPSERT the scraped data into AcademicHistory table
         // Start a transaction for bulk upsert
-        const transaction = new (require("mssql").Transaction)(pool);
+        const transaction = new DbSql.Transaction(pool as any);
         await transaction.begin();
 
         try {
             for (const course of historyData) {
+                const status = normalizeAcademicStatus(course.status);
                 // Check if history record already exists
                 const existing = await transaction.request()
                     .input("userId", userId)
@@ -61,7 +113,7 @@ export class HistoryService {
                     // Update
                     await transaction.request()
                         .input("id", existing.recordset[0].id)
-                        .input("status", course.status)
+                        .input("status", status)
                         .input("credits", course.credits)
                         .input("category", course.category)
                         .query(`
@@ -76,7 +128,7 @@ export class HistoryService {
                         .input("courseCode", course.courseCode)
                         .input("courseName", course.courseName)
                         .input("credits", course.credits)
-                        .input("status", course.status)
+                        .input("status", status)
                         .input("category", course.category)
                         .query(`
                             INSERT INTO AcademicHistory (userId, courseCode, courseName, credits, status, category)
@@ -93,5 +145,24 @@ export class HistoryService {
             logger.error(`Failed to sync history for user ${userId}:`, error);
             throw error;
         }
+
+        // 4. Persist GPA when scraped (overwrite previous value, including wrong ones)
+        if (scrapedGpa != null) {
+            await this.persistGpa(userId, scrapedGpa);
+        } else {
+            logger.warn(`GPA not found on Student/index.php for user ${userId}; leaving existing value unchanged`);
+        }
+    }
+
+    private static async persistGpa(userId: string, gpa: number) {
+        await pool.request()
+            .input("userId", userId)
+            .input("gpa", gpa)
+            .query(`
+                UPDATE Users
+                SET gpa = @gpa, gpaUpdatedAt = GETDATE(), updatedAt = GETDATE()
+                WHERE id = @userId
+            `);
+        logger.info(`Updated GPA to ${gpa} for user ${userId}`);
     }
 }

@@ -1,7 +1,7 @@
 /* ===== Schedule Page ===== */
 .schedule-page {
   min-height: 100vh;
-  background-color: #f8fafb;
+  background-color: var(--color-bg);
   padding-bottom: 60px;
   position: relative;
   overflow: hidden;
@@ -21,64 +21,12 @@
 
 /* ===== Glass Card Base (Glassmorphism) ===== */
 .glass-card {
-  background-color: #fafcfe;
+  background-color: var(--color-glass-solid);
   border-radius: 20px;
-  box-shadow: 0 4px 20px #f1f3f4;
-  border: 1px solid rgba(0, 0, 0, 0.01);
+  box-shadow: 0 4px 20px var(--color-shadow);
+  border: 1px solid var(--color-border);
   position: relative;
   z-index: 2;
-}
-
-/* ===== Navbar ===== */
-.schedule-navbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 36px;
-  padding: 16px 40px;
-  margin: 16px 140px 0;
-  border-radius: 20px;
-  position: relative;
-  z-index: 10;
-}
-
-.schedule-navbar a {
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-  color: #3a3a3a;
-  padding: 8px 18px;
-  border-radius: 12px;
-  transition: all 0.25s ease;
-  letter-spacing: 0.01em;
-}
-
-.schedule-navbar a:hover {
-  color: #1a6bdb;
-  background: rgba(26, 107, 219, 0.08);
-}
-
-.schedule-navbar a.active {
-  color: #1a6bdb;
-  background: rgba(26, 107, 219, 0.1);
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(26, 107, 219, 0.1);
-}
-
-.schedule-navbar .nav-avatar {
-  position: absolute;
-  right: 24px;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.schedule-navbar .nav-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 /* ===== Main Layout ===== */
@@ -86,10 +34,14 @@
   display: flex;
   gap: 16px;
   padding: 16px 0 0;
-  margin: 0 140px;
+  margin: 0 auto;
+  max-width: var(--page-max-width-wide);
+  width: 100%;
+  padding-inline: var(--page-gutter);
   align-items: flex-start;
   position: relative;
   z-index: 2;
+  box-sizing: border-box;
 }
 
 /* ===== Preferences Panel ===== */
@@ -474,9 +426,9 @@
   padding: 10px 14px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--color-glass-card);
   font-size: 13px;
-  color: #333;
+  color: var(--color-text-secondary);
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
@@ -507,7 +459,7 @@
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  color: #333;
+  color: var(--color-text-secondary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -516,7 +468,7 @@
 }
 
 .regenerate-btn:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--color-glass);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
@@ -544,7 +496,8 @@
   .schedule-layout {
     flex-direction: column;
     align-items: center;
-    padding: 20px;
+    padding: 20px var(--page-gutter) 0;
+    margin: 0 auto;
   }
 
   .preferences-panel,
@@ -559,24 +512,9 @@
     width: 100%;
     max-width: 700px;
   }
-
-  .schedule-navbar {
-    margin: 12px 20px 0;
-  }
 }
 
 @media (max-width: 640px) {
-  .schedule-navbar {
-    gap: 12px;
-    padding: 14px 20px;
-    margin: 8px 12px 0;
-    flex-wrap: wrap;
-  }
-
-  .schedule-navbar a {
-    font-size: 13px;
-    padding: 6px 12px;
-  }
 
   .schedule-actions {
     flex-direction: column;
@@ -615,10 +553,10 @@
 }
 
 .modal-card {
-  background-color: #fafcfe;
+  background-color: var(--color-glass-solid);
   border-radius: 20px;
-  box-shadow: 0 4px 20px #f1f3f4;
-  border: 1px solid rgba(0, 0, 0, 0.01);
+  box-shadow: 0 4px 20px var(--color-shadow);
+  border: 1px solid var(--color-border);
   padding: 28px 32px;
   min-width: 320px;
   max-width: 400px;
@@ -685,7 +623,7 @@
 }
 
 .modal-close:hover {
-  color: #333;
+  color: var(--color-text-secondary);
 }
 
 .modal-header {
@@ -798,3 +736,99 @@
   font-size: 13px;
   color: #555;
 }
+/* ── Dark mode: readable white text on dark panels ── */
+[data-theme="dark"] .schedule-page {
+  color: #f0f4f8;
+}
+
+[data-theme="dark"] .preferences-header h2,
+[data-theme="dark"] .preference-text h4,
+[data-theme="dark"] .schedule-grid thead th,
+[data-theme="dark"] .modal-header h3,
+[data-theme="dark"] .modal-value,
+[data-theme="dark"] .modal-slots-title,
+[data-theme="dark"] .modal-slot-day {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc;
+}
+
+[data-theme="dark"] .preference-text p,
+[data-theme="dark"] .schedule-placeholder p,
+[data-theme="dark"] .schedule-grid tbody td:first-child,
+[data-theme="dark"] .modal-label,
+[data-theme="dark"] .modal-slot-time,
+[data-theme="dark"] .modal-close {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .glass-card,
+[data-theme="dark"] .course-select,
+[data-theme="dark"] .schedule-btn-secondary {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .course-select {
+  color: #f0f4f8;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] .preference-item {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .modal-divider {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .modal-slot {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Pastel course tiles stay light — keep dark ink readable on them */
+[data-theme="dark"] .course-block .course-name {
+  color: #1a1a2e !important;
+}
+[data-theme="dark"] .course-block .course-meta,
+[data-theme="dark"] .course-block .course-instructor {
+  color: #334155 !important;
+}
+
+/* Right "Edit Instructors" panel */
+[data-theme="dark"] .edit-panel h2,
+[data-theme="dark"] .edit-instructor-item label {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .instructor-select {
+  color: #f0f4f8 !important;
+  background-color: #1a2438;
+  border-color: rgba(255, 255, 255, 0.18);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+[data-theme="dark"] .instructor-select option {
+  background: #1a2438;
+  color: #f0f4f8;
+}
+
+[data-theme="dark"] .regenerate-btn {
+  color: #f0f4f8 !important;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .regenerate-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .edit-panel-scroll {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+[data-theme="dark"] .edit-panel-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+

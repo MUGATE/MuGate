@@ -2,8 +2,34 @@ import { pool } from "../../../core/database/connection";
 import { CS_CURRICULUM, CurriculumCourse } from "./curriculum";
 import { logger } from "../../../core/logger/logger";
 import { HistoryService } from "../../history/history.service";
+import { CoursesService } from "../../academic/courses/courses.service";
+import { env } from "../../../config/env";
+import { isCompletedStatus } from "../../../core/utils/academic-status.util";
 
 export class GeneratorService {
+
+    private static async getLatestSemesterFromDb(): Promise<number | undefined> {
+        const result = await pool.request().query(`
+            SELECT semester FROM Courses
+            WHERE semester IS NOT NULL AND semester <> ''
+            ORDER BY CASE WHEN semester ~ '^[0-9]+$' THEN semester::int ELSE NULL END DESC NULLS LAST
+            LIMIT 1
+        `);
+        const val = parseInt(result.recordset[0]?.semester, 10);
+        return !isNaN(val) && val > 0 ? val : undefined;
+    }
+
+    private static async hasCachedOfferings(semesterId: number): Promise<boolean> {
+        const result = await pool.request()
+            .input("semester", semesterId.toString())
+            .query(`
+                SELECT COUNT(*) as cnt
+                FROM CourseSections s
+                INNER JOIN Courses c ON c.id = s.courseId
+                WHERE c.semester = @semester
+            `);
+        return (result.recordset[0]?.cnt ?? 0) > 0;
+    }
 
     /**
      * Determine which courses from the curriculum a student is eligible to take.
@@ -12,10 +38,10 @@ export class GeneratorService {
     static async getEligibleCourses(userId: string): Promise<CurriculumCourse[]> {
         logger.info(`Calculating eligible courses for user ${userId}`);
 
-        // 1. Fetch academic history
+        // 1. Fetch academic history (filter completed in code for legacy portal strings)
         const historyResult = await pool.request()
             .input("userId", userId)
-            .query("SELECT courseCode, status, category FROM AcademicHistory WHERE userId = @userId AND status IN ('Passed', 'Transferred')");
+            .query("SELECT courseCode, status, category FROM AcademicHistory WHERE userId = @userId");
 
         // Helper function to normalize course codes (removes all spaces and capitalizes)
         const normalizeCode = (code: string) => code.replace(/\s+/g, '').toUpperCase();
@@ -24,7 +50,9 @@ export class GeneratorService {
         // Tracks electives of each category the user has already passed
         const fulfilledElectivesByCategory: Record<string, string[]> = {};
 
-        historyResult.recordset.forEach(record => {
+        historyResult.recordset
+            .filter((record: any) => isCompletedStatus(record.status))
+            .forEach((record: any) => {
             passedCourses.add(normalizeCode(record.courseCode));
 
             // If the course has an elective category, track it
@@ -126,7 +154,9 @@ export class GeneratorService {
     /**
      * Main algorithm entry point: Generate optimal, conflict-free schedules
      */
-    static async generateSchedules(userId: string, semesterId: number, preferences: any) {
+    static async generateSchedules(userId: string, semesterId?: number, preferences: any = {}) {
+        let activeSemesterId = semesterId ?? env.currentSemesterId;
+
         // Step 0a: Ensure the user has academic history scraped — if empty, scrape now
         const historyCheck = await pool.request()
             .input("userId", userId)
@@ -139,17 +169,54 @@ export class GeneratorService {
                 logger.info(`Successfully scraped history for user ${userId} before generation.`);
             } catch (err: any) {
                 logger.warn(`Failed to auto-scrape history for ${userId}: ${err.message}`);
+                throw new Error(
+                    "Unable to load your academic history from the MU Portal. Please try again after logging in successfully, or sync history from your profile."
+                );
+            }
+
+            const after = await pool.request()
+                .input("userId", userId)
+                .query("SELECT COUNT(*) as cnt FROM AcademicHistory WHERE userId = @userId");
+            if (after.recordset[0].cnt === 0) {
+                throw new Error(
+                    "No academic history is available yet. Schedule generation cannot run without your course history."
+                );
             }
         }
 
-        // Step 0b: Auto-sync courses from portal to ensure the latest offerings are in the DB
-        try {
-            logger.info(`Auto-syncing courses for semester ${semesterId} before generation...`);
-            const { CoursesService } = require("../courses/courses.service");
-            await CoursesService.syncCoursesFromPortal(userId, semesterId);
-            logger.info(`Course sync completed for semester ${semesterId}.`);
-        } catch (err: any) {
-            logger.warn(`Course auto-sync failed (using existing DB data): ${err.message}`);
+        // Step 0b: Sync offerings from portal unless we already have cached sections for this semester
+        const forceSync = process.env.FORCE_COURSE_SYNC === "true";
+        let shouldSync = forceSync;
+
+        if (!shouldSync) {
+            const cachedSemester = activeSemesterId ?? await this.getLatestSemesterFromDb();
+            if (cachedSemester && await this.hasCachedOfferings(cachedSemester)) {
+                activeSemesterId = cachedSemester;
+                logger.info(`Using cached course offerings for semester ${activeSemesterId} (skipping portal sync)`);
+            } else {
+                shouldSync = true;
+            }
+        }
+
+        if (shouldSync) {
+            try {
+                logger.info(
+                    `Auto-syncing courses for semester ${activeSemesterId ?? "(auto-detect)"} before generation...`
+                );
+                activeSemesterId = await CoursesService.syncCoursesFromPortal(userId, activeSemesterId);
+                logger.info(`Course sync completed for semester ${activeSemesterId}.`);
+            } catch (err: any) {
+                logger.warn(`Course auto-sync failed (using existing DB data): ${err.message}`);
+                if (!activeSemesterId) {
+                    activeSemesterId = await this.getLatestSemesterFromDb();
+                }
+            }
+        }
+
+        if (!activeSemesterId) {
+            throw new Error(
+                "Could not determine the current semester. Please try again or set CURRENT_SEMESTER_ID in the server environment."
+            );
         }
 
         // Step 1: Get what they *can* take
@@ -158,9 +225,11 @@ export class GeneratorService {
         // Fetch passed courses to validate corequisites during backtracking
         const historyResult = await pool.request()
             .input("userId", userId)
-            .query("SELECT courseCode, status FROM AcademicHistory WHERE userId = @userId AND status IN ('Passed', 'Transferred')");
+            .query("SELECT courseCode, status FROM AcademicHistory WHERE userId = @userId");
         const passedCourses = new Set<string>();
-        historyResult.recordset.forEach(row => {
+        historyResult.recordset
+            .filter((row: any) => isCompletedStatus(row.status))
+            .forEach((row: any) => {
             passedCourses.add(row.courseCode.replace(/\s+/g, '').toUpperCase());
         });
 
@@ -192,10 +261,10 @@ export class GeneratorService {
         logger.info(`Eligible fixed courses: ${eligibleCodes.join(', ')}`);
         logger.info(`Eligible placeholders: ${eligibleCourses.filter(c => c.isElectivePlaceholder).map(c => `${c.courseCode}(${c.category})`).join(', ')}`);
 
-        logger.info(`Fetching available offerings for semester ${semesterId}...`);
+        logger.info(`Fetching available offerings for semester ${activeSemesterId}...`);
 
         const offeringsResult = await pool.request()
-            .input("semester", semesterId.toString())
+            .input("semester", activeSemesterId.toString())
             .query(`
                 SELECT 
                     c.id as courseId, c.courseCode, c.courseName, c.credits, c.department,
@@ -537,6 +606,7 @@ export class GeneratorService {
 
         return {
             status: "success",
+            semesterId: activeSemesterId,
             eligibleCount: eligibleCourses.length,
             offeringsFound: coursesToSchedule.length,
             validCombinations: generatedSchedules.length,

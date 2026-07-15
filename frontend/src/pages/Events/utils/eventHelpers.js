@@ -1,8 +1,8 @@
 export const TYPE_COLORS = {
-  workshop: "#e6a817",
-  competition: "#d94a4a",
-  hackathon: "#d94a4a",
-  talk: "#4a90d9",
+  workshop: "#c9a227",
+  competition: "#8b5cf6",
+  hackathon: "#7c3aed",
+  talk: "#2b5ea7",
   meetup: "#48c6a0",
 };
 
@@ -31,6 +31,17 @@ export const getDaysUntil = (dateStr) => {
   const target = new Date(dateStr + "T00:00:00");
   const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
   return diff;
+};
+
+/** Days until an event is over (uses endDate when present). */
+export const getDaysUntilEnd = (event) => {
+  const endOrStart = event?.endDate || event?.date;
+  return getDaysUntil(endOrStart);
+};
+
+export const isEventPast = (event) => {
+  const days = getDaysUntilEnd(event);
+  return days !== null && days < 0;
 };
 
 export const isThisWeek = (dateStr) => {

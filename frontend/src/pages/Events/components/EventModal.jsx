@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import EventDatePicker from './EventDatePicker';
 
 const EventModal = ({ isOpen, onClose, editingEvent, onSave, todayStr }) => {
   // Form states
@@ -158,12 +159,12 @@ const EventModal = ({ isOpen, onClose, editingEvent, onSave, todayStr }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', padding: '30px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <h2 style={{ marginBottom: '20px', fontWeight: '800', color: '#0f172a' }}>
+    <div className="ev-modal-overlay" onClick={onClose}>
+      <div className="ev-modal-content" onClick={(e) => e.stopPropagation()}>
+        <h2 className="ev-modal-title">
           {editingEvent ? "Edit Pinned Event" : "Pin New Event"}
         </h2>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        <form onSubmit={handleSubmit} className="ev-modal-form">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
             <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>Title *</label>
             <input
@@ -185,13 +186,11 @@ const EventModal = ({ isOpen, onClose, editingEvent, onSave, todayStr }) => {
           <div style={{ display: 'flex', gap: '10px' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
               <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>Start Date *</label>
-              <input
-                type="date"
-                required
-                min={todayStr}
+              <EventDatePicker
                 value={formStartDate}
-                onChange={e => setFormStartDate(e.target.value)}
-                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                onChange={setFormStartDate}
+                minDate={todayStr}
+                required
               />
             </div>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -318,9 +317,9 @@ const EventModal = ({ isOpen, onClose, editingEvent, onSave, todayStr }) => {
             />
             <label htmlFor="formIsFree" style={{ fontSize: '14px', fontWeight: '600', color: '#475569', cursor: 'pointer' }}>This event is free</label>
           </div>
-          <div className="modal-actions" style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-            <button type="button" className="btn-cancel" onClick={onClose} style={{ flex: 1, padding: '12px', borderRadius: '10px', fontWeight: '600', background: '#e2e8f0', color: '#475569', border: 'none', cursor: 'pointer' }}>Cancel</button>
-            <button type="submit" className="btn-save" style={{ flex: 1, padding: '12px', borderRadius: '10px', fontWeight: '600', background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer' }}>Save</button>
+          <div className="ev-modal-actions">
+            <button type="button" className="ev-modal-btn ev-modal-btn-cancel" onClick={onClose}>Cancel</button>
+            <button type="submit" className="ev-modal-btn ev-modal-btn-save">Save</button>
           </div>
         </form>
       </div>

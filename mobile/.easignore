@@ -1,0 +1,16 @@
+# Keep the EAS upload small — used with EAS_NO_VCS + EAS_PROJECT_ROOT=mobile
+node_modules/
+.expo/
+.eas/
+dist/
+web-build/
+android/
+ios/
+*.apk
+*.aab
+*.log
+.DS_Store
+scripts/
+.claude/
+eas-archive-check/
+.git/

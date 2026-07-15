@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { API_BASE_URL } from "../../utils/api";
+import NotchedHeroNav from "../../components/layout/NotchedHeroNav";
 import "./Home.css";
 import heroVideo from "./assets/Videos/MU VIDEO LANDING PAGE.mp4";
 import InstructorCarousel from "./components/DoctorCarousel";
@@ -12,8 +13,6 @@ import EventsShowcase from "./components/EventsShowcase";
 import RoadMapShowcase from "./components/RoadMapShowcase";
 import AboutSummary from "./components/AboutSummary";
 import BottomNavbar from "./components/BottomNavbar";
-
-import logo from "./assets/Images/Logo2 colored.png";
 
 const Section = ({ id, children, className = "", ...rest }) => {
   return (
@@ -30,7 +29,7 @@ const Home = () => {
   const [errorMsg, setErrorMsg] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [profileName, setProfileName] = useState("");
 
   useEffect(() => {
     // Check if token exists on mount
@@ -41,24 +40,15 @@ const Home = () => {
       if (userStr) {
         try {
           const u = JSON.parse(userStr);
-          if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) {
-            setIsAdmin(true);
-          }
+          setProfileName(u?.name || u?.email || "Profile");
         } catch { /* ignore malformed stored user */ }
       }
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("mugate_token");
-    localStorage.removeItem("mugate_user");
-    setIsLoggedIn(false);
-    setIsAdmin(false);
-    setUniversityId("");
-    setPassword("");
-    setValidationErrors({});
-    setErrorMsg("");
-  };
+  const profileInitial = useMemo(() => {
+    return String(profileName || "P").trim().charAt(0).toUpperCase() || "P";
+  }, [profileName]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -100,10 +90,7 @@ const Home = () => {
 
       // Update UI state to hide login block
       setIsLoggedIn(true);
-      if (data.data.user && (data.data.user.isAdmin === true || String(data.data.user.universityId) === "101230004")) {
-        setIsAdmin(true);
-      }
-
+      setProfileName(data.data.user?.name || data.data.user?.email || "Profile");
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
@@ -114,63 +101,31 @@ const Home = () => {
   return (
     <div className="home-container">
       {/* THE ENTIRE WHITE FRAME (TOP, LEFT, RIGHT, BOTTOM) + NAVBAR MOVES AS ONE */}
-      <div className="hero-unified-frame">
-        <nav className="hero-nav-notched">
-          <div className="nav-group-left">
-            <Link to="/internships">Internships</Link>
-            <Link to="/resume-enhancer">Resume</Link>
-            <Link to="/chatbot">Chatbot</Link>
-            <Link to="/schedule">Scheduler</Link>
-            <Link to="/capstone">Capstone</Link>
-          </div>
-
-          <div className="nav-group-center">
-            <div className="branding-logo-box">
-              <img src={logo} alt="MuGate Logo" className="nav-logo-black" />
-              <span className="brand-name-black" style={{ color: "#0e220e" }}>MUGATE</span>
-            </div>
-            <Link to="/events" className="nav-events-link">Events</Link>
-            <Link to="/roadmap" className="nav-events-link" style={{ marginLeft: '10px' }}>RoadMap</Link>
-            <Link to="/about" className="nav-events-link" style={{ marginLeft: '10px' }}>About</Link>
-            {isAdmin && (
-              <Link to="/admin-control" className="nav-events-link" style={{ marginLeft: '10px' }}>Control</Link>
-            )}
-          </div>
-
-          <div className="nav-group-right">
-            {!isLoggedIn ? (
-              <button
-                className="nav-demo-btn-solidroad"
-                onClick={() => {
-                  const el = document.querySelector('[data-page="2"]');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                Start <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255, 255, 255, 0.3)" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
-                  </svg>
-                </span>
-              </button>
-            ) : (
-              <div style={{ display: "flex", gap: "8px", alignItems: "center", marginLeft: "12px" }}>
-                <button
-                  className="nav-demo-btn-solidroad"
-                  onClick={handleLogout}
-                >
-                  Logout <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255, 255, 255, 0.3)" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                      <polyline points="12 5 19 12 12 19"></polyline>
-                    </svg>
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
-        </nav>
-      </div>
+      <NotchedHeroNav
+        rightSlot={
+          !isLoggedIn ? (
+            <button
+              className="nav-demo-btn-solidroad"
+              onClick={() => {
+                const el = document.querySelector('[data-page="2"]');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Start <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255, 255, 255, 0.3)" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </span>
+            </button>
+          ) : (
+            <Link to="/profile" className="nav-profile-ref" aria-label="Open profile page">
+              <span className="nav-profile-avatar">{profileInitial}</span>
+              <span>Profile</span>
+            </Link>
+          )
+        }
+      />
 
       {/* VIDEO HERO SECTION */}
       <section className="video-hero" data-page="1">
@@ -349,6 +304,8 @@ const Home = () => {
           <div className="footer-links-group">
             <h4 className="footer-links-heading">Quick Links</h4>
             <Link to="/" className="footer-link">Home</Link>
+            <Link to="/download" className="footer-link">Android App</Link>
+            <Link to="/about" className="footer-link">About</Link>
             <a href="https://ums.mu.edu.lb" target="_blank" rel="noreferrer" className="footer-link">University Portal</a>
           </div>
         </div>

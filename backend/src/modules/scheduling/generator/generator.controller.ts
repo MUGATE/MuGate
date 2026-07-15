@@ -8,12 +8,11 @@ export class GeneratorController {
             const userId = (req as any).user.userId;
             const { semesterId, preferences } = req.body;
 
-            if (!semesterId) {
-                res.status(400).json({ success: false, message: "Missing required field: semesterId" });
-                return;
-            }
-
-            const result = await GeneratorService.generateSchedules(userId, semesterId, preferences || {});
+            const result = await GeneratorService.generateSchedules(
+                userId,
+                semesterId != null ? Number(semesterId) : undefined,
+                preferences || {}
+            );
 
             res.status(200).json({
                 success: true,

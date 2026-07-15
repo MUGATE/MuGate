@@ -23,9 +23,19 @@ CREATE TABLE Users (
     passwordHash    NVARCHAR(255)    NOT NULL,
     name            NVARCHAR(255)    NOT NULL,
     universityId    NVARCHAR(50)     NULL,
+    gpa             DECIMAL(3,2)     NULL,
+    gpaUpdatedAt    DATETIME2        NULL,
     createdAt       DATETIME2        NOT NULL DEFAULT GETDATE(),
     updatedAt       DATETIME2        NOT NULL DEFAULT GETDATE()
 );
+GO
+
+-- Ensure GPA columns exist on older databases
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'gpa')
+    ALTER TABLE Users ADD gpa DECIMAL(3,2) NULL;
+GO
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'gpaUpdatedAt')
+    ALTER TABLE Users ADD gpaUpdatedAt DATETIME2 NULL;
 GO
 
 -- ============================================

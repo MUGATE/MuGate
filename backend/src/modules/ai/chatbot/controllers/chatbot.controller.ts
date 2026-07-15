@@ -11,9 +11,12 @@ export class ChatbotController {
     static async createSession(req: Request, res: Response) {
         try {
             // @ts-ignore
-            const user = req.user; // Set by optionalAuth middleware
-            const userId = user ? user.userId : null;
-            const userName = user ? user.name : undefined;
+            const user = req.user;
+            if (!user?.userId) {
+                return res.status(401).json({ success: false, message: "Authentication required." });
+            }
+            const userId = user.userId;
+            const userName = user.name;
 
             const dto: CreateSessionDto = req.body;
             const source = dto.source === "resume" ? "resume" : "chat";
@@ -30,15 +33,8 @@ export class ChatbotController {
         try {
             // @ts-ignore
             const user = req.user;
-            if (!user) {
-                // For anonymous users, check if session IDs were sent as query param
-                const idsParam = req.query.ids as string;
-                if (idsParam) {
-                    const sessionIds = idsParam.split(",").map(id => id.trim()).filter(Boolean);
-                    const sessions = await ChatbotMemoryService.getSessionsByIds(sessionIds);
-                    return res.status(200).json({ success: true, sessions });
-                }
-                return res.status(200).json({ success: true, sessions: [] });
+            if (!user?.userId) {
+                return res.status(401).json({ success: false, message: "Authentication required." });
             }
 
             const sessions = await ChatbotMemoryService.getSessions(user.userId);

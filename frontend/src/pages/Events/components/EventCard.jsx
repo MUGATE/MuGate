@@ -1,11 +1,11 @@
 import React from 'react';
-import { TYPE_COLORS, TYPE_LABELS, formatDate, getDaysUntil, isThisWeek, getUniqueEventImage } from '../utils/eventHelpers';
+import { TYPE_COLORS, TYPE_LABELS, formatDate, getDaysUntil, isEventPast, isThisWeek, getUniqueEventImage } from '../utils/eventHelpers';
 
 const EventCard = ({ event }) => {
   const borderColor = TYPE_COLORS[event.type] || "#999";
   const daysUntil = getDaysUntil(event.date);
   const thisWeek = isThisWeek(event.date);
-  const isPast = daysUntil !== null && daysUntil < 0;
+  const isPast = isEventPast(event);
 
   // Check if URL is a generic/root page (not a specific event registration)
   const isGeneric = (() => {

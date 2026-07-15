@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { DndContext, useDroppable, closestCenter } from "@dnd-kit/core";
 import CourseBox from "./components/CourseBox";
 import CourseModal from "./components/CourseModal";
 import { API_BASE_URL } from "../../utils/api";
+import FloatingProfileIcon from "../../components/FloatingProfileIcon";
+import GlassNavBar from "../../components/layout/GlassNavBar";
 import "./RoadMap.css";
 
 const SemesterCell = ({ id, courses, onEdit, onDelete, isGuest }) => {
@@ -179,34 +180,13 @@ const RoadMap = () => {
     return acc;
   }, {});
 
-  const isAdmin = (() => {
-    const userStr = localStorage.getItem("mugate_user");
-    if (userStr) {
-      try {
-        const u = JSON.parse(userStr);
-        if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
-      } catch { /* ignore malformed stored user */ }
-    }
-    return false;
-  })();
-
   return (
     <div className="roadmap-container">
-      <nav className="re-navbar">
-        <Link to="/">Home</Link>
-        <Link to="/internships">Internships</Link>
-        <Link to="/resume-enhancer">Resume</Link>
-        <Link to="/chatbot">Chatbot</Link>
-        <Link to="/schedule">Scheduler</Link>
-        <Link to="/capstone">Capstone</Link>
-        <Link to="/events">Events</Link>
-        <Link to="/roadmap" className="active">RoadMap</Link>
-        <Link to="/about">About</Link>
-        {isAdmin && <Link to="/admin-control">Control</Link>}
-        <div className="re-nav-avatar">
-          <img src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68" alt="Profile" />
-        </div>
-      </nav>
+      <GlassNavBar activePath="/roadmap" />
+      <FloatingProfileIcon
+        className="floating-profile-icon--roadmap"
+        navbarSelector=".glass-navbar"
+      />
 
       <div className="roadmap-header">
         <div className="roadmap-title-box">
@@ -255,40 +235,42 @@ const RoadMap = () => {
       )}
 
       <DndContext onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
-        <div className="roadmap-grid">
-          <div className="roadmap-col-headers">
-            <div></div> {/* Empty for year label */}
-            <div className="col-header">FALL</div>
-            <div className="col-header">SPRING</div>
-            <div className="col-header">SUMMER</div>
-          </div>
-
-          {YEARS.map(year => (
-            <div key={`year-${year}`} className="roadmap-row">
-              <div className="row-header">YEAR {year}</div>
-              <SemesterCell
-                id={`${year}-Fall`}
-                courses={getCoursesForCell(year, "Fall")}
-                onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
-                onDelete={handleDeleteCourse}
-                isGuest={isGuest}
-              />
-              <SemesterCell
-                id={`${year}-Spring`}
-                courses={getCoursesForCell(year, "Spring")}
-                onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
-                onDelete={handleDeleteCourse}
-                isGuest={isGuest}
-              />
-              <SemesterCell
-                id={`${year}-Summer`}
-                courses={getCoursesForCell(year, "Summer")}
-                onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
-                onDelete={handleDeleteCourse}
-                isGuest={isGuest}
-              />
+        <div className="roadmap-scroll">
+          <div className="roadmap-grid">
+            <div className="roadmap-col-headers">
+              <div></div> {/* Empty for year label */}
+              <div className="col-header">FALL</div>
+              <div className="col-header">SPRING</div>
+              <div className="col-header">SUMMER</div>
             </div>
-          ))}
+
+            {YEARS.map(year => (
+              <div key={`year-${year}`} className="roadmap-row">
+                <div className="row-header">YEAR {year}</div>
+                <SemesterCell
+                  id={`${year}-Fall`}
+                  courses={getCoursesForCell(year, "Fall")}
+                  onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
+                  onDelete={handleDeleteCourse}
+                  isGuest={isGuest}
+                />
+                <SemesterCell
+                  id={`${year}-Spring`}
+                  courses={getCoursesForCell(year, "Spring")}
+                  onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
+                  onDelete={handleDeleteCourse}
+                  isGuest={isGuest}
+                />
+                <SemesterCell
+                  id={`${year}-Summer`}
+                  courses={getCoursesForCell(year, "Summer")}
+                  onEdit={(c) => { setEditingCourse(c); setIsModalOpen(true); }}
+                  onDelete={handleDeleteCourse}
+                  isGuest={isGuest}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </DndContext>
 

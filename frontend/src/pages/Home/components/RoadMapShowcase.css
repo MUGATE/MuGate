@@ -1,15 +1,15 @@
 .roadmap-showcase-section {
     width: 100%;
-    background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
+    background: linear-gradient(to bottom, var(--color-surface-muted) 0%, var(--color-page) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 100px 80px;
+    padding: 100px var(--page-gutter);
     overflow: hidden;
 }
 
 .roadmap-showcase-container {
-    max-width: 1300px;
+    max-width: var(--page-max-width);
     width: 100%;
     display: flex;
     align-items: center;
@@ -27,7 +27,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: clamp(2.6rem, 5vw, 3.8rem);
     font-weight: 700;
-    color: #1a1a1a;
+    color: var(--color-text);
     letter-spacing: -0.03em;
     line-height: 1.15;
     margin: 0 0 24px;
@@ -233,7 +233,7 @@
 /* Responsive Styles */
 @media (max-width: 900px) {
     .roadmap-showcase-section {
-        padding: 80px 32px;
+        padding: 80px var(--page-gutter);
     }
 
     .roadmap-showcase-container {

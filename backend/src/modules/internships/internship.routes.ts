@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware, AuthRequest } from "../../core/middleware/auth.middleware";
-import { adminMiddleware } from "../../core/middleware/admin.middleware";
+import { adminMiddleware, isAdminUser } from "../../core/middleware/admin.middleware";
 import { optionalAuthMiddleware } from "../../core/middleware/optionalAuth.middleware";
 import { InternshipRepository } from "./internship.repository";
 import { logger } from "../../core/logger/logger";
@@ -160,6 +160,10 @@ router.post("/reviews/:companyId", authMiddleware, async (req: AuthRequest, res:
         logger.info(`User ${userId} submitted review for company ${companyId}`);
         return res.status(201).json({ success: true, review });
     } catch (err: any) {
+        const msg = String(err?.message || "");
+        if (/unique|duplicate|UQ_InternshipReviews/i.test(msg)) {
+            return res.status(409).json({ success: false, message: "You have already reviewed this company." });
+        }
         logger.error(`Failed to submit review: ${err.message}`);
         return res.status(500).json({ success: false, message: "Failed to submit review." });
     }
@@ -221,7 +225,7 @@ router.delete("/reviews/:reviewId", authMiddleware, async (req: AuthRequest, res
             return res.status(401).json({ success: false, message: "User not authenticated." });
         }
 
-        const isAdmin = String(req.user?.universityId) === "101230004";
+        const isAdmin = await isAdminUser(req.user);
         const deleted = isAdmin
             ? await InternshipRepository.deleteReviewAdmin(reviewId)
             : await InternshipRepository.deleteReview(reviewId, userId);

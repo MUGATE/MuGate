@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import NotchedHeroNav from '../../components/layout/NotchedHeroNav';
 import leftImg from '../../assets/Images/left.png';
 import rightImg from '../../assets/Images/right.png';
-import logo from '../Home/assets/Images/Logo2 colored.png';
 import '../Home/Home.css';
 import './About.css';
 
 const About = () => {
   const navigate = useNavigate();
   const [isPaused, setIsPaused] = useState(false);
-  const [showVideo, setShowVideo] = useState(false);
   const [selectedGuy, setSelectedGuy] = useState(null); // 'ismael' | 'mohammad' | null
   const [typedChars, setTypedChars] = useState(0); // For typing animation
 
@@ -163,56 +162,25 @@ const About = () => {
   }, [selectedGuy, typedChars, fullTextLength]);
 
 
-  const isAdmin = (() => {
-    const userStr = localStorage.getItem("mugate_user");
-    if (userStr) {
-      try {
-        const u = JSON.parse(userStr);
-        if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
-      } catch { /* ignore malformed stored user */ }
-    }
-    return false;
-  })();
-
   return (
-    <div className={`about-page-root ${selectedGuy ? 'focus-mode' : ''}`} style={{ position: 'relative', width: '100%', minHeight: '100vh', background: '#ffffff' }}>
+    <div className={`about-page-root ${selectedGuy ? 'focus-mode' : ''}`} style={{ position: 'relative', width: '100%', minHeight: '100vh', background: 'var(--color-page)' }}>
       {/* ORIGINAL NAVBAR FROM HOME */}
-      <div className="hero-unified-frame">
-        <nav className="hero-nav-notched">
-          <div className="nav-group-left">
-            <Link to="/internships">Internships</Link>
-            <Link to="/resume-enhancer">Resume</Link>
-            <Link to="/chatbot">Chatbot</Link>
-            <Link to="/schedule">Scheduler</Link>
-            <Link to="/capstone">Capstone</Link>
-          </div>
-          <div className="nav-group-center">
-            <div className="branding-logo-box">
-              <img src={logo} alt="MuGate Logo" className="nav-logo-black" />
-              <span className="brand-name-black" style={{ color: "#0e220e" }}>MUGATE</span>
-            </div>
-            <Link to="/events" className="nav-events-link">Events</Link>
-            <Link to="/roadmap" className="nav-events-link" style={{ marginLeft: '10px' }}>RoadMap</Link>
-            <Link to="/about" className="nav-events-link" style={{ marginLeft: '10px' }}>About</Link>
-            {isAdmin && (
-              <Link to="/admin-control" className="nav-events-link" style={{ marginLeft: '10px' }}>Control</Link>
-            )}
-          </div>
-          <div className="nav-group-right">
-            <button
-              className="nav-demo-btn-solidroad"
-              onClick={() => navigate('/')}
-            >
-              Back <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255, 255, 255, 0.3)" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="19" y1="12" x2="5" y2="12"></line>
-                  <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-              </span>
-            </button>
-          </div>
-        </nav>
-      </div>
+      <NotchedHeroNav
+        maskFrame={false}
+        rightSlot={
+          <button
+            className="nav-demo-btn-solidroad"
+            onClick={() => navigate('/')}
+          >
+            Back <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255, 255, 255, 0.3)" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+            </span>
+          </button>
+        }
+      />
 
       <div className="about-container">
         {selectedGuy && <div className="focus-overlay" onClick={() => setSelectedGuy(null)}></div>}
@@ -356,36 +324,7 @@ const About = () => {
               </svg>
             )}
           </button>
-
-          <button
-            className="nav-icon-btn"
-            onClick={() => setShowVideo(true)}
-            title="Play Video"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="23 7 16 12 23 17 23 7"></polygon>
-              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-            </svg>
-          </button>
         </div>
-
-        {/* Video Modal */}
-        {showVideo && (
-          <div className="video-modal-overlay" onClick={() => setShowVideo(false)}>
-            <div className="video-modal-content" onClick={e => e.stopPropagation()}>
-              <button className="close-video-btn" onClick={() => setShowVideo(false)}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
-              <div className="video-placeholder">
-                <h2>Video Coming Soon</h2>
-                <p>The project presentation video will be placed here.</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

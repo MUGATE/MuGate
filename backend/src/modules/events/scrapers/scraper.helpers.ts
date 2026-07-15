@@ -1,6 +1,7 @@
-import { chromium, Browser } from "playwright";
-import { logger } from "../../../core/logger/logger";
+import { Browser } from "playwright";
 import { EventCategory, CATEGORY_KEYWORDS } from "../event.types";
+import { launchHeadlessBrowser } from "../../../core/utils/launchHeadlessBrowser";
+import "../../../core/utils/windowsHideSpawn";
 
 // ─── HTTP Helper ──────────────────────────────────────────
 
@@ -147,7 +148,7 @@ export function isValidEventTitle(title: string): boolean {
 export async function playwrightPageText(url: string, waitMs: number = 5000): Promise<string> {
     let browser: Browser | null = null;
     try {
-        browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
+        browser = await launchHeadlessBrowser();
         const context = await browser.newContext({
             userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         });

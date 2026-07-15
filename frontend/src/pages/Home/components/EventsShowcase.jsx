@@ -8,9 +8,9 @@ import "./EventsShowcase.css";
    ══════════════════════════════════════════════════ */
 
 const TYPE_COLORS = {
-    workshop: "#e6a817",
-    competition: "#d94a4a",
-    hackathon: "#d94a4a",
+    workshop: "#c9a227",
+    competition: "#8b5cf6",
+    hackathon: "#7c3aed",
     talk: "#4a90d9",
     meetup: "#48c6a0",
 };
@@ -436,7 +436,7 @@ const EventsShowcase = (props) => {
                 {/* ── SPLIT LAYOUT ── */}
                 {loading ? (
                     <div className="esc-loading">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e6a817" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="esc-spin">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2b5ea7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="esc-spin">
                             <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                         </svg>
                         <span>Loading events...</span>

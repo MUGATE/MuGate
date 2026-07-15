@@ -10,6 +10,119 @@ import * as path from "path";
  */
 export class CapstoneService {
 
+    private static readonly STOP_WORDS = new Set([
+        'i', 'me', 'my', 'want', 'need', 'help', 'can', 'you', 'the', 'a', 'an',
+        'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+        'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might',
+        'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'about',
+        'like', 'what', 'how', 'which', 'who', 'where', 'when', 'why', 'this',
+        'that', 'these', 'those', 'it', 'its', 'and', 'or', 'but', 'not', 'so',
+        'if', 'then', 'than', 'too', 'very', 'just', 'also', 'more', 'some',
+        'any', 'all', 'each', 'every', 'both', 'few', 'many', 'much', 'no',
+        'idea', 'ideas', 'project', 'projects', 'capstone', 'suggest', 'give',
+        'tell', 'show', 'find', 'get', 'make', 'think', 'know', 'good', 'best',
+        'please', 'something', 'anything', 'interested', 'looking', 'would',
+    ]);
+
+  private static readonly DOMAIN_EXPANSIONS: Record<string, string[]> = {
+        ai: ['ai', 'machine', 'learning', 'neural', 'deep', 'intelligent', 'prediction'],
+        ml: ['machine', 'learning', 'ai', 'model', 'prediction'],
+        iot: ['iot', 'smart', 'sensor', 'internet', 'things', 'automation'],
+        health: ['health', 'medical', 'healthcare', 'patient', 'clinical', 'hospital', 'doctor'],
+        web: ['web', 'website', 'application', 'platform', 'portal'],
+        mobile: ['mobile', 'app', 'application', 'android', 'ios'],
+        ecommerce: ['ecommerce', 'store', 'shop', 'marketplace', 'commerce', 'retail'],
+        game: ['game', 'gaming', 'video', 'horror', 'npc'],
+        education: ['education', 'learning', 'student', 'university', 'course', 'tutoring'],
+        security: ['security', 'pentest', 'intrusion', 'detection', 'cyber'],
+        blockchain: ['blockchain', 'crypto', 'decentralized'],
+        fitness: ['fitness', 'gym', 'workout', 'diet', 'muscle'],
+        food: ['food', 'restaurant', 'delivery', 'meal', 'cooking'],
+        car: ['car', 'vehicle', 'automotive', 'parking', 'transport'],
+    };
+
+    private static extractKeywords(...texts: string[]): string[] {
+        const keywords = new Set<string>();
+
+        for (const text of texts) {
+            const normalized = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+            for (const word of normalized.split(/\s+/)) {
+                if (word.length >= 2 && !this.STOP_WORDS.has(word)) {
+                    keywords.add(word);
+                }
+            }
+        }
+
+        for (const word of Array.from(keywords)) {
+            const expansions = this.DOMAIN_EXPANSIONS[word];
+            if (expansions) {
+                for (const term of expansions) {
+                    keywords.add(term);
+                }
+            }
+        }
+
+        return Array.from(keywords);
+    }
+
+    private static async findRelevantIdeas(
+        message: string,
+        history: Array<{ role: string; content: string }> = []
+    ): Promise<CapstoneIdea[]> {
+        const recentUserMessages = history
+            .filter(msg => msg.role === 'user')
+            .slice(-4)
+            .map(msg => msg.content);
+
+        const searchTexts = [...recentUserMessages, message];
+        const keywords = this.extractKeywords(...searchTexts);
+        const ideasMap = new Map<number, CapstoneIdea>();
+
+        const addIdeas = (ideas: CapstoneIdea[]) => {
+            for (const idea of ideas) {
+                if (idea.id && !ideasMap.has(idea.id)) {
+                    ideasMap.set(idea.id, idea);
+                }
+            }
+        };
+
+        for (const keyword of keywords.slice(0, 10)) {
+            try {
+                addIdeas(await CapstoneRepository.searchIdeas(keyword, 15));
+            } catch (err: any) {
+                logger.warn(`Failed to search ideas for keyword "${keyword}": ${err.message}`);
+            }
+        }
+
+        const combinedQuery = searchTexts.join(' ').trim();
+        if (combinedQuery.length >= 8) {
+            try {
+                addIdeas(await CapstoneRepository.searchIdeas(combinedQuery.slice(0, 120), 20));
+            } catch (err: any) {
+                logger.warn(`Failed to search ideas for combined query: ${err.message}`);
+            }
+        }
+
+        let relevantIdeas = Array.from(ideasMap.values());
+
+        if (relevantIdeas.length < 35) {
+            try {
+                const supplement = await CapstoneRepository.getAllIdeas(60);
+                for (const idea of supplement) {
+                    if (idea.id && !ideasMap.has(idea.id)) {
+                        ideasMap.set(idea.id, idea);
+                    }
+                    if (ideasMap.size >= 50) break;
+                }
+                relevantIdeas = Array.from(ideasMap.values());
+            } catch (err: any) {
+                logger.warn(`Failed to supplement ideas from database: ${err.message}`);
+            }
+        }
+
+        return relevantIdeas.slice(0, 50);
+    }
+
     /**
      * Generate the system prompt for the Capstone AI advisor.
      * Includes relevant capstone ideas from the database as context.
@@ -19,7 +132,7 @@ export class CapstoneService {
 
 CORE RULES:
 1. Be creative, encouraging, and constructive. Help students think through their ideas.
-2. When suggesting ideas, draw from the database of past capstone projects provided below.
+2. When suggesting ideas, draw from the database of past capstone projects provided below — cite real project titles when relevant.
 3. If a student has a niche in mind, find the most relevant past projects and suggest variations or improvements.
 4. Help students refine their ideas by asking clarifying questions about scope, technology, feasibility, and impact.
 5. Suggest project titles, brief descriptions, potential technologies, and expected outcomes.
@@ -27,12 +140,13 @@ CORE RULES:
 7. Do NOT fabricate specific university policies or requirements.
 8. Keep responses conversational and student-friendly.
 9. If the student's idea is outside the scope of capstone projects, gently redirect them.
+10. Prefer referencing MU's historical CSC 499 projects over generic suggestions whenever a close match exists.
 `;
 
         if (ideas.length > 0) {
             prompt += `
-HISTORICAL CAPSTONE PROJECT IDEAS DATABASE:
-The following are real past capstone project ideas from Al Maaref University. Use these as inspiration and reference when helping students. You can suggest similar projects, improved versions, or entirely new ideas inspired by these.
+HISTORICAL CAPSTONE PROJECT IDEAS DATABASE (${ideas.length} relevant past MU projects loaded for this conversation):
+The following are real past CSC 499 capstone project ideas from Al Maaref University. Use these as your primary source when helping students. Reference specific titles, semesters (from tags), and descriptions when making recommendations.
 
 ---
 `;
@@ -64,60 +178,10 @@ NOTE: No historical capstone ideas are currently loaded in the database. You may
     static async chat(
         message: string,
         history: Array<{ role: string; content: string }> = []
-    ): Promise<{ text: string; tokensUsed: number; ideasUsed: number }> {
+    ): Promise<{ text: string; tokensUsed: number; ideasUsed: number; error?: boolean }> {
         try {
-            // Extract keywords from the message for targeted idea retrieval
-            let relevantIdeas: CapstoneIdea[] = [];
-
-            // Try to find ideas matching the user's message keywords
-            if (message.trim().length > 3) {
-                // Extract meaningful keywords (skip common words)
-                const stopWords = new Set([
-                    'i', 'me', 'my', 'want', 'need', 'help', 'can', 'you', 'the', 'a', 'an',
-                    'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
-                    'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might',
-                    'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'about',
-                    'like', 'what', 'how', 'which', 'who', 'where', 'when', 'why', 'this',
-                    'that', 'these', 'those', 'it', 'its', 'and', 'or', 'but', 'not', 'so',
-                    'if', 'then', 'than', 'too', 'very', 'just', 'also', 'more', 'some',
-                    'any', 'all', 'each', 'every', 'both', 'few', 'many', 'much', 'no',
-                    'idea', 'ideas', 'project', 'projects', 'capstone', 'suggest', 'give',
-                    'tell', 'show', 'find', 'get', 'make', 'think', 'know', 'good', 'best',
-                ]);
-
-                const keywords = message
-                    .toLowerCase()
-                    .replace(/[^a-z0-9\s]/g, '')
-                    .split(/\s+/)
-                    .filter(w => w.length > 2 && !stopWords.has(w));
-
-                // Search for each keyword and combine results (deduplicated)
-                const ideasMap = new Map<number, CapstoneIdea>();
-
-                for (const keyword of keywords.slice(0, 5)) { // Limit to 5 keywords
-                    try {
-                        const found = await CapstoneRepository.searchIdeas(keyword, 10);
-                        for (const idea of found) {
-                            if (idea.id && !ideasMap.has(idea.id)) {
-                                ideasMap.set(idea.id, idea);
-                            }
-                        }
-                    } catch (err: any) {
-                        logger.warn(`Failed to search ideas for keyword "${keyword}": ${err.message}`);
-                    }
-                }
-
-                relevantIdeas = Array.from(ideasMap.values()).slice(0, 20); // Cap at 20 ideas for context
-            }
-
-            // If no keyword matches, get a random sample of ideas for general context
-            if (relevantIdeas.length === 0) {
-                try {
-                    relevantIdeas = await CapstoneRepository.getAllIdeas(15);
-                } catch (err: any) {
-                    logger.warn(`Failed to get all ideas: ${err.message}`);
-                }
-            }
+            const relevantIdeas = await this.findRelevantIdeas(message, history);
+            logger.info(`Capstone AI chat: loaded ${relevantIdeas.length} ideas for context`);
 
             // Build the system prompt with relevant ideas
             const systemPrompt = this.buildCapstoneSystemPrompt(relevantIdeas);
@@ -142,13 +206,15 @@ NOTE: No historical capstone ideas are currently loaded in the database. You may
             return {
                 text: "I'm having trouble processing your request right now. Please try again in a moment.",
                 tokensUsed: 0,
-                ideasUsed: 0
+                ideasUsed: 0,
+                error: true,
             };
         }
     }
 
     /**
-     * Seed the database with sample capstone ideas if empty.
+     * Sync CSC 499 historical capstone ideas from the bundled text file into the database.
+     * Inserts only missing rows (matched by title + description); safe to run on every startup.
      */
     static async seedIdeasIfEmpty(): Promise<void> {
         try {
@@ -170,11 +236,8 @@ NOTE: No historical capstone ideas are currently loaded in the database. You may
                 logger.info(`Self-healed CapstoneIdeas table: deleted ${dedupResult.rowsAffected[0]} duplicate rows.`);
             }
 
-            const count = await CapstoneRepository.getIdeasCount();
-            if (count > 0) {
-                logger.info(`CapstoneIdeas already has ${count} entries. Skipping seed.`);
-                return;
-            }
+            const countBefore = await CapstoneRepository.getIdeasCount();
+            logger.info(`Syncing CSC 499 capstone ideas (${countBefore} existing entries)...`);
 
             logger.info("Locating and parsing CSC_499_Projects_All_Semesters.txt...");
 
@@ -195,40 +258,43 @@ NOTE: No historical capstone ideas are currently loaded in the database. You may
                 }
             }
 
+            if (!rawText) {
+                logger.warn("CSC_499_Projects_All_Semesters.txt not found — no historical capstone ideas to sync.");
+                return;
+            }
+
             const parsedIdeas: any[] = [];
-            if (rawText) {
-                const lines = rawText.split('\n');
-                let currentSemester = '';
-                let currentTitle = '';
-                let currentDesc = '';
+            const lines = rawText.split('\n');
+            let currentSemester = '';
+            let currentTitle = '';
+            let currentDesc = '';
 
-                for (const line of lines) {
-                    const semesterMatch = line.match(/──\s*(FALL|SPRING)\s*(\d{4})\s*──/i);
-                    if (semesterMatch) {
-                        currentSemester = `${semesterMatch[2]} ${semesterMatch[1]}`;
-                        continue;
-                    }
-
-                    const titleMatch = line.match(/^\s*\d+\.\s+(.+?)\s*$/);
-                    if (titleMatch) {
-                        if (currentTitle && currentDesc) {
-                            parsedIdeas.push({ semester: currentSemester, title: currentTitle, description: currentDesc });
-                        }
-                        currentTitle = titleMatch[1].trim();
-                        currentDesc = '';
-                        continue;
-                    }
-
-                    const descMatch = line.match(/^\s{4}(.+)$/);
-                    if (descMatch && currentTitle) {
-                        currentDesc = descMatch[1].trim();
-                        continue;
-                    }
+            for (const line of lines) {
+                const semesterMatch = line.match(/──\s*(FALL|SPRING)\s*(\d{4})\s*──/i);
+                if (semesterMatch) {
+                    currentSemester = `${semesterMatch[2]} ${semesterMatch[1]}`;
+                    continue;
                 }
 
-                if (currentTitle && currentDesc) {
-                    parsedIdeas.push({ semester: currentSemester, title: currentTitle, description: currentDesc });
+                const titleMatch = line.match(/^\s*\d+\.\s+(.+?)\s*$/);
+                if (titleMatch) {
+                    if (currentTitle && currentDesc) {
+                        parsedIdeas.push({ semester: currentSemester, title: currentTitle, description: currentDesc });
+                    }
+                    currentTitle = titleMatch[1].trim();
+                    currentDesc = '';
+                    continue;
                 }
+
+                const descMatch = line.match(/^\s{4}(.+)$/);
+                if (descMatch && currentTitle) {
+                    currentDesc = descMatch[1].trim();
+                    continue;
+                }
+            }
+
+            if (currentTitle && currentDesc) {
+                parsedIdeas.push({ semester: currentSemester, title: currentTitle, description: currentDesc });
             }
 
             logger.info(`Parsed ${parsedIdeas.length} projects from CSC_499_Projects_All_Semesters.txt`);
@@ -326,7 +392,8 @@ NOTE: No historical capstone ideas are currently loaded in the database. You may
             logger.info(`Total ideas to insert: ${finalIdeas.length}`);
 
             const inserted = await CapstoneRepository.bulkInsertIdeas(finalIdeas);
-            logger.info(`Successfully seeded ${inserted}/${finalIdeas.length} capstone ideas.`);
+            const countAfter = await CapstoneRepository.getIdeasCount();
+            logger.info(`CSC 499 sync complete: inserted ${inserted} new ideas (${countAfter} total in database).`);
 
             // Self-healing deduplication CTE to clean up any parallel race conditions
             await poolConnect;

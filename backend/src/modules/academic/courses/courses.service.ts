@@ -1,9 +1,9 @@
 import { CoursesRepository } from "./courses.repository";
 import { PortalScraper } from "../../system/scraper/portal.scraper";
-import { pool } from "../../../core/database/connection";
+import { pool, DbSql } from "../../../core/database/connection";
 import { decrypt } from "../../../core/security/encryption.util";
 import { logger } from "../../../core/logger/logger";
-
+import { env } from "../../../config/env";
 export class CoursesService {
     static async getAllCourses() {
         return CoursesRepository.findAll();
@@ -13,9 +13,11 @@ export class CoursesService {
         return CoursesRepository.findById(id);
     }
 
-    static async syncCoursesFromPortal(userId: string, semesterId: number) {
-        logger.info(`Starting course offerings sync for semester ${semesterId} by user ${userId}`);
-
+    static async syncCoursesFromPortal(userId: string, semesterId?: number): Promise<number> {
+        const resolvedHint = semesterId ?? env.currentSemesterId;
+        logger.info(
+            `Starting course offerings sync for semester ${resolvedHint ?? "(auto-detect)"} by user ${userId}`
+        );
         // 1. Get decrypted credentials from DB to perform the scraping
         const credsResult = await pool.request()
             .input("userId", userId)
@@ -29,23 +31,27 @@ export class CoursesService {
         const universityIdString = decrypt(creds.encryptedUsername);
         const passwordString = decrypt(creds.encryptedPassword);
 
-        return await this.syncCoursesGlobal(universityIdString, passwordString, semesterId);
+        return await this.syncCoursesGlobal(universityIdString, passwordString, resolvedHint);
     }
 
     /**
      * Core syncing logic separated so the background CRON job can trigger it globally.
+     * Returns the semester id that was synced (resolved from portal when not provided).
      */
-    static async syncCoursesGlobal(universityIdString: string, passwordString: string, semesterId: number) {
-        // 2. Trigger Playwright to extract the courses
-        const coursesData = await PortalScraper.extractCourses(universityIdString, passwordString, semesterId);
+    static async syncCoursesGlobal(
+        universityIdString: string,
+        passwordString: string,
+        semesterId?: number
+    ): Promise<number> {
+        const { courses: coursesData, semesterId: activeSemesterId } =
+            await PortalScraper.extractCourses(universityIdString, passwordString, semesterId);
 
         if (!coursesData || coursesData.length === 0) {
-            logger.warn(`No courses found for semester ${semesterId}`);
-            return;
+            logger.warn(`No courses found for semester ${activeSemesterId}`);
+            return activeSemesterId;
         }
-
         // 3. UPSERT the scraped data into Courses and CourseSections tables
-        const transaction = new (require("mssql").Transaction)(pool);
+        const transaction = new DbSql.Transaction(pool as any);
         await transaction.begin();
 
         try {
@@ -60,7 +66,8 @@ export class CoursesService {
                 // Upsert Course entity
                 const existingCourse = await transaction.request()
                     .input("courseCode", course.courseCode)
-                    .query("SELECT id FROM Courses WHERE courseCode = @courseCode");
+                    .input("semester", activeSemesterId.toString())
+                    .query("SELECT id FROM Courses WHERE courseCode = @courseCode AND semester = @semester");
 
                 let internalCourseId;
 
@@ -81,11 +88,11 @@ export class CoursesService {
                         .input("courseCode", course.courseCode)
                         .input("courseName", course.courseName)
                         .input("credits", course.credits)
-                        .input("semester", semesterId.toString())
+                        .input("semester", activeSemesterId.toString())
                         .query(`
                             INSERT INTO Courses (courseCode, courseName, credits, semester)
-                            OUTPUT INSERTED.id
                             VALUES (@courseCode, @courseName, @credits, @semester)
+                            RETURNING id
                         `);
                     internalCourseId = insertCourse.recordset[0].id;
                 }
@@ -168,12 +175,14 @@ export class CoursesService {
             }
 
             await transaction.commit();
-            logger.info(`Successfully synced ${coursesData.length} course sections for semester ${semesterId}`);
+            logger.info(`Successfully synced ${coursesData.length} course sections for semester ${activeSemesterId}`);
 
         } catch (error: any) {
             await transaction.rollback();
             logger.error(`Failed to sync courses:`, error);
             throw error;
         }
+
+        return activeSemesterId;
     }
 }

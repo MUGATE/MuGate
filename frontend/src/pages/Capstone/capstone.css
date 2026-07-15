@@ -8,48 +8,13 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background-color: #f8fafb;
-  padding: 16px 16px 16px;
+  background-color: var(--color-bg);
+  padding: 16px var(--page-gutter);
   gap: 12px;
+  box-sizing: border-box;
 }
 
-/* ─── Navbar ───────────────────────────────────────────── */
-.capstone-navbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 36px;
-  padding: 16px 40px;
-  border-radius: 20px;
-  background-color: #fafcfe;
-  box-shadow: 0 4px 20px #f1f3f4;
-  border: 1px solid rgba(0, 0, 0, 0.01);
-  flex-shrink: 0;
-  z-index: 10;
-}
-
-.capstone-navbar a {
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-  color: #3a3a3a;
-  padding: 8px 18px;
-  border-radius: 12px;
-  transition: all 0.25s ease;
-  letter-spacing: 0.01em;
-}
-
-.capstone-navbar a:hover {
-  color: #1a6bdb;
-  background: rgba(26, 107, 219, 0.08);
-}
-
-.capstone-navbar a.active {
-  color: #1a6bdb;
-  background: rgba(26, 107, 219, 0.1);
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(26, 107, 219, 0.1);
-}
+/* Navbar — see GlassNavBar.css */
 
 /* ─── Body: Sidebar + Main ─────────────────────────────── */
 .capstone-body {
@@ -58,6 +23,9 @@
   gap: 16px;
   overflow: hidden;
   min-height: 0;
+  max-width: var(--page-max-width-wide);
+  margin-inline: auto;
+  width: 100%;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -102,10 +70,10 @@
 .capstone-sidebar {
   width: 260px;
   min-width: 260px;
-  background-color: #fafcfe;
+  background-color: var(--color-glass-solid);
   border-radius: 20px;
-  box-shadow: 0 4px 20px #f1f3f4;
-  border: 1px solid rgba(0, 0, 0, 0.01);
+  box-shadow: 0 4px 20px var(--color-shadow);
+  border: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -215,7 +183,7 @@
 }
 
 .cs-feature-item.active .cs-feature-label {
-  color: #333;
+  color: var(--color-text-secondary);
 }
 
 .cs-feature-desc {
@@ -233,7 +201,7 @@
   border-top: 1px solid rgba(0,0,0,0.06);
   margin-top: auto;
   border-radius: 8px;
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid rgba(0,0,0,0.05);
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
@@ -253,7 +221,7 @@
 .cs-profile-name {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-secondary);
   display: block;
   white-space: nowrap;
   overflow: hidden;
@@ -277,15 +245,15 @@
 .capstone-main {
   flex: 1;
   overflow-y: auto;
-  background-color: #fafcfe;
+  background-color: var(--color-glass-solid);
   background-image:
     radial-gradient(ellipse at 50% 90%, #e8e9f4 0%, transparent 60%),
     radial-gradient(ellipse at 80% 80%, #f1f7ee 0%, transparent 50%),
     radial-gradient(ellipse at 20% 80%, #f1f7ee 0%, transparent 50%),
     radial-gradient(ellipse at 50% 20%, #ffffff 0%, transparent 60%);
   border-radius: 20px;
-  box-shadow: 0 4px 20px #f1f3f4;
-  border: 1px solid rgba(0, 0, 0, 0.01);
+  box-shadow: 0 4px 20px var(--color-shadow);
+  border: 1px solid var(--color-border);
   position: relative;
 }
 
@@ -358,7 +326,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 12px;
   flex: 1;
@@ -412,7 +380,7 @@
   gap: 8px;
   padding: 10px 18px;
   border: 1px solid rgba(0,0,0,0.08);
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 12px;
   font-size: 13px;
   font-weight: 600;
@@ -449,9 +417,9 @@
   padding: 10px 14px;
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-surface);
   font-size: 13px;
-  color: #333;
+  color: var(--color-text-secondary);
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
@@ -482,7 +450,7 @@
 
 /* ─── Add Partner Form ─────────────────────────────────── */
 .cs-add-form {
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid rgba(0,0,0,0.06);
   border-radius: 16px;
   padding: 24px;
@@ -599,7 +567,7 @@
 }
 
 .cs-partner-card {
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid rgba(0,0,0,0.05);
   border-radius: 16px;
   padding: 20px;
@@ -738,7 +706,7 @@
 }
 
 .cs-idea-card {
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid rgba(0,0,0,0.05);
   border-radius: 14px;
   padding: 18px;
@@ -889,7 +857,7 @@
 
 .cs-ai-suggestions button {
   padding: 8px 16px;
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 20px;
   color: #555;
@@ -927,7 +895,7 @@
 
 .cs-ai-message.assistant {
   align-self: flex-start;
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid rgba(0,0,0,0.06);
   color: #1a1a2e;
   border-bottom-left-radius: 4px;
@@ -998,7 +966,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 14px;
   transition: all 0.2s;
@@ -1152,19 +1120,8 @@
 /* ─── Responsive ───────────────────────────────────────── */
 @media (max-width: 900px) {
   .capstone-page-wrapper {
-    padding: 10px;
+    padding: 10px var(--page-gutter);
     gap: 8px;
-  }
-
-  .capstone-navbar {
-    gap: 12px;
-    padding: 12px 20px;
-    flex-wrap: wrap;
-  }
-
-  .capstone-navbar a {
-    font-size: 13px;
-    padding: 6px 12px;
   }
 
   .capstone-body {
@@ -1261,5 +1218,65 @@
   .cs-ai-input-area {
     padding: 12px 16px;
   }
+}
+
+
+/* ── Dark mode: main panel matches menu surface ── */
+[data-theme="dark"] .capstone-page-wrapper {
+  background-color: var(--color-glass-solid);
+}
+
+[data-theme="dark"] .capstone-main {
+  background-color: var(--color-glass-solid);
+  background-image: none;
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .cs-panel-title,
+[data-theme="dark"] .cs-sidebar-title,
+[data-theme="dark"] .cs-form-title,
+[data-theme="dark"] .cs-features-title,
+[data-theme="dark"] .cs-profile-name,
+[data-theme="dark"] .cs-feature-label,
+[data-theme="dark"] .cs-feature-item.active .cs-feature-label,
+[data-theme="dark"] .cs-search-box input,
+[data-theme="dark"] .cs-faculty-filter select,
+[data-theme="dark"] .cs-form-field input,
+[data-theme="dark"] .cs-form-field textarea,
+[data-theme="dark"] .cs-action-btn {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .cs-panel-subtitle,
+[data-theme="dark"] .cs-feature-desc,
+[data-theme="dark"] .cs-form-field label,
+[data-theme="dark"] .cs-result-count,
+[data-theme="dark"] .cs-profile-status,
+[data-theme="dark"] .cs-profile-action {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .cs-faculty-filter select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] .cs-search-box,
+[data-theme="dark"] .cs-faculty-filter select,
+[data-theme="dark"] .cs-form-field input,
+[data-theme="dark"] .cs-form-field textarea,
+[data-theme="dark"] .cs-action-btn:not(.primary) {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--color-surface-muted);
+}
+
+[data-theme="dark"] .cs-add-form {
+  background: var(--color-surface-muted);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .cs-feature-item:hover,
+[data-theme="dark"] .cs-feature-item.active {
+  background: rgba(255, 255, 255, 0.06);
 }
 

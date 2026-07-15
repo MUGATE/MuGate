@@ -43,13 +43,47 @@ const logoMap = {
 
 const resolveLogo = (logoStr) => {
   if (!logoStr) return WhishLogo;
-  const foundKey = Object.keys(logoMap).find(k => k.toLowerCase() === logoStr.toLowerCase());
+  const normalized = String(logoStr).trim();
+  const foundKey = Object.keys(logoMap).find(k => k.toLowerCase() === normalized.toLowerCase());
   if (foundKey) return logoMap[foundKey];
-  return logoStr;
+  return normalized;
+};
+
+const mergeApiCompanies = (apiRows) => {
+  const formatted = apiRows.map(c => ({
+    ...c,
+    colors: typeof c.colors === 'string' ? c.colors.split(',') : (Array.isArray(c.colors) ? c.colors : ['#ffffff']),
+    forceWhiteBack: !!c.forceWhiteBack,
+    forceBlackBack: !!c.forceBlackBack,
+    isMetallic: !!c.isMetallic,
+    rawSvgString: c.svgString,
+    svgString: resolveLogo(c.svgString),
+  }));
+
+  // Keep static carousel order + bundled logo URLs so the 3D scene does not
+  // remount or lose textures when API data arrives.
+  return companyData.map((staticCo) => {
+    const apiCo = formatted.find(
+      (c) => c.name?.toLowerCase() === staticCo.name?.toLowerCase()
+    );
+    if (!apiCo) return staticCo;
+    return {
+      ...staticCo,
+      ...apiCo,
+      svgString: staticCo.svgString || apiCo.svgString,
+      paths: staticCo.paths,
+    };
+  }).concat(
+    formatted.filter(
+      (apiCo) => !companyData.some(
+        (staticCo) => staticCo.name?.toLowerCase() === apiCo.name?.toLowerCase()
+      )
+    )
+  );
 };
 
 const InternshipList = () => {
-  const [companies, setCompanies] = useState([]);
+  const [companies, setCompanies] = useState(companyData);
   const [activeIndex, setActiveIndex] = useState(0);
 
   // ── Admin Company CRUD States ──
@@ -71,6 +105,7 @@ const InternshipList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExploreAllOpen, setIsExploreAllOpen] = useState(false);
   const [selectedExploreCompany, setSelectedExploreCompany] = useState(null);
+  const [exploreOpenedFromList, setExploreOpenedFromList] = useState(false);
 
   // ── Review state ──
   const [liveReviews, setLiveReviews] = useState([]);  // reviews from backend for selected company
@@ -107,36 +142,46 @@ const InternshipList = () => {
   const currentUserName = jwtPayload?.name || jwtPayload?.email?.split('@')[0] || '';
 
   const isAdmin = (() => {
-    if (jwtPayload && (jwtPayload.isAdmin === true || String(jwtPayload.universityId) === '101230004')) return true;
+    if (jwtPayload && jwtPayload.isAdmin === true) return true;
     const userStr = localStorage.getItem('mugate_user');
     if (userStr) {
       try {
         const u = JSON.parse(userStr);
-        if (u && (u.isAdmin === true || String(u.universityId) === '101230004')) return true;
+        if (u && u.isAdmin === true) return true;
       } catch { /* ignore malformed stored user */ }
     }
     return false;
   })();
 
+  const [sceneReady, setSceneReady] = useState(false);
+
   const fetchCompanies = async () => {
     try {
       const data = await internshipApi.getCompanies();
-      const formatted = data.map(c => ({
-        ...c,
-        colors: typeof c.colors === 'string' ? c.colors.split(',') : (Array.isArray(c.colors) ? c.colors : ['#ffffff']),
-        forceWhiteBack: !!c.forceWhiteBack,
-        forceBlackBack: !!c.forceBlackBack,
-        isMetallic: !!c.isMetallic,
-        rawSvgString: c.svgString,
-        svgString: resolveLogo(c.svgString)
-      }));
-      setCompanies(formatted);
-      if (formatted.length > 0) {
-        setActiveIndex(prev => {
-          if (prev >= formatted.length) return 0;
-          return prev;
-        });
-      }
+      if (!Array.isArray(data) || data.length === 0) return;
+      const merged = mergeApiCompanies(data);
+      setCompanies((prev) => {
+        const same =
+          prev.length === merged.length &&
+          prev.every((company, index) => {
+            const next = merged[index];
+            return (
+              company.id === next.id &&
+              company.name === next.name &&
+              company.svgString === next.svgString
+            );
+          });
+        return same ? prev : merged;
+      });
+      // Keep an open explore panel on the API id (static placeholders can differ).
+      setSelectedExploreCompany((prev) => {
+        if (!prev) return prev;
+        const matched = merged.find(
+          (c) => c.name?.toLowerCase() === prev.name?.toLowerCase()
+        );
+        return matched && matched.id !== prev.id ? matched : prev;
+      });
+      setActiveIndex((prev) => (prev >= merged.length ? 0 : prev));
     } catch (err) {
       console.error('Failed to get companies:', err);
     }
@@ -217,7 +262,7 @@ const InternshipList = () => {
     }
   };
 
-  const total = companies.length > 0 ? companies.length : companyData.length;
+  const total = companies.length;
 
   const goPrev = useCallback(() => {
     setActiveIndex((i) => (i - 1 + total) % total);
@@ -231,31 +276,44 @@ const InternshipList = () => {
     if (i !== activeIndex) setActiveIndex(i);
   }, [activeIndex]);
 
-  // ── Load company stats and companies on mount ──
+  // Sync companies + stats from the shared API as soon as possible so review
+  // queries never use mismatched static placeholder IDs.
   useEffect(() => {
     fetchCompanies();
     internshipApi.getCompanyStats()
-      .then(stats => {
+      .then((stats) => {
         const map = {};
-        stats.forEach(s => { map[s.companyId] = s; });
+        stats.forEach((s) => { map[s.companyId] = s; });
         setCompanyStats(map);
       })
-      .catch(err => console.error('Failed to load company stats:', err));
+      .catch((err) => console.error('Failed to load company stats:', err));
   }, []);
 
-  // ── Load reviews when a company is selected ──
+  // Soft re-sync after the 3D scene mounts (avoids racing the first paint).
   useEffect(() => {
-    if (selectedExploreCompany) {
-      setLiveReviews([]);
-      setFeedbackText('');
-      setFeedbackRating(0);
-      setSubmitError('');
-      setSubmitSuccess('');
-      internshipApi.getCompanyReviews(selectedExploreCompany.id)
-        .then(reviews => setLiveReviews(reviews))
-        .catch(err => console.error('Failed to load reviews:', err));
-    }
-  }, [selectedExploreCompany]);
+    if (!sceneReady) return undefined;
+    const timer = window.setTimeout(() => {
+      fetchCompanies();
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [sceneReady]);
+
+  // ── Load reviews when a company is selected (by API company id) ──
+  useEffect(() => {
+    if (!selectedExploreCompany?.id) return undefined;
+    setLiveReviews([]);
+    setFeedbackText('');
+    setFeedbackRating(0);
+    setSubmitError('');
+    setSubmitSuccess('');
+    let cancelled = false;
+    internshipApi.getCompanyReviews(selectedExploreCompany.id)
+      .then((reviews) => {
+        if (!cancelled) setLiveReviews(reviews);
+      })
+      .catch((err) => console.error('Failed to load reviews:', err));
+    return () => { cancelled = true; };
+  }, [selectedExploreCompany?.id]);
 
   // ── Submit review handler ──
   const handleSubmitReview = async () => {
@@ -355,51 +413,65 @@ const InternshipList = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [goPrev, goNext]);
 
-  const company = (companies.length > 0 ? companies[activeIndex] : companyData[activeIndex]) || {};
+  const company = companies[activeIndex] || {};
 
   return (
     <div className="hero-container">
       {/* ── 3D SCENE ── */}
-      <SceneEffect activeIndex={activeIndex} onLogoClick={handleLogoClick} companies={companies} />
+      <SceneEffect
+        activeIndex={activeIndex}
+        onLogoClick={handleLogoClick}
+        companies={companies}
+        onReady={() => setSceneReady(true)}
+      />
 
       {/* ── NAVBAR ── */}
-      <nav className="hero-nav">
-        <div className="hero-nav-left">
-          <div className="hero-avatar">
-            <img
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(isLoggedIn && currentUserName ? currentUserName.charAt(0) : 'G')}&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=64`}
-              alt="Profile"
-            />
+      <header className="hero-header">
+        <nav className="hero-nav" aria-label="Main navigation">
+          <div className="hero-nav-inner">
+            <RouterLink to="/" className="hero-nav-link">Home</RouterLink>
+            <RouterLink to="/internships" className="hero-nav-link active">Internships</RouterLink>
+            <RouterLink to="/resume-enhancer" className="hero-nav-link">Resume</RouterLink>
+            <RouterLink to="/chatbot" className="hero-nav-link">Chatbot</RouterLink>
+            <RouterLink to="/schedule" className="hero-nav-link">Scheduler</RouterLink>
+            <RouterLink to="/capstone" className="hero-nav-link">Capstone</RouterLink>
+            <RouterLink to="/events" className="hero-nav-link">Events</RouterLink>
+            <RouterLink to="/roadmap" className="hero-nav-link">RoadMap</RouterLink>
+            <RouterLink to="/download" className="hero-nav-link">App</RouterLink>
+            <RouterLink to="/about" className="hero-nav-link">About</RouterLink>
           </div>
-          <RouterLink to="/" className="hero-back-btn" aria-label="Go to Home">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-          </RouterLink>
-          <button className="hero-explore-all-btn" onClick={() => setIsExploreAllOpen(true)}>
-            <LayoutGrid size={18} />
-            Explore All
-          </button>
-          {isAdmin && (
-            <button className="hero-explore-all-btn" style={{ marginLeft: 8 }} onClick={() => handleOpenCompanyModal(null)}>
-              <Plus size={16} style={{ color: '#000000', strokeWidth: 3, marginRight: 4 }} /> Add Company
-            </button>
-          )}
-        </div>
-        <div className="hero-nav-menu">
-          <RouterLink to="/internships" className="hero-nav-link active">Internships</RouterLink>
-          <RouterLink to="/resume-enhancer" className="hero-nav-link">Resume</RouterLink>
-          <RouterLink to="/chatbot" className="hero-nav-link">Chatbot</RouterLink>
-          <RouterLink to="/schedule" className="hero-nav-link">Scheduler</RouterLink>
-          <RouterLink to="/capstone" className="hero-nav-link">Capstone</RouterLink>
-          <RouterLink to="/events" className="hero-nav-link">Events</RouterLink>
-          <RouterLink to="/roadmap" className="hero-nav-link">RoadMap</RouterLink>
-          <RouterLink to="/about" className="hero-nav-link">About</RouterLink>
-          {isAdmin && <RouterLink to="/admin-control" className="hero-nav-link">Control</RouterLink>}
-        </div>
-      </nav>
+        </nav>
+        <RouterLink to="/profile" className="hero-avatar" aria-label="Open profile page">
+          <img
+            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(isLoggedIn && currentUserName ? currentUserName.charAt(0) : 'G')}&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=64`}
+            alt="Profile"
+          />
+        </RouterLink>
+      </header>
+
+      <button
+        type="button"
+        className="hero-explore-all-btn hero-explore-all-floating"
+        onClick={() => {
+          setSelectedExploreCompany(null);
+          setExploreOpenedFromList(true);
+          setIsExploreAllOpen(true);
+        }}
+      >
+        <LayoutGrid size={18} />
+        Explore All
+      </button>
+
+      {isAdmin && (
+        <button
+          type="button"
+          className="hero-explore-all-btn hero-add-company-btn"
+          onClick={() => handleOpenCompanyModal(null)}
+        >
+          <Plus size={16} style={{ color: '#000000', strokeWidth: 3, marginRight: 4 }} />
+          Add Company
+        </button>
+      )}
 
       {/* ── TITLE + SUBTITLE ── */}
       <div className="hero-text-block" key={company.id}>
@@ -407,8 +479,34 @@ const InternshipList = () => {
         <p className="hero-subtitle">{company.description}</p>
       </div>
 
+      {/* ── CAROUSEL ARROWS (narrow screens) ── */}
+      <button
+        type="button"
+        className="hero-carousel-arrow hero-carousel-arrow--prev"
+        onClick={goPrev}
+        aria-label="Previous company"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className="hero-carousel-arrow hero-carousel-arrow--next"
+        onClick={goNext}
+        aria-label="Next company"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+
       {/* ── CTA BUTTON ── */}
-      <GlassButton onClick={() => { setSelectedExploreCompany(company); setIsExploreAllOpen(true); }}>Explore More</GlassButton>
+      <GlassButton onClick={() => {
+        setSelectedExploreCompany(company);
+        setExploreOpenedFromList(false);
+        setIsExploreAllOpen(true);
+      }}>Explore More</GlassButton>
 
       {/* ── COMPANY INFO MODAL OVERLAY ── */}
       {isModalOpen && (
@@ -449,7 +547,9 @@ const InternshipList = () => {
         onClose={() => {
           setIsExploreAllOpen(false);
           setSelectedExploreCompany(null);
+          setExploreOpenedFromList(false);
         }}
+        exploreOpenedFromList={exploreOpenedFromList}
         companies={companies}
         companyStats={companyStats}
         selectedExploreCompany={selectedExploreCompany}

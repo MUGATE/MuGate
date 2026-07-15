@@ -47,7 +47,7 @@ const Chatbot = () => {
     if (userStr) {
       try {
         const u = JSON.parse(userStr);
-        if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
+        if (u && u.isAdmin === true) return true;
       } catch { /* ignore malformed stored user */ }
     }
     return false;

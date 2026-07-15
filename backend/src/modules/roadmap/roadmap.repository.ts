@@ -1,5 +1,4 @@
-import * as sql from "mssql";
-import { pool, poolConnect } from "../../core/database/connection";
+import { pool, poolConnect, usePostgres, DbSql } from "../../core/database/connection";
 import { logger } from "../../core/logger/logger";
 
 export interface RoadMapCourse {
@@ -18,6 +17,10 @@ export class RoadMapRepository {
      * Ensure the UserRoadmap table exists. Called once at startup.
      */
     static async ensureTable(): Promise<void> {
+        if (usePostgres) {
+            logger.info("UserRoadmap table ensured (Postgres schema).");
+            return;
+        }
         try {
             await poolConnect;
             await pool.request().query(`
@@ -60,33 +63,33 @@ export class RoadMapRepository {
      */
     static async saveUserRoadmap(userId: string, courses: RoadMapCourse[]): Promise<boolean> {
         await poolConnect;
-        const transaction = new sql.Transaction(pool);
-        
+        const transaction = new DbSql.Transaction(pool as any);
+
         try {
             await transaction.begin();
-            const request = new sql.Request(transaction);
-            
+            const request = new DbSql.Request(transaction as any);
+
             // Delete existing
-            request.input('userId', userId);
+            request.input("userId", userId);
             await request.query(`DELETE FROM UserRoadmap WHERE userId = @userId`);
-            
+
             // Insert new ones
             for (const course of courses) {
-                const insertReq = new sql.Request(transaction);
-                insertReq.input('userId', userId);
-                insertReq.input('courseCode', course.courseCode);
-                insertReq.input('courseName', course.courseName);
-                insertReq.input('credits', course.credits);
-                insertReq.input('category', course.category);
-                insertReq.input('year', course.year);
-                insertReq.input('semester', course.semester);
-                
+                const insertReq = new DbSql.Request(transaction as any);
+                insertReq.input("userId", userId);
+                insertReq.input("courseCode", course.courseCode);
+                insertReq.input("courseName", course.courseName);
+                insertReq.input("credits", course.credits);
+                insertReq.input("category", course.category);
+                insertReq.input("year", course.year);
+                insertReq.input("semester", course.semester);
+
                 await insertReq.query(`
                     INSERT INTO UserRoadmap (userId, courseCode, courseName, credits, category, year, semester)
                     VALUES (@userId, @courseCode, @courseName, @credits, @category, @year, @semester)
                 `);
             }
-            
+
             await transaction.commit();
             return true;
         } catch (err) {

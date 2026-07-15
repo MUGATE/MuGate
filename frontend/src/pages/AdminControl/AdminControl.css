@@ -1,17 +1,26 @@
 .admin-ctrl-container {
   height: 100vh;
   width: 100%;
-  background-color: #f8fafc;
-  color: #1e293b;
+  background-color: var(--color-surface-muted);
+  color: var(--color-text);
   position: relative;
   overflow: hidden;
-  padding: 8rem 2rem 4rem 2rem;
+  padding: 8rem var(--page-gutter) 4rem;
   font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   gap: 2rem;
+  box-sizing: border-box;
+}
+
+.admin-ctrl-nav-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
 }
 
 /* Background Glow Effects */
@@ -43,7 +52,7 @@
   will-change: transform;
 }
 
-/* Glass Card — fixed height, no page scroll */
+/* Glass Card — bounded height with internal scroll */
 .admin-ctrl-card {
   width: 100%;
   max-width: 1100px;
@@ -57,7 +66,7 @@
   box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.02);
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 13rem);
+  height: calc(100vh - 13rem);
   overflow: hidden;
 }
 
@@ -81,14 +90,14 @@
   font-weight: 500;
   padding: 0.6rem 1.2rem;
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--color-surface);
   border: 1px solid rgba(0, 0, 0, 0.08);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .admin-ctrl-back-btn:hover {
-  color: #111827;
+  color: var(--color-text);
   background: #f3f4f6;
   border-color: rgba(0, 0, 0, 0.15);
   transform: translateX(-4px);
@@ -114,7 +123,7 @@
 }
 
 .admin-ctrl-refresh-btn {
-  background: #ffffff;
+  background: var(--color-surface);
   border: 1px solid rgba(0, 0, 0, 0.08);
   color: #4b5563;
   padding: 0.65rem;
@@ -125,7 +134,7 @@
 }
 
 .admin-ctrl-refresh-btn:hover {
-  color: #111827;
+  color: var(--color-text);
   background: #f3f4f6;
   border-color: rgba(0, 0, 0, 0.15);
 }
@@ -173,7 +182,7 @@
 .admin-ctrl-subtitle {
   font-size: 1.2rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text);
   margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
@@ -189,11 +198,11 @@
 .admin-ctrl-select {
   flex: 1;
   min-width: 280px;
-  background: #ffffff;
+  background: var(--color-surface);
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   padding: 0.8rem 1rem;
-  color: #1e293b;
+  color: var(--color-text);
   font-size: 0.95rem;
   outline: none;
   transition: all 0.2s ease;
@@ -206,8 +215,8 @@
 }
 
 .admin-ctrl-select option {
-  background: #ffffff;
-  color: #1e293b;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .admin-ctrl-submit-btn {
@@ -232,7 +241,7 @@
 .admin-ctrl-loading {
   text-align: center;
   padding: 3rem 0;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .spinner {
@@ -260,6 +269,8 @@
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+  max-height: none;
+  overscroll-behavior: contain;
 }
 
 .admin-ctrl-table {
@@ -273,7 +284,7 @@
   font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--color-text-muted);
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   letter-spacing: 0.05em;
 }
@@ -282,7 +293,7 @@
   padding: 1.2rem 1.25rem;
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   font-size: 0.95rem;
-  color: #334155;
+  color: var(--color-text-secondary);
 }
 
 .admin-ctrl-table tr:last-child td {
@@ -301,7 +312,7 @@
 
 .admin-name {
   font-weight: 600;
-  color: #0f172a;
+  color: var(--color-text);
 }
 
 .badge-self {
@@ -328,7 +339,7 @@
 
 .admin-code {
   font-family: monospace;
-  background: #f1f5f9;
+  background: var(--color-bg);
   padding: 0.2rem 0.5rem;
   border: 1px solid rgba(0, 0, 0, 0.04);
   border-radius: 6px;
@@ -336,7 +347,7 @@
 }
 
 .admin-email {
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 /* Status indicator */
@@ -359,7 +370,7 @@
 }
 
 .status-indicator.offline {
-  background-color: #94a3b8;
+  background-color: var(--color-text-muted);
 }
 
 .status-text {
@@ -391,12 +402,53 @@
   opacity: 0.25;
   cursor: not-allowed;
   border-color: rgba(0, 0, 0, 0.05);
-  color: #94a3b8;
+  color: var(--color-text-muted);
+}
+
+.admin-kb-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-kb-stat {
+  background: var(--color-bg);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.admin-kb-stat strong {
+  display: block;
+  font-size: 1.5rem;
+  color: var(--color-brand);
+}
+
+.admin-kb-stat span {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.admin-kb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-kb-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 @media (max-width: 768px) {
   .admin-ctrl-card {
     padding: 1.5rem;
+  }
+
+  .admin-kb-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
   
   .admin-ctrl-form {

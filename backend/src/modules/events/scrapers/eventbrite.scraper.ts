@@ -1,7 +1,9 @@
-import { chromium, Browser } from "playwright";
+import { Browser } from "playwright";
 import { logger } from "../../../core/logger/logger";
 import { ScrapedEvent } from "../event.types";
 import { isValidEventTitle, isTechRelevant, categorizeEvent, extractTags } from "./scraper.helpers";
+import { launchHeadlessBrowser } from "../../../core/utils/launchHeadlessBrowser";
+import "../../../core/utils/windowsHideSpawn";
 
 export async function scrapeEventbrite(): Promise<ScrapedEvent[]> {
     const events: ScrapedEvent[] = [];
@@ -17,7 +19,7 @@ export async function scrapeEventbrite(): Promise<ScrapedEvent[]> {
     let browser: Browser | null = null;
 
     try {
-        browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
+        browser = await launchHeadlessBrowser();
         const context = await browser.newContext({
             userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         });

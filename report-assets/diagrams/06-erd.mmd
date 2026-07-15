@@ -1,0 +1,35 @@
+erDiagram
+    Users ||--o| PortalCredentials : has
+    Users ||--o{ AcademicHistory : has
+    Users ||--o{ Schedules : saves
+    Users ||--o{ ChatSessions : owns
+    Users ||--o{ Sessions : has
+    Schedules ||--o{ ScheduleSections : contains
+    ScheduleSections }o--|| CourseSections : references
+    CourseSections }o--|| Courses : belongs_to
+    ChatSessions ||--o{ ChatMessages : contains
+    KnowledgePages ||--o{ KnowledgeChunks : chunked_into
+    Companies ||--o{ InternshipReviews : has
+    Users {
+        uniqueidentifier id PK
+        nvarchar email UK
+        nvarchar universityId
+        nvarchar name
+    }
+    PortalCredentials {
+        uniqueidentifier id PK
+        uniqueidentifier userId FK
+        nvarchar encryptedUsername
+        nvarchar encryptedPassword
+    }
+    ChatSessions {
+        uniqueidentifier id PK
+        uniqueidentifier userId FK
+        nvarchar source
+        nvarchar title
+    }
+    KnowledgePages {
+        uniqueidentifier id PK
+        nvarchar url UK
+        nvarchar category
+    }

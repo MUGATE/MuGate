@@ -2,13 +2,21 @@ node_modules/
 dist/
 .env
 
+# Mobile
+mobile/.env
+
 # Logs & caches (never commit)
 *.log
 scrape_log.txt
 .vite/
 
-backend/src/config/env.ts
 backend/.env
-backend/package-lock.json
-backend/package.json
 backend/node_modules/.package-lock.json
+
+# Local runtime data (regenerated; never commit)
+backend/data/
+
+
+# Large binary; host via releases or local file
+frontend/public/downloads/mugate.apk
+

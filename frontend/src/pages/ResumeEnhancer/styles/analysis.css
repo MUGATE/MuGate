@@ -24,7 +24,7 @@
 }
 .re-analysis-source-heuristic {
   background: rgba(100, 116, 139, 0.16);
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .re-analysis-summary {
@@ -40,7 +40,7 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin: 14px 0 6px;
 }
 
@@ -51,7 +51,7 @@
 .re-analysis-recos li {
   font-size: 13px;
   line-height: 1.5;
-  color: #334155;
+  color: var(--color-text-secondary);
   margin-bottom: 3px;
 }
 
@@ -76,7 +76,7 @@
 .re-cat-label {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text);
 }
 .re-cat-score {
   font-size: 14px;
@@ -125,7 +125,7 @@
 .re-cat-list li {
   font-size: 12.5px;
   line-height: 1.45;
-  color: #334155;
+  color: var(--color-text-secondary);
 }
 
 /* Keywords */
@@ -155,9 +155,9 @@
   width: 100%;
   resize: vertical;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #1e293b;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: 12.5px;
   padding: 8px 10px;
   font-family: inherit;

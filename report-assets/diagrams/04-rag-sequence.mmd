@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant U as User
+    participant C as Chatbot Controller
+    participant G as Content Guard
+    participant CL as Classifier
+    participant K as Knowledge Service
+    participant V as Vector Store
+    participant AI as AiProvider Cascade
+    participant DB as SQL Server
+
+    U->>C: POST /api/chatbot/message
+    C->>G: isQuerySafe
+    C->>CL: classify question
+    alt University question
+        C->>K: hybrid retrieval
+        K->>V: vector search
+        K->>DB: keyword search KnowledgeChunks
+        K-->>C: RRF merged context
+    end
+    C->>AI: generateResponse
+    AI-->>C: assistant text
+    C->>DB: save ChatMessages
+    C-->>U: JSON response

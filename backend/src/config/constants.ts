@@ -3,9 +3,18 @@ export const APP_CONSTANTS = {
     JWT_EXPIRY: "24h",
     REFRESH_TOKEN_EXPIRY: "7d",
 
-    // Rate limiting
+    // Rate limiting (global)
     RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-    RATE_LIMIT_MAX_REQUESTS: 100,
+    RATE_LIMIT_MAX_REQUESTS: 300,
+
+    // Stricter limits
+    AUTH_RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000,
+    AUTH_RATE_LIMIT_MAX_REQUESTS: 20,
+    AI_RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000,
+    AI_RATE_LIMIT_MAX_REQUESTS: 60,
+
+    // Uploads
+    RESUME_UPLOAD_MAX_BYTES: 5 * 1024 * 1024, // 5 MB
 
     // Pagination
     DEFAULT_PAGE_SIZE: 20,

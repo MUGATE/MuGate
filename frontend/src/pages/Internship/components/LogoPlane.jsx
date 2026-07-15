@@ -10,13 +10,100 @@ import * as THREE from 'three';
 const EXTRUDE_DEPTH = 0.4;
 const LAYER_COUNT = 10;
 
-const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = true, isCenter = false, forceWhiteBack = false, forceBlackBack = false }) => {
-  const [texture, setTexture] = useState(null);
-  const [silhouetteTexture, setSilhouetteTexture] = useState(null);
+const logoTextureCache = new Map();
+
+const getCacheKey = (svgContent, forceWhiteBack, forceBlackBack) => {
+  const content = typeof svgContent === 'string' ? svgContent : String(svgContent ?? '');
+  return `${content}|${forceWhiteBack ? 1 : 0}|${forceBlackBack ? 1 : 0}`;
+};
+
+const loadLogoTextures = (svgContent, forceWhiteBack, forceBlackBack) => {
+  const cacheKey = getCacheKey(svgContent, forceWhiteBack, forceBlackBack);
+  const cached = logoTextureCache.get(cacheKey);
+  if (cached) return Promise.resolve(cached);
+
+  return new Promise((resolve, reject) => {
+    const SIZE = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+    const ctx = canvas.getContext('2d');
+
+    const content = typeof svgContent === 'string' ? svgContent : String(svgContent);
+    const isSvgString = content.trim().startsWith('<svg');
+    const imageSrc = isSvgString
+      ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(content)}`
+      : content;
+
+    const img = new Image();
+
+    img.onload = () => {
+      const w = img.naturalWidth || SIZE;
+      const h = img.naturalHeight || SIZE;
+
+      let drawW;
+      let drawH;
+      const MAX_BOUND = SIZE * 0.65;
+
+      if (w > h) {
+        drawW = MAX_BOUND;
+        drawH = (h / w) * drawW;
+      } else {
+        drawH = MAX_BOUND;
+        drawW = (w / h) * drawH;
+      }
+
+      const dx = (SIZE - drawW) / 2;
+      const dy = (SIZE - drawH) / 2;
+
+      ctx.clearRect(0, 0, SIZE, SIZE);
+      ctx.drawImage(img, dx, dy, drawW, drawH);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      texture.colorSpace = THREE.SRGBColorSpace;
+
+      let silhouetteTexture = null;
+      if (forceWhiteBack || forceBlackBack) {
+        const silCanvas = document.createElement('canvas');
+        silCanvas.width = SIZE;
+        silCanvas.height = SIZE;
+        const sCtx = silCanvas.getContext('2d');
+        sCtx.drawImage(img, dx, dy, drawW, drawH);
+        sCtx.globalCompositeOperation = 'source-in';
+        sCtx.fillStyle = forceBlackBack ? '#000000' : '#ffffff';
+        sCtx.fillRect(0, 0, SIZE, SIZE);
+
+        silhouetteTexture = new THREE.CanvasTexture(silCanvas);
+        silhouetteTexture.needsUpdate = true;
+        silhouetteTexture.colorSpace = THREE.SRGBColorSpace;
+      }
+
+      const result = { texture, silhouetteTexture };
+      logoTextureCache.set(cacheKey, result);
+      resolve(result);
+    };
+
+    img.onerror = () => reject(new Error(`[LogoPlane] failed to load: ${imageSrc}`));
+    img.src = imageSrc;
+  });
+};
+
+const LogoPlane = ({
+  svgContent,
+  floorY = -1.4,
+  debug = false,
+  showReflection = true,
+  isCenter = false,
+  forceWhiteBack = false,
+  forceBlackBack = false,
+}) => {
+  const initialCache = logoTextureCache.get(getCacheKey(svgContent, forceWhiteBack, forceBlackBack));
+  const [texture, setTexture] = useState(() => initialCache?.texture ?? null);
+  const [silhouetteTexture, setSilhouetteTexture] = useState(() => initialCache?.silhouetteTexture ?? null);
   const groupRef = useRef();
   const reflectionRef = useRef();
 
-  // ── Premium Alpha-Masked Sweep Shine ───────────────────────
   const sweepMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       transparent: true,
@@ -25,7 +112,7 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
       uniforms: {
         uTime: { value: 0 },
         uOpacity: { value: 0.4 },
-        uTexture: { value: null }
+        uTexture: { value: null },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -44,20 +131,13 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
           vec4 texColor = texture2D(uTexture, vUv);
           if (texColor.a < 0.01) discard;
 
-          // 5 second total cycle: 2s sweep, 3s pause
           float cycle = 5.0;
           float t = mod(uTime, cycle);
           float progress = clamp(t / 2.0, 0.0, 1.0);
-          
-          // Diagonal position for y - x (range is -1 to 1)
           float pos = mix(-1.5, 1.5, progress);
-          
-          // Narrow high-end band using y - x for "down right to top left"
-          float band = smoothstep(pos - 0.2, pos, vUv.y - vUv.x) * 
+          float band = smoothstep(pos - 0.2, pos, vUv.y - vUv.x) *
                        smoothstep(pos + 0.2, pos, vUv.y - vUv.x);
-          
           float visibility = progress < 1.0 ? 1.0 : 0.0;
-          
           float alpha = band * uOpacity * texColor.a * visibility;
           gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
         }
@@ -66,76 +146,32 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
   }, []);
 
   useEffect(() => {
-    if (!svgContent) return;
+    if (svgContent == null || svgContent === '') return undefined;
+
     let cancelled = false;
+    const cacheKey = getCacheKey(svgContent, forceWhiteBack, forceBlackBack);
+    const cached = logoTextureCache.get(cacheKey);
 
-    const SIZE = 512;
-    const canvas = document.createElement('canvas');
-    canvas.width = SIZE;
-    canvas.height = SIZE;
-    const ctx = canvas.getContext('2d');
+    if (cached) {
+      setTexture(cached.texture);
+      setSilhouetteTexture(cached.silhouetteTexture ?? null);
+      return undefined;
+    }
 
-    // Support both raw SVG strings and imported PNG/JPG image URLs
-    const isSvgString = svgContent.trim().startsWith('<svg');
-    const imageSrc = isSvgString
-      ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`
-      : svgContent;
+    loadLogoTextures(svgContent, forceWhiteBack, forceBlackBack)
+      .then((result) => {
+        if (cancelled) return;
+        setTexture(result.texture);
+        setSilhouetteTexture(result.silhouetteTexture ?? null);
+      })
+      .catch((err) => {
+        if (!cancelled) console.warn(err.message || err);
+      });
 
-    const img = new Image();
-
-    img.onload = () => {
-      if (cancelled) return;
-      // Ensure the image scales properly but retains its aspect ratio
-      const w = img.naturalWidth || SIZE;
-      const h = img.naturalHeight || SIZE;
-
-      let drawW, drawH;
-      const MAX_BOUND = SIZE * 0.65; // Make sizes universally smaller and more consistent
-
-      if (w > h) {
-        drawW = MAX_BOUND;
-        drawH = (h / w) * drawW;
-      } else {
-        drawH = MAX_BOUND;
-        drawW = (w / h) * drawH;
-      }
-
-      const dx = (SIZE - drawW) / 2;
-      const dy = (SIZE - drawH) / 2;
-
-      ctx.clearRect(0, 0, SIZE, SIZE);
-      ctx.drawImage(img, dx, dy, drawW, drawH);
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.needsUpdate = true;
-      tex.colorSpace = THREE.SRGBColorSpace;
-      setTexture(tex);
-
-            if (forceWhiteBack || forceBlackBack) {
-        // Create silhouette for the depth layers (white or black)
-        const silCanvas = document.createElement('canvas');
-        silCanvas.width = SIZE;
-        silCanvas.height = SIZE;
-        const sCtx = silCanvas.getContext('2d');
-        sCtx.drawImage(img, dx, dy, drawW, drawH);
-        sCtx.globalCompositeOperation = "source-in";
-        sCtx.fillStyle = forceBlackBack ? "#000000" : "#ffffff";
-        sCtx.fillRect(0, 0, SIZE, SIZE);
-
-        const silTex = new THREE.CanvasTexture(silCanvas);
-        silTex.needsUpdate = true;
-        silTex.colorSpace = THREE.SRGBColorSpace;
-        setSilhouetteTexture(silTex);
-      }
+    return () => {
+      cancelled = true;
     };
-
-    img.onerror = () => {
-      if (!cancelled) console.warn('[LogoPlane] SVG failed to load');
-    };
-
-    img.src = imageSrc;
-    return () => { cancelled = true; };
-  }, [svgContent]);
+  }, [svgContent, forceWhiteBack, forceBlackBack]);
 
   useFrame((state) => {
     if (groupRef.current && reflectionRef.current) {
@@ -149,19 +185,19 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
     }
   });
 
-  // Pre-compute layer colors
-  const layerColors = useMemo(() =>
-    Array.from({ length: LAYER_COUNT }, (_, i) => {
-      const t = i / (LAYER_COUNT - 1);
-      const brightness = -0.4 - t * 0.15;
-      return new THREE.Color(brightness, brightness, brightness);
-    }),
-    []);
+  const layerColors = useMemo(
+    () =>
+      Array.from({ length: LAYER_COUNT }, (_, i) => {
+        const t = i / (LAYER_COUNT - 1);
+        const brightness = -0.4 - t * 0.15;
+        return new THREE.Color(brightness, brightness, brightness);
+      }),
+    []
+  );
 
   const backColor = useMemo(() => new THREE.Color(0.65, 0.65, 0.65), []);
   const planeArgs = useMemo(() => [1.8, 1.8], []);
 
-  // ── Reflection Shader Material ───────────────────────────────
   const reflectionMaterial = useMemo(() => {
     if (!texture) return null;
     return new THREE.ShaderMaterial({
@@ -169,7 +205,7 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
       uniforms: {
         tDiffuse: { value: texture },
         opacity: { value: 0.5 },
-        debug: { value: debug ? 1.0 : 0.0 }
+        debug: { value: debug ? 1.0 : 0.0 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -217,30 +253,24 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
 
   return (
     <group ref={groupRef}>
-      {/* ── Main Logo Group (Tilted) ───────────────────────────── */}
       <group rotation={[-0.16, -0.16, 0]}>
-        {/* Subtle white shine & sparkles */}
         {isCenter && (
           <group position={[0, 0, 0.05]} renderOrder={LAYER_COUNT + 5}>
-            {/* White sweep shine */}
             <mesh>
               <planeGeometry args={planeArgs} />
               <primitive object={sweepMaterial} attach="material" />
             </mesh>
-
-            {/* White Animated Sparkles */}
             <Sparkles
               count={60}
               scale={3.0}
               size={2.5}
               speed={0.4}
               opacity={0.9}
-              color={"#ffffff"}
+              color="#ffffff"
             />
           </group>
         )}
 
-        {/* Front face */}
         <mesh renderOrder={LAYER_COUNT + 2}>
           <planeGeometry args={planeArgs} />
           <meshBasicMaterial
@@ -251,7 +281,6 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
           />
         </mesh>
 
-        {/* Underlight — white glow on the logo itself, from below */}
         {isCenter && (
           <mesh position={[0, 0, 0.03]} renderOrder={LAYER_COUNT + 4}>
             <planeGeometry args={planeArgs} />
@@ -259,9 +288,7 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
               transparent
               blending={THREE.AdditiveBlending}
               depthWrite={false}
-              uniforms={{
-                uTexture: { value: texture },
-              }}
+              uniforms={{ uTexture: { value: texture } }}
               vertexShader={`
                 varying vec2 vUv;
                 void main() {
@@ -275,7 +302,6 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
                 void main() {
                   float logoAlpha = texture2D(uTexture, vUv).a;
                   if (logoAlpha < 0.1) discard;
-                  // Glow tightly concentrated at the very bottom
                   float upFade = 1.0 - smoothstep(0.0, 0.35, vUv.y);
                   gl_FragColor = vec4(1.0, 1.0, 1.0, upFade * logoAlpha * 0.25);
                 }
@@ -284,7 +310,6 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
           </mesh>
         )}
 
-        {/* Depth layers */}
         {layerColors.map((color, i) => (
           <mesh
             key={i}
@@ -293,7 +318,7 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
           >
             <planeGeometry args={planeArgs} />
             <meshBasicMaterial
-                            map={((forceWhiteBack || forceBlackBack) && silhouetteTexture) ? silhouetteTexture : texture}
+              map={(forceWhiteBack || forceBlackBack) && silhouetteTexture ? silhouetteTexture : texture}
               transparent
               alphaTest={0.15}
               side={THREE.DoubleSide}
@@ -302,7 +327,6 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
           </mesh>
         ))}
 
-        {/* Back face */}
         <mesh
           position={[0, 0, -EXTRUDE_DEPTH]}
           rotation={[0, Math.PI, 0]}
@@ -310,7 +334,7 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
         >
           <planeGeometry args={planeArgs} />
           <meshBasicMaterial
-                        map={((forceWhiteBack || forceBlackBack) && silhouetteTexture) ? silhouetteTexture : texture}
+            map={(forceWhiteBack || forceBlackBack) && silhouetteTexture ? silhouetteTexture : texture}
             transparent
             alphaTest={0.15}
             side={THREE.FrontSide}
@@ -319,11 +343,8 @@ const LogoPlane = ({ svgContent, floorY = -1.4, debug = false, showReflection = 
         </mesh>
       </group>
 
-      {/* ── Glass Reflection (Vertical Billboard) ──────────────────── */}
       {showReflection && reflectionMaterial && (
-        <mesh
-          ref={reflectionRef}
-        >
+        <mesh ref={reflectionRef}>
           <planeGeometry args={planeArgs} />
           <primitive object={reflectionMaterial} attach="material" />
         </mesh>

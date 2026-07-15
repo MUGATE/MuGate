@@ -36,29 +36,39 @@ const ResumeEditor = ({ data, setData, onBack }) => {
   // Undo history — snapshots taken before each AI edit so the user can revert.
   const [history, setHistory] = useState([]);
 
+  // Guard against corrupted localStorage / partial props so templates never crash.
+  const safeData = normalizeResume(data);
+
   // ── Manual edit operations (immutable, instant live preview) ──
-  const update = useCallback((path, value) => setData((d) => setByPath(d, path, value)), [setData]);
-  const addItem = useCallback((section) => setData((d) => ({
-    ...d, [section]: [...d[section], (EMPTY_ITEM[section] || (() => ({})))()],
-  })), [setData]);
-  const removeItem = useCallback((section, idx) => setData((d) => ({
-    ...d, [section]: d[section].filter((_, i) => i !== idx),
-  })), [setData]);
+  const update = useCallback((path, value) => setData((d) => setByPath(normalizeResume(d), path, value)), [setData]);
+  const addItem = useCallback((section) => setData((d) => {
+    const base = normalizeResume(d);
+    const factory = EMPTY_ITEM[section] || (() => ({}));
+    return { ...base, [section]: [...(base[section] || []), factory()] };
+  }), [setData]);
+  const removeItem = useCallback((section, idx) => setData((d) => {
+    const base = normalizeResume(d);
+    return { ...base, [section]: (base[section] || []).filter((_, i) => i !== idx) };
+  }), [setData]);
   const addBullet = useCallback((section, idx) => setData((d) => {
-    const arr = [...d[section]];
+    const base = normalizeResume(d);
+    const arr = [...(base[section] || [])];
+    if (!arr[idx]) return base;
     arr[idx] = { ...arr[idx], bullets: [...(arr[idx].bullets || []), ''] };
-    return { ...d, [section]: arr };
+    return { ...base, [section]: arr };
   }), [setData]);
   const removeBullet = useCallback((section, idx, bi) => setData((d) => {
-    const arr = [...d[section]];
+    const base = normalizeResume(d);
+    const arr = [...(base[section] || [])];
+    if (!arr[idx]) return base;
     arr[idx] = { ...arr[idx], bullets: (arr[idx].bullets || []).filter((_, i) => i !== bi) };
-    return { ...d, [section]: arr };
+    return { ...base, [section]: arr };
   }), [setData]);
 
   const ops = { update, addItem, removeItem, addBullet, removeBullet };
 
   const switchTemplate = (template) => {
-    setData((d) => ({ ...d, template }));
+    setData((d) => normalizeResume({ ...normalizeResume(d), template }));
     setNote('');
   };
 
@@ -66,19 +76,25 @@ const ResumeEditor = ({ data, setData, onBack }) => {
   const runAi = useCallback(async () => {
     setAiLoading(true);
     setNote('');
-    const snapshot = data; // capture current state so the AI edit can be undone
+    const snapshot = normalizeResume(data);
     try {
-      const result = await aiEditResume(data, aiInstruction, aiScope);
+      const result = await aiEditResume(snapshot, aiInstruction, aiScope);
       if (result.changed) {
         setHistory((h) => [...h, snapshot].slice(-25));
+        setData(normalizeResume(result.resume));
+        setNote(
+          result.message
+            || `✓ Changes have been applied to your ${aiScope === 'all' ? 'CV' : aiScope}. You can undo this change.`
+        );
+      } else {
+        setNote(
+          result.message
+            || 'Those changes can\'t be applied — your CV is unchanged.'
+        );
       }
-      setData(normalizeResume(result.resume));
-      setNote(result.changed
-        ? `AI improved your ${aiScope === 'all' ? 'CV' : aiScope}. You can undo this change.`
-        : 'AI is unavailable right now — your CV is unchanged.');
     } catch (e) {
       console.error('AI edit failed:', e);
-      setNote('AI edit failed — your CV is unchanged.');
+      setNote("Those changes can't be applied — AI edit failed. Your CV is unchanged.");
     } finally {
       setAiLoading(false);
     }
@@ -97,12 +113,13 @@ const ResumeEditor = ({ data, setData, onBack }) => {
     setExporting(true);
     setNote('');
     try {
-      const { format, formData, extras } = toBackendPayload(data);
+      const resume = normalizeResume(data);
+      const { format, formData, extras } = toBackendPayload(resume);
       const blob = await generateResumeFile({ format, formData, extras, fileType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${(data.personal.fullName || 'My Resume').trim()}.${fileType}`;
+      a.download = `${(resume.personal.fullName || 'My Resume').trim()}.${fileType}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -114,13 +131,13 @@ const ResumeEditor = ({ data, setData, onBack }) => {
     }
   }, [data]);
 
-  const Template = data.template === 'global' ? GlobalTemplate : LocalTemplate;
+  const Template = safeData.template === 'global' ? GlobalTemplate : LocalTemplate;
 
   return (
     <div className="re-editor">
       {/* Toolbar */}
       <div className="re-editor-toolbar re-glass">
-        <button className="re-cv-back-btn" onClick={onBack}>
+        <button className="re-cv-back-btn" onClick={onBack} type="button">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -128,18 +145,18 @@ const ResumeEditor = ({ data, setData, onBack }) => {
         </button>
 
         <div className="re-editor-tpl-switch">
-          <button className={data.template === 'local' ? 'active' : ''} onClick={() => switchTemplate('local')}>Local CV</button>
-          <button className={data.template === 'global' ? 'active' : ''} onClick={() => switchTemplate('global')}>Global CV</button>
+          <button type="button" className={safeData.template === 'local' ? 'active' : ''} onClick={() => switchTemplate('local')}>Local CV</button>
+          <button type="button" className={safeData.template === 'global' ? 'active' : ''} onClick={() => switchTemplate('global')}>Global CV</button>
         </div>
 
         <div className="re-editor-actions">
-          <button className="re-editor-mode" onClick={() => setEditable((v) => !v)}>
+          <button type="button" className="re-editor-mode" onClick={() => setEditable((v) => !v)}>
             {editable ? 'Preview' : 'Edit'}
           </button>
-          <button className="re-editor-export" disabled={exporting} onClick={() => handleExport('pdf')}>
+          <button type="button" className="re-editor-export" disabled={exporting} onClick={() => handleExport('pdf')}>
             {exporting ? '…' : 'PDF'}
           </button>
-          <button className="re-editor-export" disabled={exporting} onClick={() => handleExport('docx')}>
+          <button type="button" className="re-editor-export" disabled={exporting} onClick={() => handleExport('docx')}>
             {exporting ? '…' : 'DOCX'}
           </button>
         </div>
@@ -162,11 +179,11 @@ const ResumeEditor = ({ data, setData, onBack }) => {
             value={aiInstruction}
             onChange={(e) => setAiInstruction(e.target.value)}
           />
-          <button className="re-editor-ai-btn" disabled={aiLoading} onClick={runAi}>
+          <button type="button" className="re-editor-ai-btn" disabled={aiLoading} onClick={runAi}>
             {aiLoading ? 'Improving…' : '✨ Improve with AI'}
           </button>
           {history.length > 0 && (
-            <button className="re-editor-ai-undo" disabled={aiLoading} onClick={undoAi}>
+            <button type="button" className="re-editor-ai-undo" disabled={aiLoading} onClick={undoAi}>
               ↩ Undo AI change{history.length > 1 ? ` (${history.length})` : ''}
             </button>
           )}
@@ -177,7 +194,7 @@ const ResumeEditor = ({ data, setData, onBack }) => {
         {/* Document (live preview / inline editor) */}
         <main className="re-editor-doc-wrap">
           <div className={`re-editor-doc-paper ${editable ? 'editing' : ''}`}>
-            <Template data={data} editable={editable} ops={ops} />
+            <Template data={safeData} editable={editable} ops={ops} />
           </div>
         </main>
       </div>

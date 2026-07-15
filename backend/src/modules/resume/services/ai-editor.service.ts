@@ -8,6 +8,10 @@ import { logger } from "../../../core/logger/logger";
  * Additive and isolated: it does NOT touch the analyzer, the PDF/DOCX generators,
  * or the legacy text editor. On any failure it returns the resume UNCHANGED so the
  * caller's state can never be corrupted.
+ *
+ * After every edit attempt it verifies whether a visible (template-supported) change
+ * landed, and returns a user-facing message + reason (including Local/Global form
+ * restrictions).
  */
 
 const MAX_JSON_CHARS = 14000; // cap serialized resume sent to the model
@@ -33,6 +37,45 @@ export interface ResumeData {
   leadership: ResumeLeadership[];
   skills: { languages: string; computer: string; research: string; technical: string; soft: string; laboratory: string; interests: string };
 }
+
+export type AiEditReason =
+  | "applied"
+  | "no_change"
+  | "no_edit_requested"
+  | "local_form_restriction"
+  | "global_form_restriction"
+  | "ai_unavailable";
+
+export interface AiEditResult {
+  resume: ResumeData;
+  changed: boolean;
+  source: "ai" | "unchanged" | "blocked";
+  tokensUsed: number;
+  /** User-facing confirmation or failure explanation */
+  message: string;
+  reason: AiEditReason;
+  /** Short labels of sections that actually changed (when applied) */
+  updatedSections?: string[];
+}
+
+// Fields supported / visible per CV form (Local vs Global templates).
+const GLOBAL_UNSUPPORTED: Array<{ field: string; label: string; pattern: RegExp }> = [
+  { field: "summary", label: "Objective / Summary", pattern: /\b(summary|objective|profile|career\s*goal)\b/i },
+  { field: "linkedin", label: "LinkedIn", pattern: /\blinkedin\b/i },
+  // Avoid matching "project management" / "project experience" job wording.
+  { field: "projects", label: "Projects", pattern: /\b(projects?(?:\s+section)?|add(?:\s+\w+){0,3}\s+project|my\s+projects?)\b/i },
+];
+
+const LOCAL_UNSUPPORTED: Array<{ field: string; label: string; pattern: RegExp }> = [
+  {
+    field: "leadership",
+    label: "Leadership & Activities",
+    pattern: /\b(leadership|activit(?:y|ies)|extracurricular|volunteer(?:ing)?|club)\b/i,
+  },
+];
+
+const EDIT_INTENT =
+  /\b(change|update|replace|rewrite|rephrase|improve|enhance|fix|edit|add|remove|delete|set|make|shorten|lengthen|tighten|polish|correct|apply|put|insert|swap|rename|fill)\b/i;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const str = (v: any): string => (typeof v === "string" ? v : v == null ? "" : String(v));
@@ -94,7 +137,104 @@ function extractJson(text: string): any | null {
   try { return JSON.parse(t.slice(start, end + 1)); } catch { return null; }
 }
 
-function buildSystemPrompt(): string {
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
+  }
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
+      a.localeCompare(b)
+    );
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function hasMeaningfulChange(before: ResumeData, after: ResumeData): boolean {
+  return stableStringify(before) !== stableStringify(after);
+}
+
+/** Keep only fields the current Local/Global form can show; discard invisible edits. */
+function clampToTemplate(resume: ResumeData, original: ResumeData): ResumeData {
+  if (resume.template === "global") {
+    return {
+      ...resume,
+      summary: original.summary,
+      personal: { ...resume.personal, linkedin: original.personal.linkedin },
+      projects: original.projects,
+    };
+  }
+  return {
+    ...resume,
+    leadership: original.leadership,
+  };
+}
+
+function detectFormRestriction(
+  instruction: string,
+  template: "local" | "global"
+): { reason: "local_form_restriction" | "global_form_restriction"; label: string; field: string } | null {
+  const list = template === "global" ? GLOBAL_UNSUPPORTED : LOCAL_UNSUPPORTED;
+  const text = (instruction || "").trim();
+  if (!text) return null;
+
+  for (const item of list) {
+    if (!item.pattern.test(text)) continue;
+    // Require clear edit intent OR a direct "add X" style ask about that field.
+    if (EDIT_INTENT.test(text) || new RegExp(`\\b(add|include|put|set)\\b.*${item.pattern.source}`, "i").test(text)) {
+      return {
+        reason: template === "global" ? "global_form_restriction" : "local_form_restriction",
+        label: item.label,
+        field: item.field,
+      };
+    }
+  }
+  return null;
+}
+
+function looksLikeEditRequest(instruction: string): boolean {
+  const text = (instruction || "").trim();
+  if (!text) return true; // empty instruction in scoped editor = "improve this section"
+  if (EDIT_INTENT.test(text)) return true;
+  // Direct field updates without an explicit verb: "email: x@y.com", "my name is ..."
+  if (/^(my\s+)?(name|email|phone|address|linkedin|gpa|summary|objective)\b/i.test(text)) return true;
+  if (/\b(to|with|=|:)\s*.+/i.test(text) && /\b(name|email|phone|address|linkedin|gpa|summary|objective|bullet|skill)\b/i.test(text)) {
+    return true;
+  }
+  return false;
+}
+
+function listChangedSections(before: ResumeData, after: ResumeData): string[] {
+  const sections: string[] = [];
+  if (stableStringify(before.personal) !== stableStringify(after.personal)) sections.push("Contact");
+  if (before.summary !== after.summary) sections.push(before.template === "local" ? "Objective" : "Summary");
+  if (stableStringify(before.education) !== stableStringify(after.education)) sections.push("Education");
+  if (stableStringify(before.experience) !== stableStringify(after.experience)) sections.push("Experience");
+  if (stableStringify(before.projects) !== stableStringify(after.projects)) sections.push("Projects");
+  if (stableStringify(before.leadership) !== stableStringify(after.leadership)) sections.push("Leadership");
+  if (stableStringify(before.skills) !== stableStringify(after.skills)) sections.push("Skills");
+  return sections;
+}
+
+function restrictionMessage(
+  template: "local" | "global",
+  label: string
+): string {
+  const formName = template === "global" ? "Global" : "Local";
+  const alt = template === "global" ? "Local" : "Global";
+  return (
+    `Those changes can't be applied due to the ${formName} CV form restriction — ` +
+    `${label} isn't available on the ${formName} template. ` +
+    `Switch to the ${alt} format, or edit a supported section instead (e.g. Experience, Education, Skills).`
+  );
+}
+
+function buildSystemPrompt(template: "local" | "global"): string {
+  const formNote =
+    template === "global"
+      ? "This is a GLOBAL CV form: it has NO Objective/Summary, NO LinkedIn, and NO Projects section. Do NOT invent those fields. If the user asks to edit them, leave the resume JSON identical."
+      : "This is a LOCAL CV form: it has NO Leadership & Activities section. Do NOT invent leadership entries. If the user asks to edit that, leave the resume JSON identical.";
+
   return [
     "You are an expert professional resume writer and editor.",
     "You improve wording, impact, clarity and ATS-friendliness ONLY by rephrasing the user's existing content.",
@@ -103,9 +243,11 @@ function buildSystemPrompt(): string {
     "no technologies, tools, programming languages, companies, job titles, degrees, or named skills;",
     "no achievements or responsibilities that are not already stated.",
     "If a bullet contains no number, your rewritten bullet MUST contain no number. Strengthen the verb and clarity instead — never add a fake statistic.",
-    "Rephrase, strengthen action verbs, fix grammar, and tighten language — nothing else.",
+    "ONLY modify the resume when the user clearly asks you to change, update, rewrite, add, remove, or improve something.",
+    "If the user is asking a question, requesting advice, or chatting (not requesting an edit), return the CURRENT RESUME JSON BYTE-FOR-BYTE IDENTICAL — do not tidy or rewrite anything.",
+    formNote,
     "Preserve the EXACT number of items in every array (same count of experience entries, bullets, education, etc.). Do NOT add or remove bullets or entries unless the instruction explicitly asks to.",
-    "Keep all factual fields (organization, title, dates, gpa, institution, email, phone) byte-for-byte identical to the input.",
+    "Keep all factual fields (organization, title, dates, gpa, institution, email, phone) byte-for-byte identical unless the instruction explicitly asks to change them.",
     "Return a SINGLE valid JSON object with the EXACT same schema and keys as the input — no markdown, no prose, no code fences.",
   ].join(" ");
 }
@@ -113,12 +255,12 @@ function buildSystemPrompt(): string {
 function buildUserPrompt(resume: ResumeData, instruction: string, scope?: string): string {
   const scopeLine = scope && scope !== "all"
     ? `Only improve the "${scope}" section. Leave all other fields byte-for-byte identical.`
-    : "Improve the whole resume.";
+    : "Apply ONLY the user's instruction. If it is not an edit request, return the CURRENT RESUME JSON unchanged.";
   const json = JSON.stringify(resume).slice(0, MAX_JSON_CHARS);
   return `${scopeLine}
 User instruction: "${instruction || "Improve wording, impact and professionalism."}"
 
-REMINDER: Only rephrase what is already written. Do NOT add numbers, percentages, metrics, technologies, or extra bullets that are not in the CURRENT RESUME JSON below. Keep every array the same length.
+REMINDER: Only rephrase what is already written. Do NOT add numbers, percentages, metrics, technologies, or extra bullets that are not in the CURRENT RESUME JSON below. Keep every array the same length unless the instruction explicitly asks to add/remove.
 
 Return JSON with this EXACT schema (same keys, same structure):
 {
@@ -136,11 +278,13 @@ CURRENT RESUME JSON:
 ${json}`;
 }
 
-export interface AiEditResult {
-  resume: ResumeData;
-  changed: boolean;
-  source: "ai" | "unchanged";
-  tokensUsed: number;
+function unchangedResult(
+  resume: ResumeData,
+  reason: AiEditReason,
+  message: string,
+  source: "ai" | "unchanged" | "blocked" = "unchanged"
+): AiEditResult {
+  return { resume, changed: false, source, tokensUsed: 0, message, reason };
 }
 
 export async function aiEditResume(
@@ -157,30 +301,104 @@ export async function aiEditResume(
     skills: { languages: "", computer: "", research: "", technical: "", soft: "", laboratory: "", interests: "" },
   });
   const current = normalizeResume(rawResume, safeFallback);
+  const template = current.template;
+  const text = typeof instruction === "string" ? instruction.trim() : "";
+
+  // 1) Hard-block edits that the Local/Global form cannot display.
+  const blocked = detectFormRestriction(text, template);
+  if (blocked) {
+    return unchangedResult(
+      current,
+      blocked.reason,
+      restrictionMessage(template, blocked.label),
+      "blocked"
+    );
+  }
+
+  // 2) Non-edit chat (analyzer / builder) — skip silent whole-CV rewrites.
+  // Scoped editor clicks (summary/experience/…) still count as edit intents.
+  const scopedEdit = !!(scope && scope !== "all");
+  if (!scopedEdit && text && !looksLikeEditRequest(text)) {
+    return unchangedResult(
+      current,
+      "no_edit_requested",
+      "I didn't change your CV — that looks like a question rather than an edit. Ask me to change a specific field (e.g. \"change my email to ...\") and I'll apply it."
+    );
+  }
 
   try {
-    const { text, tokensUsed } = await AiProvider.generateResponse(
-      buildSystemPrompt(),
+    const { text: aiText, tokensUsed } = await AiProvider.generateResponse(
+      buildSystemPrompt(template),
       [],
       buildUserPrompt(current, instruction, scope)
     );
-    const parsed = extractJson(text);
+    const parsed = extractJson(aiText);
     if (parsed) {
-      const improved = normalizeResume(parsed, current);
+      let improved = normalizeResume(parsed, current);
       // Guard: the model must return real content; otherwise keep the original.
       const hasContent =
         improved.personal.fullName || improved.summary ||
         improved.education.length || improved.experience.length;
-      if (hasContent) {
-        return { resume: improved, changed: true, source: "ai", tokensUsed };
+
+      if (!hasContent) {
+        return unchangedResult(
+          current,
+          "ai_unavailable",
+          "Those changes can't be applied — the AI editor returned empty content. Please try again."
+        );
       }
+
+      // Drop edits to fields this form cannot show (false "success").
+      improved = clampToTemplate(improved, current);
+      improved.template = template;
+
+      const updatedSections = listChangedSections(current, improved);
+      const changed = updatedSections.length > 0 && hasMeaningfulChange(current, improved);
+
+      if (changed) {
+        return {
+          resume: improved,
+          changed: true,
+          source: "ai",
+          tokensUsed,
+          reason: "applied",
+          updatedSections,
+          message:
+            `✓ Changes have been applied` +
+            (updatedSections.length ? ` (${updatedSections.join(", ")})` : "") +
+            ".",
+        };
+      }
+
+      // Model "edited" only unsupported fields, or made no real change.
+      const recheck = detectFormRestriction(text, template);
+      if (recheck) {
+        return unchangedResult(
+          current,
+          recheck.reason,
+          restrictionMessage(template, recheck.label),
+          "blocked"
+        );
+      }
+
+      return unchangedResult(
+        current,
+        looksLikeEditRequest(text) || scopedEdit ? "no_change" : "no_edit_requested",
+        looksLikeEditRequest(text) || scopedEdit
+          ? "Those changes can't be applied — nothing on your CV could be updated from that request. Try something more specific (e.g. \"change my email to ...\" or \"make the experience bullets more concise\")."
+          : "I didn't change your CV — that looks like a question rather than an edit. Ask me to change a specific field and I'll apply it."
+      );
     }
     logger.warn("AI resume editor: unparseable/empty output, returning unchanged resume.");
   } catch (err: any) {
     logger.error(`AI resume editor failed: ${err?.message}. Returning unchanged resume.`);
   }
 
-  return { resume: current, changed: false, source: "unchanged", tokensUsed: 0 };
+  return unchangedResult(
+    current,
+    "ai_unavailable",
+    "Those changes can't be applied — the AI editor is unavailable right now. Please try again in a moment."
+  );
 }
 
 // ── Resume parser: raw extracted text → structured normalized ResumeData ───────

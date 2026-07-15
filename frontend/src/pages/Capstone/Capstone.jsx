@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import CapstoneSidebar from './components/CapstoneSidebar';
 import FindPartner from './components/FindPartner';
 import IdeasDatabase from './components/IdeasDatabase/IdeasDatabase';
 import AIAdvisor from './components/AIAdvisor';
+import FloatingProfileIcon from '../../components/FloatingProfileIcon';
+import GlassNavBar from '../../components/layout/GlassNavBar';
 import './capstone.css';
 
 const Capstone = () => {
@@ -20,36 +21,15 @@ const Capstone = () => {
       currentUserEmail = payload.email || '';
     } catch { /* ignore */ }
   }
-
-
-
-  const isAdmin = (() => {
-    const userStr = localStorage.getItem("mugate_user");
-    if (userStr) {
-      try {
-        const u = JSON.parse(userStr);
-        if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
-      } catch { /* ignore malformed stored user */ }
-    }
-    return false;
-  })();
-
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="capstone-page-wrapper">
       {/* Navbar */}
-      <nav className="capstone-navbar">
-        <Link to="/">Home</Link>
-        <Link to="/internships">Internships</Link>
-        <Link to="/resume-enhancer">Resume</Link>
-        <Link to="/chatbot">Chatbot</Link>
-        <Link to="/schedule">Scheduler</Link>
-        <Link to="/capstone" className="active">Capstone</Link>
-        <Link to="/events">Events</Link>
-        <Link to="/roadmap">RoadMap</Link>
-        <Link to="/about">About</Link>
-        {isAdmin && <Link to="/admin-control">Control</Link>}
-      </nav>
+      <GlassNavBar activePath="/capstone" />
+      <FloatingProfileIcon
+        className="floating-profile-icon--capstone"
+        navbarSelector=".glass-navbar"
+      />
 
       {/* Body: Sidebar + Main */}
       <div className="capstone-body">

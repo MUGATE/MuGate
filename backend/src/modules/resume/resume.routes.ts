@@ -1,9 +1,18 @@
 import { Router } from "express";
 import multer from "multer";
-import { generateResume, editResume, analyzeResumeController, aiEditResumeController, parseResumeController, convertResumeController } from "./controllers/resume.controller";
+import { generateResume, editResume, analyzeResumeController, aiEditResumeController, parseResumeController, convertResumeController, convertResumeBase64Controller } from "./controllers/resume.controller";
+import { authMiddleware } from "../../core/middleware/auth.middleware";
+import { aiRateLimiter } from "../../core/middleware/rateLimiter.middleware";
+import { APP_CONSTANTS } from "../../config/constants";
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: APP_CONSTANTS.RESUME_UPLOAD_MAX_BYTES },
+});
+
+router.use(authMiddleware);
+router.use(aiRateLimiter);
 
 // POST /api/resume/generate
 router.post("/generate", generateResume);
@@ -19,6 +28,9 @@ router.post("/parse", parseResumeController);
 
 // POST /api/resume/convert — upload a file, extract full text, return structured JSON
 router.post("/convert", upload.single("file"), convertResumeController);
+
+// POST /api/resume/convert-base64 — same as convert, but JSON body (mobile-friendly)
+router.post("/convert-base64", convertResumeBase64Controller);
 
 // POST /api/resume/edit
 router.post("/edit", upload.single("file"), editResume);

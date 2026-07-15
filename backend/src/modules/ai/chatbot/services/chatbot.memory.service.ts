@@ -29,9 +29,10 @@ export class ChatbotMemoryService {
                     .input("userId", userId)
                     .input("source", source)
                     .query(`
-                        SELECT TOP 1 id FROM ChatSessions
+                        SELECT id FROM ChatSessions
                         WHERE userId = @userId AND isPinned = 0 AND isActive = 1 AND source = @source
                         ORDER BY updatedAt ASC
+                        LIMIT 1
                     `);
 
                 if (oldestResult.recordset.length === 0) {
@@ -50,8 +51,8 @@ export class ChatbotMemoryService {
             .input("source", source)
             .query(`
                 INSERT INTO ChatSessions (userId, title, isPinned, source)
-                OUTPUT INSERTED.*
                 VALUES (@userId, @title, @isPinned, @source)
+                RETURNING *
             `);
 
         return insertResult.recordset[0];
@@ -71,6 +72,10 @@ export class ChatbotMemoryService {
      * Gets the chat history parameters for a specific session
      */
     static async getSessionHistory(sessionId: string, userId: string | null): Promise<ChatMessage[]> {
+        if (!userId) {
+            throw new Error("Unauthorized to access this session.");
+        }
+
         // Validate ownership first
         const sessionResult = await pool.request()
             .input("sessionId", sessionId)
@@ -81,10 +86,7 @@ export class ChatbotMemoryService {
         }
 
         const session = sessionResult.recordset[0];
-        // Enforce ownership unless it's a public session (userId is null and checking against a null logged-in user)
-        // Adjust logic if public sessions are tracked locally via cookies instead in actual DB.
-        // Assuming public sessions pass a specific temporary UUID or are blocked from retrieval.
-        if (session.userId && session.userId !== userId) {
+        if (!session.userId || session.userId !== userId) {
             throw new Error("Unauthorized to access this session.");
         }
 
@@ -106,8 +108,8 @@ export class ChatbotMemoryService {
             .input("tokensUsed", tokensUsed)
             .query(`
                 INSERT INTO ChatMessages (sessionId, role, content, tokensUsed)
-                OUTPUT INSERTED.*
                 VALUES (@sessionId, @role, @content, @tokensUsed)
+                RETURNING *
             `);
 
         // Update session updatedAt timestamp
@@ -132,20 +134,19 @@ export class ChatbotMemoryService {
     }
 
     /**
-     * Gets sessions by a list of IDs (for anonymous session recovery)
+     * Gets sessions by a list of IDs for the authenticated user only (no anonymous IDOR).
      */
-    static async getSessionsByIds(sessionIds: string[]): Promise<ChatSession[]> {
-        if (!sessionIds || sessionIds.length === 0) return [];
-        // Build parameterized IN clause
+    static async getSessionsByIds(sessionIds: string[], userId: string): Promise<ChatSession[]> {
+        if (!userId || !sessionIds || sessionIds.length === 0) return [];
         const params: string[] = [];
-        const request = pool.request();
+        const request = pool.request().input("userId", userId);
         sessionIds.forEach((id, i) => {
             const paramName = `id${i}`;
             request.input(paramName, id);
             params.push(`@${paramName}`);
         });
         const result = await request.query(
-            `SELECT * FROM ChatSessions WHERE id IN (${params.join(",")}) AND isActive = 1 AND source = 'chat' ORDER BY isPinned DESC, updatedAt DESC`
+            `SELECT * FROM ChatSessions WHERE id IN (${params.join(",")}) AND userId = @userId AND isActive = 1 AND source = 'chat' ORDER BY isPinned DESC, updatedAt DESC`
         );
         return result.recordset;
     }

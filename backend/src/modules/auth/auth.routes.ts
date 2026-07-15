@@ -1,28 +1,25 @@
 import { Router } from "express";
 import { AuthController } from "./auth.controller";
 import { authMiddleware } from "../../core/middleware/auth.middleware";
-import { adminMiddleware } from "../../core/middleware/admin.middleware";
+import { adminMiddleware, isAdminUser } from "../../core/middleware/admin.middleware";
+import { authRateLimiter } from "../../core/middleware/rateLimiter.middleware";
 import { pool, poolConnect } from "../../core/database/connection";
+import { env, isSuperAdminUniversityId } from "../../config/env";
 
 const router = Router();
 
-router.post("/login", AuthController.login);
+router.post("/login", authRateLimiter, AuthController.login);
 
 // Lightweight self-check: is the current user an admin? (no adminMiddleware gate)
 router.get("/me/is-admin", authMiddleware, async (req, res) => {
     const user = (req as any).user;
-    const universityId = String(user?.universityId || "");
-
-    if (universityId === "101230004") {
-        return res.json({ success: true, isAdmin: true });
-    }
-
     try {
-        await poolConnect;
-        const result = await pool.request()
-            .input("universityId", universityId)
-            .query("SELECT 1 FROM Admins WHERE universityId = @universityId");
-        return res.json({ success: true, isAdmin: result.recordset.length > 0 });
+        const isAdmin = await isAdminUser(user);
+        return res.json({
+            success: true,
+            isAdmin,
+            isSuperAdmin: isSuperAdminUniversityId(user?.universityId),
+        });
     } catch (err: any) {
         return res.status(500).json({ success: false, message: err.message });
     }
@@ -30,32 +27,38 @@ router.get("/me/is-admin", authMiddleware, async (req, res) => {
 
 // --- Admin Management Routes ---
 
-// 1. Get all registered users to select from
 router.get("/users", authMiddleware, adminMiddleware, async (req, res) => {
     try {
         await poolConnect;
         const result = await pool.request()
             .query("SELECT id, name, email, universityId, lastActiveAt FROM Users ORDER BY name ASC");
-        
+
         return res.json({ success: true, users: result.recordset });
     } catch (err: any) {
         return res.status(500).json({ success: false, message: err.message });
     }
 });
 
-// 2. Get list of admins with online/offline activity details
 router.get("/admins", authMiddleware, adminMiddleware, async (req, res) => {
     try {
         await poolConnect;
-        // Fetch all admins from table AND include super admin
-        const result = await pool.request().query(`
-            SELECT u.id, u.name, u.email, 
-                   COALESCE(a.universityId, u.universityId) as universityId, 
+        const superId = env.superAdminUniversityId;
+        const result = await pool.request()
+            .input("superId", superId || "__none__")
+            .query(`
+            SELECT u.id, u.name, u.email,
+                   COALESCE(a.universityId, u.universityId) as universityId,
                    u.lastActiveAt,
-                   CASE WHEN a.universityId IS NOT NULL OR u.universityId = '101230004' THEN 1 ELSE 0 END as isAdmin
+                   CASE
+                     WHEN a.universityId IS NOT NULL THEN 1
+                     WHEN @superId <> '__none__' AND u.universityId = @superId THEN 1
+                     ELSE 0
+                   END as isAdmin,
+                   CASE WHEN @superId <> '__none__' AND u.universityId = @superId THEN 1 ELSE 0 END as isSuperAdmin
             FROM Users u
             LEFT JOIN Admins a ON u.universityId = a.universityId
-            WHERE a.universityId IS NOT NULL OR u.universityId = '101230004'
+            WHERE a.universityId IS NOT NULL
+               OR (@superId <> '__none__' AND u.universityId = @superId)
             ORDER BY u.name ASC
         `);
 
@@ -85,6 +88,7 @@ router.get("/admins", authMiddleware, adminMiddleware, async (req, res) => {
 
             return {
                 ...adm,
+                isSuperAdmin: Boolean(adm.isSuperAdmin),
                 isOnline,
                 offlineDuration
             };
@@ -96,7 +100,6 @@ router.get("/admins", authMiddleware, adminMiddleware, async (req, res) => {
     }
 });
 
-// 3. Add admin
 router.post("/admins", authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const { universityId } = req.body;
@@ -108,27 +111,22 @@ router.post("/admins", authMiddleware, adminMiddleware, async (req, res) => {
 
         await poolConnect;
 
-        // Upsert: create the user if they haven't logged in yet
         await pool.request()
             .input("universityId", universityId)
             .input("email", derivedEmail)
             .input("passwordHash", "SSO_PORTAL_AUTH")
             .query(`
-                IF NOT EXISTS (SELECT 1 FROM Users WHERE universityId = @universityId)
-                BEGIN
-                    INSERT INTO Users (universityId, email, name, passwordHash)
-                    VALUES (@universityId, @email, @universityId, @passwordHash)
-                END
+                INSERT INTO Users (universityId, email, name, passwordHash)
+                SELECT @universityId, @email, @universityId, @passwordHash
+                WHERE NOT EXISTS (SELECT 1 FROM Users WHERE universityId = @universityId)
             `);
 
-        // Insert into Admins table (idempotent)
         await pool.request()
             .input("universityId", universityId)
             .query(`
-                IF NOT EXISTS (SELECT 1 FROM Admins WHERE universityId = @universityId)
-                BEGIN
-                    INSERT INTO Admins (universityId) VALUES (@universityId)
-                END
+                INSERT INTO Admins (universityId)
+                SELECT @universityId
+                WHERE NOT EXISTS (SELECT 1 FROM Admins WHERE universityId = @universityId)
             `);
 
         return res.json({ success: true, message: "Admin added successfully." });
@@ -137,11 +135,10 @@ router.post("/admins", authMiddleware, adminMiddleware, async (req, res) => {
     }
 });
 
-// 4. Remove admin
 router.delete("/admins/:universityId", authMiddleware, adminMiddleware, async (req, res) => {
     try {
-        const { universityId } = req.params;
-        if (universityId === "101230004") {
+        const universityId = String(req.params.universityId || "");
+        if (isSuperAdminUniversityId(universityId)) {
             return res.status(400).json({ success: false, message: "Super admin cannot be removed." });
         }
 

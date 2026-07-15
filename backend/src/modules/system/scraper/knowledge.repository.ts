@@ -1,12 +1,35 @@
 import { pool } from "../../../core/database/connection";
 import { logger } from "../../../core/logger/logger";
 import { ContentCleaner } from "./content.cleaner";
+import { ragConfig } from "../../../config/rag.config";
 import {
     ScrapedPage,
     KnowledgePage,
     KnowledgeChunk,
     ScraperRun,
 } from "./scraper.types";
+
+function extractSourceDomain(url: string): string {
+    try {
+        return new URL(url).hostname;
+    } catch {
+        return "www.mu.edu.lb";
+    }
+}
+
+function detectEntityType(url: string, title: string, content: string): string | null {
+    const combined = `${url} ${title} ${content.substring(0, 300)}`.toLowerCase();
+    if (/\/(staff|people|instructors?|faculty|professors?)/i.test(url) || /\bdr\.|professor|instructor|lecturer\b/i.test(combined)) {
+        return "instructor";
+    }
+    if (/\/(course|curriculum|syllabus)/i.test(url) || /\bcourse code\b/i.test(combined)) {
+        return "course";
+    }
+    if (/\/(facult|department|college)/i.test(url)) {
+        return "faculty";
+    }
+    return null;
+}
 
 /**
  * Knowledge Repository — Handles all database operations for the RAG knowledge base.
@@ -20,15 +43,16 @@ export class KnowledgeRepository {
      * Upsert a scraped page: insert if new, update if content changed, skip if unchanged.
      * Returns "new", "updated", or "unchanged".
      */
-    static async upsertPage(page: ScrapedPage): Promise<"new" | "updated" | "unchanged"> {
+    /**
+     * Upsert a scraped page. Returns status and pageId for vector sync.
+     */
+    static async upsertPage(page: ScrapedPage): Promise<{ status: "new" | "updated" | "unchanged"; pageId: string }> {
         try {
-            // Check if page already exists
             const existing = await pool.request()
                 .input("url", page.url)
                 .query("SELECT id, contentHash FROM KnowledgePages WHERE url = @url");
 
             if (existing.recordset.length === 0) {
-                // INSERT new page
                 const insertResult = await pool.request()
                     .input("url", page.url)
                     .input("title", page.title)
@@ -38,10 +62,11 @@ export class KnowledgeRepository {
                     .input("subcategory", page.subcategory || null)
                     .input("language", page.language)
                     .input("wordCount", page.wordCount)
+                    .input("sourceDomain", extractSourceDomain(page.url))
                     .query(`
-                        INSERT INTO KnowledgePages (url, title, content, contentHash, category, subcategory, language, wordCount, lastScrapedAt)
-                        OUTPUT INSERTED.id
-                        VALUES (@url, @title, @content, @contentHash, @category, @subcategory, @language, @wordCount, GETDATE())
+                        INSERT INTO KnowledgePages (url, title, content, contentHash, category, subcategory, language, wordCount, sourceDomain, lastScrapedAt)
+                        VALUES (@url, @title, @content, @contentHash, @category, @subcategory, @language, @wordCount, @sourceDomain, GETDATE())
+                        RETURNING id
                     `);
 
                 const pageId = insertResult.recordset[0].id;
@@ -50,18 +75,16 @@ export class KnowledgeRepository {
                 await this.createChunksForPage(pageId, page);
 
                 logger.info(`New page stored: ${page.url}`);
-                return "new";
+                return { status: "new", pageId };
             }
 
             const existingPage = existing.recordset[0];
 
-            // Check if content has changed
             if (existingPage.contentHash === page.contentHash) {
-                // Content unchanged — just update lastScrapedAt
                 await pool.request()
                     .input("url", page.url)
-                    .query("UPDATE KnowledgePages SET lastScrapedAt = GETDATE() WHERE url = @url");
-                return "unchanged";
+                    .query("UPDATE KnowledgePages SET lastScrapedAt = GETDATE(), isActive = 1 WHERE url = @url");
+                return { status: "unchanged", pageId: existingPage.id };
             }
 
             // Content changed — update page and re-chunk
@@ -96,7 +119,7 @@ export class KnowledgeRepository {
             await this.createChunksForPage(existingPage.id, page);
 
             logger.info(`Updated page: ${page.url}`);
-            return "updated";
+            return { status: "updated", pageId: existingPage.id };
 
         } catch (error: any) {
             logger.error(`Failed to upsert page ${page.url}: ${error.message}`);
@@ -110,12 +133,11 @@ export class KnowledgeRepository {
     private static async createChunksForPage(pageId: string, page: ScrapedPage): Promise<void> {
         const chunks = ContentCleaner.chunkContent(page.cleanContent, 500);
         const pageKeywords = ContentCleaner.extractKeywords(page.cleanContent);
+        const entityType = detectEntityType(page.url, page.title, page.cleanContent);
 
         for (let i = 0; i < chunks.length; i++) {
             const chunkContent = chunks[i];
             const chunkKeywords = ContentCleaner.extractKeywords(chunkContent);
-
-            // Merge page-level and chunk-level keywords
             const allKeywords = [...new Set([...chunkKeywords, ...pageKeywords.slice(0, 10)])];
 
             await pool.request()
@@ -125,9 +147,10 @@ export class KnowledgeRepository {
                 .input("keywords", allKeywords.join(","))
                 .input("category", page.category)
                 .input("title", page.title)
+                .input("entityType", entityType)
                 .query(`
-                    INSERT INTO KnowledgeChunks (pageId, chunkIndex, content, keywords, category, title)
-                    VALUES (@pageId, @chunkIndex, @content, @keywords, @category, @title)
+                    INSERT INTO KnowledgeChunks (pageId, chunkIndex, content, keywords, category, title, entityType)
+                    VALUES (@pageId, @chunkIndex, @content, @keywords, @category, @title, @entityType)
                 `);
         }
     }
@@ -160,7 +183,7 @@ export class KnowledgeRepository {
             const scoreExpr = scoreParts.join(" + ");
 
             const query = `
-                SELECT TOP ${maxResults}
+                SELECT
                     c.*,
                     (${scoreExpr}) as relevanceScore
                 FROM KnowledgeChunks c
@@ -168,6 +191,7 @@ export class KnowledgeRepository {
                 WHERE p.isActive = 1
                   AND (${conditions.join(" OR ")})
                 ORDER BY relevanceScore DESC, c.chunkIndex ASC
+                LIMIT ${maxResults}
             `;
 
             const result = await request.query(query);
@@ -203,11 +227,12 @@ export class KnowledgeRepository {
             }
 
             const result = await request.query(`
-                SELECT TOP ${maxResults} c.*
+                SELECT c.*
                 FROM KnowledgeChunks c
                 INNER JOIN KnowledgePages p ON c.pageId = p.id
                 WHERE ${whereClause}
                 ORDER BY c.chunkIndex ASC
+                LIMIT ${maxResults}
             `);
 
             return result.recordset;
@@ -274,19 +299,25 @@ export class KnowledgeRepository {
         if (activeUrls.length === 0) return 0;
 
         try {
-            // Build a table of active URLs for efficient comparison
-            // Using a simple approach: deactivate pages not scraped recently
-            const result = await pool.request()
-                .query(`
-                    UPDATE KnowledgePages 
-                    SET isActive = 0, updatedAt = GETDATE()
-                    WHERE isActive = 1 
-                      AND lastScrapedAt < DATEADD(day, -7, GETDATE())
-                `);
+            const normalized = activeUrls.map(u => u.replace(/\/$/, ""));
+            let deactivated = 0;
 
-            const deactivated = result.rowsAffected[0];
+            const allActive = await pool.request().query(
+                "SELECT id, url FROM KnowledgePages WHERE isActive = 1"
+            );
+
+            for (const row of allActive.recordset) {
+                const url = String(row.url).replace(/\/$/, "");
+                if (!normalized.includes(url)) {
+                    await pool.request()
+                        .input("id", row.id)
+                        .query("UPDATE KnowledgePages SET isActive = 0, updatedAt = GETDATE() WHERE id = @id");
+                    deactivated++;
+                }
+            }
+
             if (deactivated > 0) {
-                logger.info(`Deactivated ${deactivated} stale knowledge pages.`);
+                logger.info(`Deactivated ${deactivated} pages not seen in latest crawl.`);
             }
             return deactivated;
         } catch (error: any) {
@@ -307,8 +338,8 @@ export class KnowledgeRepository {
             .input("baseUrl", baseUrl)
             .query(`
                 INSERT INTO ScraperRuns (runType, status, baseUrl)
-                OUTPUT INSERTED.id
                 VALUES (@runType, @status, @baseUrl)
+                RETURNING id
             `);
         return result.recordset[0].id;
     }
@@ -349,7 +380,8 @@ export class KnowledgeRepository {
      */
     static async getRecentRuns(limit: number = 10): Promise<ScraperRun[]> {
         const result = await pool.request().query(`
-            SELECT TOP ${limit} * FROM ScraperRuns ORDER BY startedAt DESC
+            SELECT * FROM ScraperRuns ORDER BY startedAt DESC
+            LIMIT ${limit}
         `);
         return result.recordset;
     }
@@ -362,5 +394,106 @@ export class KnowledgeRepository {
             "SELECT * FROM KnowledgePages WHERE isActive = 1 ORDER BY category, title"
         );
         return result.recordset;
+    }
+
+    static async getPageById(pageId: string): Promise<KnowledgePage | null> {
+        const result = await pool.request()
+            .input("id", pageId)
+            .query("SELECT * FROM KnowledgePages WHERE id = @id");
+        return result.recordset[0] || null;
+    }
+
+    static async getChunksByPageId(pageId: string): Promise<KnowledgeChunk[]> {
+        const result = await pool.request()
+            .input("pageId", pageId)
+            .query("SELECT * FROM KnowledgeChunks WHERE pageId = @pageId ORDER BY chunkIndex");
+        return result.recordset;
+    }
+
+    static async getUnsyncedChunks(limit: number = 50): Promise<KnowledgeChunk[]> {
+        const result = await pool.request().query(`
+            SELECT c.*
+            FROM KnowledgeChunks c
+            INNER JOIN KnowledgePages p ON c.pageId = p.id
+            WHERE p.isActive = 1 AND c.chromaSyncedAt IS NULL
+            ORDER BY c.createdAt ASC
+            LIMIT ${limit}
+        `);
+        return result.recordset;
+    }
+
+    static async getUnsyncedCount(): Promise<number> {
+        const result = await pool.request().query(`
+            SELECT COUNT(*) as cnt
+            FROM KnowledgeChunks c
+            INNER JOIN KnowledgePages p ON c.pageId = p.id
+            WHERE p.isActive = 1 AND c.chromaSyncedAt IS NULL
+        `);
+        return result.recordset[0]?.cnt || 0;
+    }
+
+    static async markChunksSynced(chunkIds: string[], model: string): Promise<void> {
+        if (chunkIds.length === 0) return;
+        for (const id of chunkIds) {
+            await pool.request()
+                .input("id", id)
+                .input("model", model)
+                .query(`
+                    UPDATE KnowledgeChunks
+                    SET chromaSyncedAt = GETDATE(), embeddingModel = @model
+                    WHERE id = @id
+                `);
+        }
+    }
+
+    static async getPageUrlIndex(): Promise<Array<{ url: string; title: string }>> {
+        const result = await pool.request().query(
+            "SELECT url, title FROM KnowledgePages WHERE isActive = 1"
+        );
+        return result.recordset;
+    }
+
+    static async getPageCount(): Promise<number> {
+        const result = await pool.request().query("SELECT COUNT(*) as cnt FROM KnowledgePages");
+        return result.recordset[0]?.cnt || 0;
+    }
+
+    static async enqueueUrls(urls: string[], runId?: string, priority: number = 0): Promise<number> {
+        let added = 0;
+        for (const url of urls) {
+            try {
+                await pool.request()
+                    .input("url", url)
+                    .input("priority", priority)
+                    .input("runId", runId || null)
+                    .query(`
+                        INSERT INTO ScrapeQueue (url, priority, runId, status)
+                        SELECT @url, @priority, @runId, 'pending'
+                        WHERE NOT EXISTS (
+                            SELECT 1 FROM ScrapeQueue WHERE url = @url AND status = 'pending'
+                        )
+                    `);
+                added++;
+            } catch { /* skip duplicate */ }
+        }
+        return added;
+    }
+
+    static async getPendingQueueUrls(limit: number = 500): Promise<string[]> {
+        const result = await pool.request().query(`
+            SELECT url FROM ScrapeQueue
+            WHERE status = 'pending'
+            ORDER BY priority DESC, createdAt ASC
+            LIMIT ${limit}
+        `);
+        return result.recordset.map((r: { url: string }) => r.url);
+    }
+
+    static async markQueueUrlsDone(urls: string[]): Promise<void> {
+        for (const url of urls) {
+            await pool.request()
+                .input("url", url)
+                .query("UPDATE ScrapeQueue SET status = 'done', updatedAt = GETDATE() WHERE url = @url");
+        }
     }
 }

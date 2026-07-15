@@ -29,7 +29,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: clamp(3rem, 6vw, 4.5rem);
     font-weight: 900;
-    color: #0e220e;
+    color: var(--color-brand);
     letter-spacing: -0.03em;
     margin: 0 0 10px;
     line-height: 1.15;
@@ -349,7 +349,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: 1.3rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: var(--color-text);
     letter-spacing: -0.02em;
     margin: 0;
 }

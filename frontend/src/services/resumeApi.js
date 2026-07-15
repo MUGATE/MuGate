@@ -24,11 +24,11 @@ export async function analyzeResume(resumeText, jobDescription = '') {
 
 /**
  * Ask the backend to rewrite/improve a resume (or one section) and return the
- * result as structured normalized JSON.
+ * result as structured normalized JSON, plus whether the edit actually applied.
  * @param {object} resume       normalized resume data
  * @param {string} instruction  optional natural-language instruction
  * @param {string} scope        'all' or a section key (summary/experience/...)
- * @returns {Promise<{resume: object, changed: boolean, source: string, tokensUsed: number}>}
+ * @returns {Promise<{resume: object, changed: boolean, source: string, tokensUsed: number, message: string, reason: string, updatedSections?: string[]}>}
  */
 export async function aiEditResume(resume, instruction = '', scope = 'all') {
   const res = await fetch(`${RESUME_API_BASE}/ai-edit`, {
@@ -39,7 +39,15 @@ export async function aiEditResume(resume, instruction = '', scope = 'all') {
   if (!res.ok) throw new Error(`AI edit failed (${res.status})`);
   const data = await res.json();
   if (!data?.success || !data.resume) throw new Error('Malformed AI edit response');
-  return { resume: data.resume, changed: !!data.changed, source: data.source, tokensUsed: data.tokensUsed || 0 };
+  return {
+    resume: data.resume,
+    changed: !!data.changed,
+    source: data.source,
+    tokensUsed: data.tokensUsed || 0,
+    message: typeof data.message === 'string' ? data.message : '',
+    reason: data.reason || (data.changed ? 'applied' : 'no_change'),
+    updatedSections: Array.isArray(data.updatedSections) ? data.updatedSections : [],
+  };
 }
 
 /**

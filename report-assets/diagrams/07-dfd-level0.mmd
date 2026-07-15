@@ -1,0 +1,19 @@
+flowchart LR
+    subgraph level0 [DFD Level 0]
+        STUDENT[Student]
+        ADMIN[Administrator]
+        PROCESS((MuGate System))
+        PORTAL[(MU Portal)]
+        AIAPI[(AI Providers)]
+        DB[(SQL Server)]
+    end
+
+    STUDENT -->|credentials requests| PROCESS
+    PROCESS -->|JWT responses| STUDENT
+    PROCESS -->|verify scrape| PORTAL
+    PORTAL -->|history courses| PROCESS
+    PROCESS -->|queries updates| DB
+    DB -->|data| PROCESS
+    PROCESS -->|prompts| AIAPI
+    AIAPI -->|responses| PROCESS
+    ADMIN -->|admin commands| PROCESS

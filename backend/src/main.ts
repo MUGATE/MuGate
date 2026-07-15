@@ -1,11 +1,27 @@
+import "./core/utils/windowsHideSpawn"; // hide Playwright console flashes on Windows
 import app from "./app";
 import open from "open";
+import { env } from "./config/env";
+import path from "path";
 
-const PORT = 5000;
+// Cursor agent shells redirect Playwright browsers into a temp cache. Prefer the
+// real user install so login/scrape use chrome-headless-shell instead of flashing Chrome.
+const browserPath = process.env.PLAYWRIGHT_BROWSERS_PATH || "";
+if (browserPath.toLowerCase().includes("cursor-sandbox-cache")) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = path.join(
+    process.env.LOCALAPPDATA || "",
+    "ms-playwright"
+  );
+}
 
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
+const PORT = Number(env.port) || 5000;
+const HOST = "0.0.0.0";
 
-  // Open browser automatically
-  await open(`http://localhost:${PORT}`);
+app.listen(PORT, HOST, async () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`LAN access: http://<your-ip>:${PORT}`);
+
+  if (process.env.NODE_ENV !== "production") {
+    await open(`http://localhost:${PORT}`);
+  }
 });

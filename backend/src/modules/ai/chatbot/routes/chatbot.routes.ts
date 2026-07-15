@@ -1,8 +1,9 @@
 import { Router } from "express";
 import multer from "multer";
 import { ChatbotController } from "../controllers/chatbot.controller";
-import { optionalAuthMiddleware } from "../../../../core/middleware/optionalAuth.middleware";
 import { authMiddleware } from "../../../../core/middleware/auth.middleware";
+import { adminMiddleware } from "../../../../core/middleware/admin.middleware";
+import { aiRateLimiter } from "../../../../core/middleware/rateLimiter.middleware";
 
 // Multer config: store in memory (buffer), max 5MB
 const upload = multer({
@@ -12,26 +13,18 @@ const upload = multer({
 
 const router = Router();
 
-// Routes
-// Note: Some endpoints might require firm auth (like getting history), 
-// but for public mode we use optional auth to create/send messages.
+// All chatbot surfaces require authentication (prevents anonymous AI spend + session IDOR)
+router.post("/sessions", authMiddleware, ChatbotController.createSession);
+router.post("/message", authMiddleware, aiRateLimiter, ChatbotController.sendMessage);
+router.post("/upload", authMiddleware, aiRateLimiter, upload.single("file"), ChatbotController.uploadFile);
 
-router.post("/sessions", optionalAuthMiddleware, ChatbotController.createSession);
-router.post("/message", optionalAuthMiddleware, ChatbotController.sendMessage);
-router.post("/upload", optionalAuthMiddleware, upload.single("file"), ChatbotController.uploadFile);
+router.get("/sessions", authMiddleware, ChatbotController.getSessions);
+router.delete("/sessions/:sessionId", authMiddleware, ChatbotController.deleteSession);
 
-// These could strictly require authMiddleware if public users aren't allowed to load/delete histories.
-// Based on current logic, public might not have persistence, so optional auth is okay. The controller checks `req.user`.
-router.get("/sessions", optionalAuthMiddleware, ChatbotController.getSessions);
-router.delete("/sessions/:sessionId", optionalAuthMiddleware, ChatbotController.deleteSession);
+router.get("/analytics", authMiddleware, adminMiddleware, ChatbotController.getAnalytics);
 
-// Admin-only (protected by standard auth for now, or admin middleware if available)
-router.get("/analytics", authMiddleware, ChatbotController.getAnalytics);
+router.get("/sessions/:sessionId/messages", authMiddleware, ChatbotController.getSessionMessages);
 
-// Load message history for a specific session
-router.get("/sessions/:sessionId/messages", optionalAuthMiddleware, ChatbotController.getSessionMessages);
-
-// Enhance prompt using AI
-router.post("/enhance-prompt", optionalAuthMiddleware, ChatbotController.enhancePrompt);
+router.post("/enhance-prompt", authMiddleware, aiRateLimiter, ChatbotController.enhancePrompt);
 
 export default router;

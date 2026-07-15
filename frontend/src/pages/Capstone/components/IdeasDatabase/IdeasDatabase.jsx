@@ -49,7 +49,7 @@ const IdeasDatabase = () => {
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        if (user && (user.isAdmin === true || String(user.universityId) === '101230004')) {
+        if (user && user.isAdmin === true) {
           setIsAdmin(true);
         }
       } catch (err) {

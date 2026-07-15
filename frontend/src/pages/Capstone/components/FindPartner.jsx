@@ -1,18 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Search, UserPlus, Trash2, Mail, Phone, GraduationCap, Code, X
+  Search, UserPlus, Trash2, Mail, Phone, GraduationCap, Code, X, User
 } from 'lucide-react';
 import { Users } from 'lucide-react';
 import * as capstoneApi from '../../../services/capstoneApi';
+
+const EMPTY_FORM = {
+  userName: '',
+  email: '',
+  phone: '',
+  major: 'Computer Science',
+  skills: '',
+  description: '',
+  lookingFor: '',
+};
 
 const FindPartner = ({ token, currentUserId, currentUserEmail }) => {
   const [partners, setPartners] = useState([]);
   const [partnerSearch, setPartnerSearch] = useState('');
   const [isLoadingPartners, setIsLoadingPartners] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [addFormData, setAddFormData] = useState({
-    phone: '', major: 'Computer Science', skills: '', description: '', lookingFor: ''
-  });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [addFormData, setAddFormData] = useState(EMPTY_FORM);
   const [addFormError, setAddFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,6 +38,17 @@ const FindPartner = ({ token, currentUserId, currentUserEmail }) => {
   };
 
   useEffect(() => {
+    const userStr = localStorage.getItem('mugate_user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user && user.isAdmin === true) {
+          setIsAdmin(true);
+        }
+      } catch (err) {
+        console.error('Error parsing user:', err);
+      }
+    }
     loadPartners();
   }, []);
 
@@ -39,6 +59,17 @@ const FindPartner = ({ token, currentUserId, currentUserEmail }) => {
     return () => clearTimeout(timer);
   }, [partnerSearch]);
 
+  const openAddForm = () => {
+    if (!showAddForm) {
+      setAddFormData({
+        ...EMPTY_FORM,
+        email: isAdmin ? '' : (currentUserEmail || `${currentUserId}@mu.edu.lb`),
+      });
+      setAddFormError('');
+    }
+    setShowAddForm(!showAddForm);
+  };
+
   const handleAddPartner = async (e) => {
     e.preventDefault();
     setAddFormError('');
@@ -48,18 +79,19 @@ const FindPartner = ({ token, currentUserId, currentUserEmail }) => {
     }
     setIsSubmitting(true);
     try {
-      // Use real email from JWT
-      const email = currentUserEmail || `${currentUserId}@mu.edu.lb`;
-      // Send partner request with required fields
-      const payload = { ...addFormData, email };
-      // If description is empty, send a placeholder so backend validation passes
+      const email = (isAdmin ? addFormData.email : currentUserEmail || `${currentUserId}@mu.edu.lb`).trim();
+      const payload = {
+        ...addFormData,
+        email,
+      };
       if (!payload.description) payload.description = 'Looking for a capstone partner';
       if (!payload.phone) delete payload.phone;
       if (!payload.skills) delete payload.skills;
       if (!payload.lookingFor) delete payload.lookingFor;
+      if (!isAdmin || !payload.userName?.trim()) delete payload.userName;
       await capstoneApi.addPartner(payload);
       setShowAddForm(false);
-      setAddFormData({ phone: '', major: 'Computer Science', skills: '', description: '', lookingFor: '' });
+      setAddFormData(EMPTY_FORM);
       await loadPartners(partnerSearch);
     } catch (err) {
       setAddFormError(err.message || 'Failed to add partner listing.');
@@ -69,7 +101,10 @@ const FindPartner = ({ token, currentUserId, currentUserEmail }) => {
   };
 
   const handleDeletePartner = async (partnerId) => {
-    if (!window.confirm('Remove your partner listing?')) return;
+    const message = isAdmin
+      ? 'Remove this partner listing?'
+      : 'Remove your partner listing?';
+    if (!window.confirm(message)) return;
     try {
       await capstoneApi.deletePartner(partnerId);
       await loadPartners(partnerSearch);
@@ -77,6 +112,9 @@ const FindPartner = ({ token, currentUserId, currentUserEmail }) => {
       console.error('Failed to delete partner:', err);
     }
   };
+
+  const canDelete = (partner) =>
+    isAdmin || (currentUserId && partner.userId === currentUserId);
 
   return (
     <div className="cs-panel">
@@ -108,9 +146,9 @@ const FindPartner = ({ token, currentUserId, currentUserEmail }) => {
           )}
         </div>
         {token && (
-          <button className="cs-action-btn primary" onClick={() => setShowAddForm(!showAddForm)}>
+          <button className="cs-action-btn primary" onClick={openAddForm}>
             {showAddForm ? <X size={16} /> : <UserPlus size={16} />}
-            <span>{showAddForm ? 'Cancel' : 'Add Myself'}</span>
+            <span>{showAddForm ? 'Cancel' : isAdmin ? 'Add Partner' : 'Add Myself'}</span>
           </button>
         )}
       </div>
@@ -120,9 +158,32 @@ const FindPartner = ({ token, currentUserId, currentUserEmail }) => {
         <form className="cs-add-form" onSubmit={handleAddPartner}>
           <h3 className="cs-form-title">
             <UserPlus size={18} />
-            Add Yourself to the Partner List
+            {isAdmin ? 'Add Partner Listing' : 'Add Yourself to the Partner List'}
           </h3>
           <div className="cs-form-grid">
+            {isAdmin && (
+              <>
+                <div className="cs-form-field">
+                  <label><User size={13} /> Name</label>
+                  <input
+                    type="text"
+                    placeholder="Student name"
+                    value={addFormData.userName}
+                    onChange={(e) => setAddFormData(prev => ({ ...prev, userName: e.target.value }))}
+                  />
+                </div>
+                <div className="cs-form-field">
+                  <label><Mail size={13} /> Email</label>
+                  <input
+                    type="email"
+                    placeholder="student@mu.edu.lb"
+                    value={addFormData.email}
+                    onChange={(e) => setAddFormData(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                  />
+                </div>
+              </>
+            )}
             <div className="cs-form-field">
               <label><Phone size={13} /> Phone</label>
               <input
@@ -192,11 +253,11 @@ const FindPartner = ({ token, currentUserId, currentUserEmail }) => {
                   {partner.major}
                 </span>
               </div>
-              {currentUserId && partner.userId === currentUserId && (
+              {canDelete(partner) && (
                 <button
                   className="cs-delete-btn"
                   onClick={() => handleDeletePartner(partner.id)}
-                  title="Remove your listing"
+                  title={isAdmin ? 'Remove listing' : 'Remove your listing'}
                 >
                   <Trash2 size={15} />
                 </button>

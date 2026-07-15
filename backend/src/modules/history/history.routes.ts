@@ -8,6 +8,7 @@ const router = Router();
 router.use(authMiddleware);
 
 router.get("/", HistoryController.getStudentHistory);
+router.get("/summary", HistoryController.getAcademicSummary);
 router.post("/sync", HistoryController.syncHistory);
 
 export default router;

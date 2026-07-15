@@ -18,7 +18,7 @@
     top: 0;
     width: 100%;
     height: 100vh;
-    background: linear-gradient(to bottom, #ebebeb 0%, #ffffff 100%);
+    background: linear-gradient(to bottom, var(--color-surface-muted) 0%, var(--color-page) 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -44,7 +44,7 @@
     font-family: "SolidroadCustom", sans-serif;
     font-size: clamp(1.5rem, 2.8vw, 3.5rem);
     font-weight: 900;
-    color: #0e220e;
+    color: var(--color-brand);
     letter-spacing: -0.03em;
     line-height: 1.1;
     -webkit-text-stroke: 0.5px #0e220e;

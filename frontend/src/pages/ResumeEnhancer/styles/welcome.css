@@ -2,7 +2,7 @@
 
 .resume-page {
   height: 100vh;
-  background-color: #f8fafb;
+  background-color: var(--color-bg);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -20,81 +20,30 @@
 }
 
 .re-glass {
-  background-color: #fafcfe;
+  background-color: var(--color-glass-solid);
   border-radius: 20px;
-  box-shadow: 0 4px 20px #f1f3f4;
-  border: 1px solid rgba(0, 0, 0, 0.01);
+  box-shadow: 0 4px 20px var(--color-shadow);
+  border: 1px solid var(--color-border);
   position: relative;
   z-index: 2;
 }
 
-.re-navbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 36px;
-  padding: 16px 40px;
-  margin: 16px auto 0;
-  max-width: 1500px;
-  width: calc(100% - 80px);
-  border-radius: 20px;
-  position: relative;
-  z-index: 1001;
-  flex-shrink: 0;
-  background-color: #fafcfe;
-  box-shadow: 0 4px 20px #f1f3f4;
-  border: 1px solid rgba(0, 0, 0, 0.01);
-}
-
-.re-navbar a {
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
-  color: #3a3a3a;
-  padding: 8px 18px;
-  border-radius: 12px;
-  transition: all 0.25s ease;
-  letter-spacing: 0.01em;
-}
-.re-navbar a:hover {
-  color: #1a6bdb;
-  background: rgba(26, 107, 219, 0.08);
-}
-.re-navbar a.active {
-  color: #1a6bdb;
-  background: rgba(26, 107, 219, 0.1);
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(26, 107, 219, 0.1);
-}
-
-.re-nav-avatar {
-  position: absolute;
-  right: 24px;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-.re-nav-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+/* Navbar — see GlassNavBar.css */
 
 .re-layout {
   display: flex;
   gap: 24px;
-  padding: 20px 0 20px;
+  padding: 20px 0;
   margin: 0 auto;
-  max-width: 1500px;
-  width: calc(100% - 80px);
+  max-width: var(--page-max-width-wide);
+  width: calc(100% - 2 * var(--page-gutter));
   align-items: stretch;
   position: relative;
   z-index: 2;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .re-section-title {
@@ -129,10 +78,10 @@
   text-align: center;
   position: relative;
   overflow: visible;
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 24px;
   border: 1px solid rgba(74, 144, 217, 0.15);
-  box-shadow: 0 4px 20px #f1f3f4;
+  box-shadow: 0 4px 20px var(--color-shadow);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   transform: scale(0.85) translateY(30px);
@@ -172,7 +121,7 @@
   transition: all 0.2s ease;
 }
 .re-modal-back:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--color-glass);
   color: #1a1a2e;
   border-color: rgba(0, 0, 0, 0.15);
 }
@@ -249,16 +198,21 @@
 
 /* Tablet viewports */
 @media (max-width: 1100px) {
-  .re-navbar {
-    margin: 16px 24px 0;
-    gap: 20px;
-    padding: 14px 24px;
+  .resume-page {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
+
   .re-layout {
     flex-wrap: wrap;
-    margin: 0 24px;
+    width: calc(100% - 2 * var(--page-gutter));
     padding: 20px 0;
     overflow: visible;
+    flex: none;
+    height: auto;
+    min-height: 0;
   }
 }
 
@@ -269,24 +223,9 @@
     min-height: 100vh;
     overflow: auto;
   }
-  .re-navbar {
-    margin: 10px 12px 0;
-    gap: 6px;
-    padding: 12px 14px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .re-navbar a {
-    font-size: 13px;
-    padding: 6px 12px;
-  }
-  .re-nav-avatar {
-    position: static;
-    margin-left: auto;
-  }
   .re-layout {
     flex-direction: column;
-    margin: 0 12px;
+    width: calc(100% - 2 * var(--page-gutter));
     padding: 14px 0;
     gap: 14px;
     overflow: visible;
@@ -302,3 +241,176 @@
     font-size: 20px;
   }
 }
+
+/* ── Dark mode: lighter popups + visible field borders ── */
+[data-theme="dark"] .re-modal-card,
+[data-theme="dark"] .re-format-modal {
+  background: #1e2a42;
+  border-color: rgba(148, 183, 255, 0.28);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .re-modal-title,
+[data-theme="dark"] .re-format-name,
+[data-theme="dark"] .re-cv-builder-title,
+[data-theme="dark"] .re-section-title {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .re-modal-subtitle,
+[data-theme="dark"] .re-format-desc,
+[data-theme="dark"] .re-modal-btn-desc {
+  color: #b6c4d8 !important;
+}
+
+[data-theme="dark"] .re-modal-option-btn,
+[data-theme="dark"] .re-format-option {
+  background: #243352;
+  border-color: rgba(170, 195, 235, 0.28);
+  color: #f0f4f8;
+}
+
+[data-theme="dark"] .re-modal-btn-label {
+  color: #f0f4f8;
+}
+
+[data-theme="dark"] .re-modal-back {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .re-modal-back:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+[data-theme="dark"] .cv-field-input,
+[data-theme="dark"] .cv-textarea,
+[data-theme="dark"] .dl-modal-input,
+[data-theme="dark"] .re-edit-input,
+[data-theme="dark"] .re-editor-ai-input,
+[data-theme="dark"] .re-editor-ai-select {
+  background: #243352;
+  color: #f8fafc;
+  border: 1.5px solid rgba(170, 195, 235, 0.45);
+}
+
+[data-theme="dark"] .cv-field-input:focus,
+[data-theme="dark"] .cv-textarea:focus,
+[data-theme="dark"] .dl-modal-input:focus,
+[data-theme="dark"] .re-edit-input:focus,
+[data-theme="dark"] .re-editor-ai-input:focus,
+[data-theme="dark"] .re-editor-ai-select:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.22);
+  background: #2a3b5c;
+}
+
+[data-theme="dark"] .cv-field-input::placeholder,
+[data-theme="dark"] .cv-textarea::placeholder,
+[data-theme="dark"] .dl-modal-input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .cv-field-label {
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .re-cv-form-card,
+[data-theme="dark"] .re-cv-builder,
+[data-theme="dark"] .re-glass {
+  background: #17233a;
+  border-color: rgba(148, 183, 255, 0.2);
+}
+
+[data-theme="dark"] .re-editor-doc-paper {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .re-editor-doc-paper .re-doc-name,
+[data-theme="dark"] .re-editor-doc-paper .re-doc-section-title {
+  color: #0f172a !important;
+}
+
+/* After selecting create/enhance — builder + analyzer copy */
+[data-theme="dark"] .re-cv-builder-title,
+[data-theme="dark"] .cv-form-title,
+[data-theme="dark"] .upload-page-title,
+[data-theme="dark"] .upload-title,
+[data-theme="dark"] .preview-filename,
+[data-theme="dark"] .score-number,
+[data-theme="dark"] .re-convert-title,
+[data-theme="dark"] .suggestion-title,
+[data-theme="dark"] .re-analyzing-text,
+[data-theme="dark"] .re-section-title {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .re-cv-back-btn,
+[data-theme="dark"] .upload-page-subtitle,
+[data-theme="dark"] .upload-subtitle,
+[data-theme="dark"] .preview-filesize,
+[data-theme="dark"] .score-max,
+[data-theme="dark"] .re-convert-sub,
+[data-theme="dark"] .suggestion-text,
+[data-theme="dark"] .re-cv-builder-placeholder,
+[data-theme="dark"] .re-cv-edit-label,
+[data-theme="dark"] .re-converting-sub {
+  color: #c5d0e0 !important;
+}
+
+[data-theme="dark"] .re-cv-back-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="dark"] .re-cv-back-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+[data-theme="dark"] .cv-form-section-title {
+  color: #93c5fd !important;
+  border-bottom-color: rgba(147, 197, 253, 0.25);
+}
+
+[data-theme="dark"] .cv-form-header,
+[data-theme="dark"] .re-cv-builder-header {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .re-upload-area {
+  border-color: rgba(147, 197, 253, 0.35);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .re-upload-area:hover {
+  border-color: rgba(147, 197, 253, 0.55);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .re-score-card,
+[data-theme="dark"] .re-convert-card,
+[data-theme="dark"] .re-suggestions-card,
+[data-theme="dark"] .re-preview-card,
+[data-theme="dark"] .suggestion-card {
+  background: #1a2438;
+  border-color: rgba(148, 183, 255, 0.18);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .dl-modal-label,
+[data-theme="dark"] .dl-modal-formats button,
+[data-theme="dark"] .format-option-label {
+  color: #c5d0e0 !important;
+}
+
+[data-theme="dark"] .dl-modal-title,
+[data-theme="dark"] .dl-modal-heading {
+  color: #f8fafc !important;
+}
+

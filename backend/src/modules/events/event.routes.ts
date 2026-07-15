@@ -16,7 +16,7 @@ router.post("/", authMiddleware, adminMiddleware, EventController.addManualEvent
 router.put("/:id", authMiddleware, adminMiddleware, EventController.updateManualEvent);
 router.delete("/:id", authMiddleware, adminMiddleware, EventController.deleteManualEvent);
 
-// Scrape trigger — could be protected with auth in production
-router.post("/scrape", EventController.triggerScrape);
+// Scrape trigger — admin only
+router.post("/scrape", authMiddleware, adminMiddleware, EventController.triggerScrape);
 
 export default router;

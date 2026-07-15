@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { createSession, sendMessage as sendChatbotMessage } from '../../services/chatbotApi';
 import { generateResumeFile, aiEditResume } from '../../services/resumeApi';
 
@@ -9,7 +8,9 @@ import ResumeBuilderPage from './pages/ResumeBuilderPage';
 import DownloadModal from './components/DownloadModal';
 import usePersistentState from './hooks/usePersistentState';
 import ResumeEditor from './editor/ResumeEditor';
-import { createEmptyResume } from './editor/resumeSchema';
+import FloatingProfileIcon from '../../components/FloatingProfileIcon';
+import GlassNavBar from '../../components/layout/GlassNavBar';
+import { createEmptyResume, normalizeResume } from './editor/resumeSchema';
 import { fromLocalForm, fromGlobalForm, toBackendPayload } from './editor/adapters';
 
 // Import modular styling stylesheets
@@ -101,7 +102,7 @@ const ResumeEnhancerRouter = () => {
     const seed = fromMode === 'global'
       ? fromGlobalForm(globalForm, { exp: globalExtraExp, lead: globalExtraLead })
       : fromLocalForm(localForm, { edu: localExtraEdu, exp: localExtraExp, projects: localExtraProjects });
-    setEditorData(seed);
+    setEditorData(normalizeResume(seed));
     setEditorReturnMode(fromMode);
     setMode('editor');
   };
@@ -132,7 +133,8 @@ const ResumeEnhancerRouter = () => {
   const removeGlobalLead = i => setGlobalExtraLead(p => p.filter((_, idx) => idx !== i));
   const updateGlobalExtraLead = (i, f, v) => setGlobalExtraLead(p => p.map((e, idx) => idx === i ? { ...e, [f]: v } : e));
 
-  // Helper to run AI edits directly on builder forms
+  // Helper to run AI edits directly on builder forms.
+  // Returns { changed, message, reason } so chat can confirm apply / explain restrictions.
   const runBuilderAiEdit = useCallback(async (format, text) => {
     try {
       const isLocal = format === 'local';
@@ -158,12 +160,20 @@ const ResumeEnhancerRouter = () => {
           setGlobalExtraExp(payload.extras.exp || []);
           setGlobalExtraLead(payload.extras.lead || []);
         }
-        return true;
       }
+      return {
+        changed: !!result?.changed,
+        message: result?.message || '',
+        reason: result?.reason || 'no_change',
+      };
     } catch (err) {
       console.error('Builder AI edit failed:', err);
+      return {
+        changed: false,
+        message: "Those changes can't be applied — something went wrong. Please try again.",
+        reason: 'ai_unavailable',
+      };
     }
-    return false;
   }, [localForm, globalForm, localExtraEdu, localExtraExp, localExtraProjects, globalExtraExp, globalExtraLead, setLocalForm, setGlobalForm, setLocalExtraEdu, setLocalExtraExp, setLocalExtraProjects, setGlobalExtraExp, setGlobalExtraLead]);
 
   // Auto-scroll chats
@@ -183,7 +193,15 @@ const ResumeEnhancerRouter = () => {
     setLocalInput('');
     setIsLocalChatLoading(true);
     try {
-      const wasEdited = await runBuilderAiEdit('local', text);
+      const editResult = await runBuilderAiEdit('local', text);
+
+      if (editResult.changed || ['local_form_restriction', 'global_form_restriction', 'no_change', 'ai_unavailable'].includes(editResult.reason)) {
+        setLocalMessages(prev => [...prev, {
+          text: editResult.message || (editResult.changed ? '✓ Changes have been applied.' : "Those changes can't be applied."),
+          isUser: false,
+        }]);
+        return;
+      }
 
       let sid = localSessionId;
       if (!sid) {
@@ -195,12 +213,11 @@ const ResumeEnhancerRouter = () => {
           .map(([k, v]) => `${k}: ${v}`)
           .join('\n');
         if (cvContext) {
-          await sendChatbotMessage(sid, `I am building a Lebanese-format CV. Here is my data:\n${cvContext}\n\nYou are an advisor. Help me build my CV and suggest improvements. Respond concisely.`);
+          await sendChatbotMessage(sid, `I am building a Lebanese-format CV. Here is my data:\n${cvContext}\n\nYou are an advisor. Help me build my CV and suggest improvements. Respond concisely. Never pretend you already edited the form unless told.`);
         }
       }
       const response = await sendChatbotMessage(sid, text);
-      const prefix = wasEdited ? "✨ [AI applied updates directly to your CV form] " : "";
-      setLocalMessages(prev => [...prev, { text: prefix + (response.text || 'Sorry, I could not process that request.'), isUser: false }]);
+      setLocalMessages(prev => [...prev, { text: response.text || 'Sorry, I could not process that request.', isUser: false }]);
     } catch {
       setLocalMessages(prev => [...prev, { text: CHAT_FALLBACK_LOCAL[Math.floor(Math.random() * CHAT_FALLBACK_LOCAL.length)], isUser: false }]);
     } finally {
@@ -216,7 +233,15 @@ const ResumeEnhancerRouter = () => {
     setGlobalInput('');
     setIsGlobalChatLoading(true);
     try {
-      const wasEdited = await runBuilderAiEdit('global', text);
+      const editResult = await runBuilderAiEdit('global', text);
+
+      if (editResult.changed || ['local_form_restriction', 'global_form_restriction', 'no_change', 'ai_unavailable'].includes(editResult.reason)) {
+        setGlobalMessages(prev => [...prev, {
+          text: editResult.message || (editResult.changed ? '✓ Changes have been applied.' : "Those changes can't be applied."),
+          isUser: false,
+        }]);
+        return;
+      }
 
       let sid = globalSessionId;
       if (!sid) {
@@ -228,12 +253,11 @@ const ResumeEnhancerRouter = () => {
           .map(([k, v]) => `${k}: ${v}`)
           .join('\n');
         if (cvContext) {
-          await sendChatbotMessage(sid, `I am building an international CV. Here is my data:\n${cvContext}\n\nYou are an advisor. Help me build my CV and suggest improvements. Respond concisely.`);
+          await sendChatbotMessage(sid, `I am building an international CV. Here is my data:\n${cvContext}\n\nYou are an advisor. Help me build my CV and suggest improvements. Respond concisely. Never pretend you already edited the form unless told.`);
         }
       }
       const response = await sendChatbotMessage(sid, text);
-      const prefix = wasEdited ? "✨ [AI applied updates directly to your CV form] " : "";
-      setGlobalMessages(prev => [...prev, { text: prefix + (response.text || 'Sorry, I could not process that request.'), isUser: false }]);
+      setGlobalMessages(prev => [...prev, { text: response.text || 'Sorry, I could not process that request.', isUser: false }]);
     } catch {
       setGlobalMessages(prev => [...prev, { text: CHAT_FALLBACK_GLOBAL[Math.floor(Math.random() * CHAT_FALLBACK_GLOBAL.length)], isUser: false }]);
     } finally {
@@ -271,17 +295,6 @@ const ResumeEnhancerRouter = () => {
     }
   }, [showDownloadModal, localForm, globalForm, localExtraEdu, localExtraExp, localExtraProjects, globalExtraExp, globalExtraLead, downloadFileType, downloadFileName]);
 
-  const isAdmin = (() => {
-    const userStr = localStorage.getItem("mugate_user");
-    if (userStr) {
-      try {
-        const u = JSON.parse(userStr);
-        if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
-      } catch { /* ignore malformed stored user */ }
-    }
-    return false;
-  })();
-
   return (
     <div className="resume-page">
       {/* Dynamic Aesthetic Background Meshes */}
@@ -295,21 +308,11 @@ const ResumeEnhancerRouter = () => {
       <span className="re-sparkle re-sparkle-5">✧</span>
 
       {/* Global Portal Navigation */}
-      <nav className="re-navbar">
-        <Link to="/">Home</Link>
-        <Link to="/internships">Internships</Link>
-        <Link to="/resume-enhancer" className="active">Resume</Link>
-        <Link to="/chatbot">Chatbot</Link>
-        <Link to="/schedule">Scheduler</Link>
-        <Link to="/capstone">Capstone</Link>
-        <Link to="/events">Events</Link>
-        <Link to="/roadmap">RoadMap</Link>
-        <Link to="/about">About</Link>
-        {isAdmin && <Link to="/admin-control">Control</Link>}
-        <div className="re-nav-avatar">
-          <img src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68" alt="Profile" />
-        </div>
-      </nav>
+      <GlassNavBar activePath="/resume-enhancer" />
+      <FloatingProfileIcon
+        className="floating-profile-icon--resume"
+        navbarSelector=".glass-navbar"
+      />
 
       {/* Decoupled SPA Routing Context */}
       {mode === 'welcome' && (

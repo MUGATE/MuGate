@@ -8,7 +8,8 @@ export const generateSystemPrompt = (
     studentContext: string = "",
     ragContext: string = "",
     questionType: QuestionType = QuestionType.UNIVERSITY_ACADEMIC,
-    reasoning: boolean = false
+    reasoning: boolean = false,
+    freshlyScraped: boolean = false
 ): string => {
     const hasStudentContext = studentContext && studentContext.trim().length > 0 && !studentContext.includes("Context Error");
     const hasRagContext = ragContext && ragContext.trim().length > 0;
@@ -31,9 +32,12 @@ CORE PRESENTATION & RESPONSE RULES (ChatGPT Style):
 
     // ─── RAG Context (Retrieved University Knowledge) ─────
     if (hasRagContext) {
+        const freshnessNote = freshlyScraped
+            ? "Some of this information was just retrieved from the official university website and should be treated as current."
+            : "Use this as your PRIMARY source for answering.";
         prompt += `
 VERIFIED UNIVERSITY INFORMATION:
-The following is authoritative information retrieved from the official university website. Use this as your PRIMARY source for answering. Present this information clearly — summarize, organize, and clarify it for the student. Do NOT add facts beyond what is provided here. If the information partially answers the question, say what you know and note what specific details might need verification from the university directly.
+The following is authoritative information from the official Al Maaref University (MU) website. ${freshnessNote} Present this information clearly — summarize, organize, and clarify it for the student. Do NOT add facts beyond what is provided here. If the information partially answers the question, say what you know and note what specific details might need verification from the university directly.
 
 ---
 ${ragContext}
@@ -42,7 +46,7 @@ ${ragContext}
 `;
     } else if (questionType === QuestionType.UNIVERSITY_ACADEMIC) {
         prompt += `
-NOTE: No specific university data was retrieved from the knowledge base for this question. You may answer using general academic knowledge, but clearly indicate if you are providing general guidance rather than verified MU-specific information. For MU-specific details (exact fees, specific program requirements, deadlines), recommend the student check the official university website or contact the registrar.
+NOTE: No specific university data was found for this question, including a live search of mu.edu.lb. Clearly state that MU-specific details could not be verified. Recommend the student check https://www.mu.edu.lb/ or contact the registrar for exact fees, program requirements, deadlines, or instructor information.
 
 `;
     }

@@ -18,6 +18,21 @@ export class HistoryController {
         }
     }
 
+    static async getAcademicSummary(req: AuthRequest, res: Response) {
+        try {
+            const userId = req.user?.userId;
+            if (!userId) {
+                res.status(401).json({ success: false, message: "Unauthorized" });
+                return;
+            }
+
+            const summary = await HistoryService.getAcademicSummary(userId);
+            res.json({ success: true, data: summary });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    }
+
     static async syncHistory(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?.userId;
@@ -31,8 +46,14 @@ export class HistoryController {
 
             // Fetch the newly synced data from the database
             const history = await HistoryService.getStudentHistory(userId);
+            const summary = await HistoryService.getAcademicSummary(userId);
 
-            res.json({ success: true, message: "History synced successfully", data: history });
+            res.json({
+                success: true,
+                message: "History synced successfully",
+                data: history,
+                summary,
+            });
         } catch (error: any) {
             res.status(500).json({ success: false, message: error.message || "Failed to sync history" });
         }

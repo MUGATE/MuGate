@@ -1,4 +1,4 @@
-import { pool, poolConnect } from "../../core/database/connection";
+import { pool, poolConnect, usePostgres } from "../../core/database/connection";
 import { logger } from "../../core/logger/logger";
 import { Event, EventCategory, EventFilters, ScrapedEvent, ScraperSource } from "./event.types";
 
@@ -10,6 +10,10 @@ export class EventRepository {
      * Ensure the Events table exists. Called once at startup.
      */
     static async ensureTable(): Promise<void> {
+        if (usePostgres) {
+            // Schema applied via Supabase migration
+            return;
+        }
         try {
             await poolConnect;
             await pool.request().query(`
@@ -83,14 +87,18 @@ export class EventRepository {
     // ─── Read Methods ─────────────────────────────────────
 
     /**
-     * Get upcoming events with optional filters.
-     * Only returns active events where startDate >= now.
+     * Get upcoming/active events with optional filters.
+     * Includes events that have not ended yet (endDate >= now), or
+     * single-day events whose startDate is still in the future.
      */
     static async getUpcoming(filters: EventFilters = {}): Promise<Event[]> {
         await poolConnect;
         const { search, category, location, limit = 50, offset = 0 } = filters;
 
-        let whereClause = "WHERE isActive = 1 AND startDate >= GETDATE()";
+        let whereClause = `WHERE isActive = 1 AND (
+            startDate >= GETDATE()
+            OR (endDate IS NOT NULL AND endDate >= GETDATE())
+        )`;
         const request = pool.request();
 
         if (search && search.trim().length > 0) {
@@ -148,7 +156,10 @@ export class EventRepository {
         const result = await pool.request().query(`
             SELECT DISTINCT category
             FROM Events
-            WHERE isActive = 1 AND startDate >= GETDATE()
+            WHERE isActive = 1 AND (
+                startDate >= GETDATE()
+                OR (endDate IS NOT NULL AND endDate >= GETDATE())
+            )
             ORDER BY category
         `);
         return result.recordset.map((r: any) => r.category);
@@ -164,14 +175,19 @@ export class EventRepository {
     }> {
         await poolConnect;
 
+        const upcomingWhere = `isActive = 1 AND (
+            startDate >= GETDATE()
+            OR (endDate IS NOT NULL AND endDate >= GETDATE())
+        )`;
+
         const totalResult = await pool.request().query(`
-            SELECT COUNT(*) AS cnt FROM Events WHERE isActive = 1 AND startDate >= GETDATE()
+            SELECT COUNT(*) AS cnt FROM Events WHERE ${upcomingWhere}
         `);
 
         const categoryResult = await pool.request().query(`
             SELECT category, COUNT(*) AS count
             FROM Events
-            WHERE isActive = 1 AND startDate >= GETDATE()
+            WHERE ${upcomingWhere}
             GROUP BY category
             ORDER BY count DESC
         `);
@@ -179,7 +195,7 @@ export class EventRepository {
         const sourceResult = await pool.request().query(`
             SELECT scraperSource, COUNT(*) AS count
             FROM Events
-            WHERE isActive = 1 AND startDate >= GETDATE()
+            WHERE ${upcomingWhere}
             GROUP BY scraperSource
             ORDER BY count DESC
         `);
@@ -281,12 +297,14 @@ export class EventRepository {
 
     /**
      * Deactivate past events (cleanup).
+     * Uses endDate when present so multi-day events stay active until they finish.
      */
     static async deactivatePastEvents(): Promise<number> {
         await poolConnect;
         const result = await pool.request().query(`
             UPDATE Events SET isActive = 0, updatedAt = GETDATE()
-            WHERE isActive = 1 AND startDate < DATEADD(DAY, -1, GETDATE())
+            WHERE isActive = 1
+              AND COALESCE(endDate, startDate) < DATEADD(DAY, -1, GETDATE())
         `);
         return result.rowsAffected[0] || 0;
     }
@@ -297,7 +315,11 @@ export class EventRepository {
     static async getUpcomingCount(): Promise<number> {
         await poolConnect;
         const result = await pool.request().query(`
-            SELECT COUNT(*) AS cnt FROM Events WHERE isActive = 1 AND startDate >= GETDATE()
+            SELECT COUNT(*) AS cnt FROM Events
+            WHERE isActive = 1 AND (
+                startDate >= GETDATE()
+                OR (endDate IS NOT NULL AND endDate >= GETDATE())
+            )
         `);
         return result.recordset[0].cnt;
     }
@@ -327,9 +349,9 @@ export class EventRepository {
             .query(`
                 INSERT INTO Events (title, description, location, startDate, endDate, category, tags,
                     imageUrl, externalUrl, source, sourceId, scraperSource, organizer, isFree, isActive, createdBy)
-                OUTPUT INSERTED.*
                 VALUES (@title, @description, @location, @startDate, @endDate, @category, @tags,
                     @imageUrl, @externalUrl, @source, @sourceId, @scraperSource, @organizer, @isFree, @isActive, @createdBy)
+                RETURNING *
             `);
         return result.recordset[0];
     }
@@ -373,8 +395,8 @@ export class EventRepository {
                     isFree = @isFree,
                     isActive = @isActive,
                     updatedAt = GETDATE()
-                OUTPUT INSERTED.*
                 WHERE id = @id
+                RETURNING *
             `);
         return result.recordset[0] || null;
     }

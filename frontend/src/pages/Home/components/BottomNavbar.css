@@ -1,32 +1,30 @@
 /* ══════════════════════════════════════════════════
-   BOTTOM NAVBAR — Compact, centered, external rounded bottom corners
-   Inverse of top navbar shape (which has border-radius: 0 0 32px 32px
-   with external notch curves at top via ::before/::after)
+   BOTTOM NAVBAR — White box docked to the page gutter
    ══════════════════════════════════════════════════ */
 
 .bottom-navbar {
     position: fixed;
-    bottom: 16px;
+    /* Flush against the bottom white page-gutter strip */
+    bottom: var(--page-gutter, 16px);
     left: 50%;
     width: auto;
     height: auto;
     padding: 10px;
-    background: #ffffff;
+    background: var(--color-page);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 999;
+    /* Above hero frame mask so the white box can meet the gutter cleanly */
+    z-index: 1100;
     overflow: visible;
 
-    /* Top corners: 16px internal rounding (normal) */
+    /* Rounded top; flat bottom so it touches the white line */
     border-radius: 16px 16px 0 0;
 
-    /* Use drop-shadow so it wraps the ENTIRE shape including pseudo-elements */
-    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 
-    /* Hidden by default — below viewport */
-    /* translateX(-50%) keeps it centered; translateY(100%) hides it */
-    transform: translateX(-50%) translateY(calc(100% + 32px));
+    /* Hidden by default — slide below the gutter */
+    transform: translateX(-50%) translateY(calc(100% + var(--page-gutter, 16px) + 8px));
     transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: transform;
 }
@@ -36,44 +34,7 @@
     transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── EXTERNAL ROUNDED CORNERS AT BOTTOM ──
-   Same technique as the top navbar's notch curves (::before/::after
-   with transparent background + box-shadow) but inverted for the bottom.
-   
-   Creates outward-curving "ears" at the bottom corners:
-        ┌────────────────┐
-        │     NAVBAR     │
-        │                │
-   ╭────┘                └────╮  ← external curves via box-shadow
-   ──────────────────────────── 
-   ─────────────────────────────────────────────── */
-
-.bottom-navbar::before,
-.bottom-navbar::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    width: 24px;
-    height: 24px;
-    background: transparent;
-    pointer-events: none;
-}
-
-/* External curve — bottom left */
-.bottom-navbar::before {
-    left: -24px;
-    border-radius: 0 0 24px 0;
-    box-shadow: 12px 12px 0 12px #ffffff;
-}
-
-/* External curve — bottom right */
-.bottom-navbar::after {
-    right: -24px;
-    border-radius: 0 0 0 24px;
-    box-shadow: -12px 12px 0 12px #ffffff;
-}
-
-/* ── DARK BLUE BUTTON — Clean, no effects ── */
+/* ── DARK BLUE BUTTON ── */
 
 .bottom-navbar-btn {
     font-family: "SolidroadCustom", sans-serif;
@@ -91,14 +52,11 @@
     align-items: center;
     gap: 10px;
 
-    /* Animated gradient — blue like chatbot section */
     background: linear-gradient(135deg, #2b5ea7 0%, #1a4a8a 50%, #3b6fb7 100%);
     background-size: 200% 200%;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     animation: bottom-btn-gradient-shift 4s ease infinite;
-
-    /* No shadow, no glow */
     box-shadow: none;
 }
 
@@ -116,7 +74,6 @@
     }
 }
 
-/* Arrow rotates up on hover */
 .bottom-navbar-btn:hover {
     background: linear-gradient(135deg, #2b5ea7 0%, #1a4a8a 50%, #3b6fb7 100%);
     background-size: 200% 200%;
@@ -132,8 +89,6 @@
     transform: none;
 }
 
-/* ── ARROW IN CIRCLE ── */
-
 .bottom-navbar-arrow-circle {
     width: 26px;
     height: 26px;
@@ -146,8 +101,6 @@
     color: #ffffff;
     transition: transform 0.3s ease;
 }
-
-/* ── BUTTON TEXT ── */
 
 .bottom-navbar-btn-text {
     position: relative;

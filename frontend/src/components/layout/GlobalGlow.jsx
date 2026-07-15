@@ -1,10 +1,17 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 
 /**
  * GlobalGlow — Animated background blobs for a premium "dreamy" look.
- * Positioned fixed behind all content.
+ * Positioned fixed behind all content. Fog/vignette are skipped on
+ * content-heavy pages where they make the UI hard to read.
  */
 const GlobalGlow = () => {
+    const { pathname } = useLocation();
+    if (pathname.startsWith('/events')) {
+        return null;
+    }
+
     return (
         <div className="global-glow-container">
             {/* Background Blobs */}

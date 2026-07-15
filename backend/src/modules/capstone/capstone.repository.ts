@@ -1,4 +1,4 @@
-import { pool, poolConnect } from "../../core/database/connection";
+import { pool, poolConnect, usePostgres } from "../../core/database/connection";
 import { logger } from "../../core/logger/logger";
 
 // ─── Interfaces ───────────────────────────────────────────
@@ -34,6 +34,10 @@ export class CapstoneRepository {
      * Ensure both tables exist. Called once at startup.
      */
     static async ensureTables(): Promise<void> {
+        if (usePostgres) {
+            logger.info("Capstone tables ensured (Postgres schema).");
+            return;
+        }
         try {
             await poolConnect;
 
@@ -134,8 +138,8 @@ export class CapstoneRepository {
             .input("lookingFor", partner.lookingFor)
             .query(`
                 INSERT INTO CapstonePartners (userId, userName, email, phone, major, skills, description, lookingFor)
-                OUTPUT INSERTED.*
                 VALUES (@userId, @userName, @email, @phone, @major, @skills, @description, @lookingFor)
+                RETURNING *
             `);
         return result.recordset[0];
     }
@@ -149,6 +153,17 @@ export class CapstoneRepository {
             .input("id", partnerId)
             .input("userId", userId)
             .query(`DELETE FROM CapstonePartners WHERE id = @id AND userId = @userId`);
+        return (result.rowsAffected[0] || 0) > 0;
+    }
+
+    /**
+     * Delete any partner listing (admin use).
+     */
+    static async deletePartnerAdmin(partnerId: number): Promise<boolean> {
+        await poolConnect;
+        const result = await pool.request()
+            .input("id", partnerId)
+            .query(`DELETE FROM CapstonePartners WHERE id = @id`);
         return (result.rowsAffected[0] || 0) > 0;
     }
 
@@ -174,10 +189,11 @@ export class CapstoneRepository {
         const result = await pool.request()
             .input("limit", limit)
             .query(`
-                SELECT TOP (@limit) id, title, description, faculty, year, tags, isActive, createdAt
+                SELECT id, title, description, faculty, year, tags, isActive, createdAt
                 FROM CapstoneIdeas
                 ${condition}
                 ORDER BY year DESC, title ASC, createdAt DESC
+                LIMIT @limit
             `);
         return result.recordset;
     }
@@ -191,7 +207,7 @@ export class CapstoneRepository {
             .input("keyword", `%${keyword}%`)
             .input("limit", limit)
             .query(`
-                SELECT TOP (@limit) id, title, description, faculty, year, tags, isActive, createdAt
+                SELECT id, title, description, faculty, year, tags, isActive, createdAt
                 FROM CapstoneIdeas
                 WHERE isActive = 1 AND (
                     title LIKE @keyword
@@ -200,6 +216,7 @@ export class CapstoneRepository {
                     OR faculty LIKE @keyword
                 )
                 ORDER BY year DESC, title ASC, createdAt DESC
+                LIMIT @limit
             `);
         return result.recordset;
     }
@@ -213,10 +230,11 @@ export class CapstoneRepository {
             .input("faculty", `%${faculty}%`)
             .input("limit", limit)
             .query(`
-                SELECT TOP (@limit) id, title, description, faculty, year, tags, isActive, createdAt
+                SELECT id, title, description, faculty, year, tags, isActive, createdAt
                 FROM CapstoneIdeas
                 WHERE isActive = 1 AND faculty LIKE @faculty
                 ORDER BY year DESC, title ASC, createdAt DESC
+                LIMIT @limit
             `);
         return result.recordset;
     }
@@ -234,8 +252,8 @@ export class CapstoneRepository {
             .input("tags", idea.tags)
             .query(`
                 INSERT INTO CapstoneIdeas (title, description, faculty, year, tags, isActive)
-                OUTPUT INSERTED.*
-                VALUES (@title, @description, @faculty, @year, @tags, 1)
+                VALUES (@title, @description, @faculty, @year, @tags, TRUE)
+                RETURNING *
             `);
         return result.recordset[0];
     }
@@ -255,8 +273,8 @@ export class CapstoneRepository {
             .query(`
                 UPDATE CapstoneIdeas
                 SET title = @title, description = @description, faculty = @faculty, year = @year, tags = @tags
-                OUTPUT INSERTED.*
                 WHERE id = @id
+                RETURNING *
             `);
         return result.recordset[0] || null;
     }
@@ -320,14 +338,12 @@ export class CapstoneRepository {
                     .input("year", idea.year)
                     .input("tags", idea.tags)
                     .query(`
-                        IF NOT EXISTS (
+                        INSERT INTO CapstoneIdeas (title, description, faculty, year, tags, isActive)
+                        SELECT @title, @description, @faculty, @year, @tags, TRUE
+                        WHERE NOT EXISTS (
                             SELECT 1 FROM CapstoneIdeas 
-                            WHERE title = @title AND CAST(description AS NVARCHAR(1000)) = CAST(@description AS NVARCHAR(1000))
+                            WHERE title = @title AND CAST(description AS TEXT) = CAST(@description AS TEXT)
                         )
-                        BEGIN
-                            INSERT INTO CapstoneIdeas (title, description, faculty, year, tags, isActive)
-                            VALUES (@title, @description, @faculty, @year, @tags, 1)
-                        END
                     `);
                 if (result.rowsAffected[0] && result.rowsAffected[0] > 0) {
                     inserted++;

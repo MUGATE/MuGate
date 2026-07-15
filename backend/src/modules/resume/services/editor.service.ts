@@ -274,7 +274,8 @@ async function editDocx(buffer: Buffer, instructions: string): Promise<Buffer> {
 }
 
 async function generateProfessionalPdf(text: string): Promise<Buffer> {
-  const { chromium } = await import("playwright");
+  const { launchHeadlessBrowser } = await import("../../../core/utils/launchHeadlessBrowser");
+  await import("../../../core/utils/windowsHideSpawn");
   const lines = text.split("\n").filter((l: string) => l.trim());
 
   let htmlContent = `<!DOCTYPE html>
@@ -391,7 +392,7 @@ async function generateProfessionalPdf(text: string): Promise<Buffer> {
 
   htmlContent += `</div></body></html>`;
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launchHeadlessBrowser();
   try {
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: "networkidle" });

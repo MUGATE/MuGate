@@ -6,6 +6,7 @@ import ReviewCard from './ReviewCard';
 const ExploreAllModal = ({
   isOpen,
   onClose,
+  exploreOpenedFromList,
   companies,
   companyStats,
   selectedExploreCompany,
@@ -54,11 +55,16 @@ const ExploreAllModal = ({
       <div className="explore-all-modal-glass" onClick={(e) => e.stopPropagation()}>
         <button className="hero-modal-close" onClick={() => {
           if (selectedExploreCompany) {
-            setSelectedExploreCompany(null);
+            if (exploreOpenedFromList) {
+              setSelectedExploreCompany(null);
+              setConfirmDeleteCompanyId(null);
+            } else {
+              onClose();
+            }
           } else {
             onClose();
           }
-        }} aria-label={selectedExploreCompany ? "Back" : "Close"}>
+        }} aria-label={selectedExploreCompany ? 'Back' : 'Close'}>
           {selectedExploreCompany ? (
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2"

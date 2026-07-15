@@ -1,10 +1,20 @@
 import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
 
+function isCredentialError(message: string): boolean {
+    const m = message.toLowerCase();
+    return (
+        m.includes("invalid university") ||
+        m.includes("authentication failed") ||
+        m.includes("invalid credentials") ||
+        m.includes("incorrect") ||
+        m.includes("wrong password")
+    );
+}
+
 export class AuthController {
     static async login(req: Request, res: Response) {
         try {
-            // The frontend now only needs to send universityId (e.g. "101230004") and password
             const { universityId, password } = req.body;
 
             if (!universityId || !password) {
@@ -12,10 +22,29 @@ export class AuthController {
                 return;
             }
 
-            const result = await AuthService.login(universityId, password);
+            const id = String(universityId).trim();
+            if (!/^\d{5,15}$/.test(id)) {
+                res.status(400).json({ success: false, message: "University ID must be numeric (5–15 digits)." });
+                return;
+            }
+            if (String(password).length < 4 || String(password).length > 200) {
+                res.status(400).json({ success: false, message: "Invalid password length." });
+                return;
+            }
+
+            const result = await AuthService.login(id, password);
             res.json({ success: true, data: result });
         } catch (err: any) {
-            res.status(401).json({ success: false, message: err.message });
+            const message = err?.message || "Login failed";
+            if (isCredentialError(message)) {
+                res.status(401).json({ success: false, message });
+                return;
+            }
+            // Portal/DB/crypto failures must not masquerade as bad passwords
+            res.status(503).json({
+                success: false,
+                message: "Login temporarily unavailable. Please try again shortly.",
+            });
         }
     }
 }

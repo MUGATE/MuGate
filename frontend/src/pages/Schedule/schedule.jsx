@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
-import { Link } from 'react-router-dom';
 import { Clock, CalendarDays, PartyPopper } from 'lucide-react';
+import FloatingProfileIcon from '../../components/FloatingProfileIcon';
+import GlassNavBar from '../../components/layout/GlassNavBar';
 import './schedule.css';
 
 import {
@@ -121,9 +122,7 @@ const Schedule = () => {
     setScheduleVisible(false);
 
     try {
-      // The backend needs a semesterId (e.g., 38).
       const payload = {
-        semesterId: 38,
         preferences: {
           excludeDays: preferences.freeFridays ? [4] : [], // Friday is 4 in 0-indexed mapped Days
           startTime: preferences.skip8am ? "9:00:00" : null,
@@ -143,8 +142,12 @@ const Schedule = () => {
         setCurrentIndex(0);
         parseBackendSchedule(res.data.topSchedules[0].schedule);
         setScheduleVisible(true);
+      } else if (res.data?.offeringsFound === 0) {
+        throw new Error(
+          "No course offerings were loaded for this semester. The portal sync may have timed out — wait a moment and try again."
+        );
       } else {
-        throw new Error("No combination of courses found that match your strict preferences. Try relaxing 'Skip 8AM' or 'Free Fridays'.");
+        throw new Error("No combination of courses found that match your strict preferences.");
       }
 
     } catch (err) {
@@ -249,7 +252,7 @@ const Schedule = () => {
     if (userStr) {
       try {
         const u = JSON.parse(userStr);
-        if (u && (u.isAdmin === true || String(u.universityId) === "101230004")) return true;
+        if (u && u.isAdmin === true) return true;
       } catch { /* ignore malformed stored user */ }
     }
     return false;
@@ -294,24 +297,11 @@ const Schedule = () => {
       <span className="sparkle sparkle-6">✦</span>
 
       {/* ── Navbar ── */}
-      <nav className="schedule-navbar glass-card">
-        <Link to="/">Home</Link>
-        <Link to="/internships">Internships</Link>
-        <Link to="/resume-enhancer">Resume</Link>
-        <Link to="/chatbot">Chatbot</Link>
-        <Link to="/schedule" className="active">Scheduler</Link>
-        <Link to="/capstone">Capstone</Link>
-        <Link to="/events">Events</Link>
-        <Link to="/roadmap">RoadMap</Link>
-        <Link to="/about">About</Link>
-        {isAdmin && <Link to="/admin-control">Control</Link>}
-        <div className="nav-avatar">
-          <img
-            src="https://ui-avatars.com/api/?name=U&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=68"
-            alt="Profile"
-          />
-        </div>
-      </nav>
+      <GlassNavBar activePath="/schedule" className="glass-card" />
+      <FloatingProfileIcon
+        className="floating-profile-icon--schedule"
+        navbarSelector=".glass-navbar"
+      />
 
       {/* ── Three-column Layout ── */}
       <div className="schedule-layout">

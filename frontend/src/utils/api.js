@@ -1,6 +1,24 @@
+const DEFAULT_PORT = "5000";
+
+function resolveApiBaseUrl() {
+    const explicit = import.meta.env.VITE_API_BASE_URL;
+    if (explicit && typeof explicit === "string") return explicit;
+
+    if (typeof window === "undefined") {
+        return `http://localhost:${DEFAULT_PORT}/api`;
+    }
+
+    const { protocol, hostname } = window.location;
+    if (!hostname || hostname === "localhost" || hostname === "127.0.0.1") {
+        return `http://localhost:${DEFAULT_PORT}/api`;
+    }
+
+    return `${protocol}//${hostname}:${DEFAULT_PORT}/api`;
+}
+
 // Single source of truth for the backend base URL — import this instead of
 // hardcoding "http://localhost:5000" anywhere else.
-export const API_BASE_URL = "http://localhost:5000/api";
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export const apiFetch = async (endpoint, options = {}) => {
     const token = localStorage.getItem("mugate_token");
@@ -28,9 +46,10 @@ export const apiFetch = async (endpoint, options = {}) => {
         const data = await response.json();
 
         if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                // Automatically handle token expiration/invalid token
+            if (response.status === 401) {
+                // Token missing/expired/invalid — force re-login
                 localStorage.removeItem("mugate_token");
+                localStorage.removeItem("mugate_user");
                 window.location.href = "/";
                 throw new Error("Authentication failed. Please login again.");
             }

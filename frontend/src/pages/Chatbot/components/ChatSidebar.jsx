@@ -1,8 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, Command, Home, Compass, History, Library, GraduationCap,
-  Calendar, Info, Shield, Plus, MessageSquare, Trash2, ChevronsUpDown
+  Calendar, Info, Plus, MessageSquare, Trash2, ChevronsUpDown, Download
 } from 'lucide-react';
 import FluidTrail from './FluidTrail';
 
@@ -16,9 +16,9 @@ const ChatSidebar = ({
   setSearchQuery,
   userName,
   token,
-  isAdmin,
   LogoPath
 }) => {
+  const navigate = useNavigate();
   const filteredSessions = sessions.filter(s =>
     (s.title || 'New Chat').toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -83,16 +83,14 @@ const ChatSidebar = ({
           <Calendar size={18} />
           <span>Events</span>
         </Link>
+        <Link to="/download" className="nav-item">
+          <Download size={18} />
+          <span>Android App</span>
+        </Link>
         <Link to="/about" className="nav-item">
           <Info size={18} />
           <span>About</span>
         </Link>
-        {isAdmin && (
-          <Link to="/admin-control" className="nav-item">
-            <Shield size={18} />
-            <span>Control</span>
-          </Link>
-        )}
       </nav>
 
       {/* Chat Sessions History */}
@@ -121,7 +119,7 @@ const ChatSidebar = ({
       </div>
 
       {/* User Profile */}
-      <div className="sidebar-profile">
+      <div className="sidebar-profile" onClick={() => navigate('/profile')}>
         <img
           src={`https://ui-avatars.com/api/?name=${userName || 'Guest'}&background=333&color=fff`}
           alt="User avatar"

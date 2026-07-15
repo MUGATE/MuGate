@@ -1,9 +1,10 @@
 import { Router, Request, Response } from "express";
 import { authMiddleware, AuthRequest } from "../../core/middleware/auth.middleware";
-import { adminMiddleware } from "../../core/middleware/admin.middleware";
+import { adminMiddleware, isAdminUser } from "../../core/middleware/admin.middleware";
 import { CapstoneRepository } from "./capstone.repository";
 import { CapstoneService } from "./capstone.service";
 import { logger } from "../../core/logger/logger";
+import { aiRateLimiter } from "../../core/middleware/rateLimiter.middleware";
 
 const router = Router();
 
@@ -13,9 +14,9 @@ const router = Router();
 
 /**
  * GET /api/capstone/partners
- * Public — get all partner listings. Optional ?search= query param.
+ * Auth required — partner listings include contact PII.
  */
-router.get("/partners", async (req: Request, res: Response) => {
+router.get("/partners", authMiddleware, async (req: Request, res: Response) => {
     try {
         const search = req.query.search as string | undefined;
         let partners;
@@ -46,7 +47,8 @@ router.post("/partners", authMiddleware, async (req: AuthRequest, res: Response)
             return res.status(401).json({ success: false, message: "User not authenticated." });
         }
 
-        const { email, phone, major, skills, description, lookingFor } = req.body;
+        const { email, phone, major, skills, description, lookingFor, userName: bodyUserName } = req.body;
+        const isAdmin = await isAdminUser(req.user);
 
         // Validate required fields
         if (!email || typeof email !== "string" || !email.includes("@")) {
@@ -59,15 +61,21 @@ router.post("/partners", authMiddleware, async (req: AuthRequest, res: Response)
             return res.status(400).json({ success: false, message: "Description must be at least 10 characters." });
         }
 
-        // Check if user already has a listing
-        const alreadyListed = await CapstoneRepository.hasUserListed(userId);
-        if (alreadyListed) {
-            return res.status(409).json({ success: false, message: "You already have a partner listing. Delete it first to create a new one." });
+        if (!isAdmin) {
+            const alreadyListed = await CapstoneRepository.hasUserListed(userId);
+            if (alreadyListed) {
+                return res.status(409).json({ success: false, message: "You already have a partner listing. Delete it first to create a new one." });
+            }
         }
+
+        const listingUserName =
+            isAdmin && typeof bodyUserName === "string" && bodyUserName.trim().length >= 2
+                ? bodyUserName.trim()
+                : userName;
 
         const partner = await CapstoneRepository.addPartner({
             userId,
-            userName,
+            userName: listingUserName,
             email: email.trim(),
             phone: (phone || "").trim(),
             major: major.trim(),
@@ -79,6 +87,13 @@ router.post("/partners", authMiddleware, async (req: AuthRequest, res: Response)
         logger.info(`User ${userId} added capstone partner listing`);
         return res.status(201).json({ success: true, partner });
     } catch (err: any) {
+        const msg = String(err?.message || "");
+        if (/unique|duplicate|UQ_CapstonePartners/i.test(msg)) {
+            return res.status(409).json({
+                success: false,
+                message: "You already have a partner listing. Delete it first to create a new one.",
+            });
+        }
         logger.error(`Failed to add partner: ${err.message}`);
         return res.status(500).json({ success: false, message: "Failed to add partner listing." });
     }
@@ -100,12 +115,18 @@ router.delete("/partners/:partnerId", authMiddleware, async (req: AuthRequest, r
             return res.status(401).json({ success: false, message: "User not authenticated." });
         }
 
-        const deleted = await CapstoneRepository.deletePartner(partnerId, userId);
+        const isAdmin = await isAdminUser(req.user);
+        const deleted = isAdmin
+            ? await CapstoneRepository.deletePartnerAdmin(partnerId)
+            : await CapstoneRepository.deletePartner(partnerId, userId);
         if (!deleted) {
-            return res.status(404).json({ success: false, message: "Listing not found or not yours." });
+            return res.status(404).json({
+                success: false,
+                message: isAdmin ? "Listing not found." : "Listing not found or not yours.",
+            });
         }
 
-        logger.info(`User ${userId} deleted partner listing ${partnerId}`);
+        logger.info(`User ${userId} deleted partner listing ${partnerId} (isAdmin: ${isAdmin})`);
         return res.json({ success: true, message: "Partner listing deleted." });
     } catch (err: any) {
         logger.error(`Failed to delete partner: ${err.message}`);
@@ -273,10 +294,10 @@ router.get("/ideas/faculties", async (req: Request, res: Response) => {
 
 /**
  * POST /api/capstone/ai/chat
- * Public — chat with the Capstone AI advisor.
+ * Auth required — chat with the Capstone AI advisor.
  * Body: { message: string, history?: Array<{ role: string, content: string }> }
  */
-router.post("/ai/chat", async (req: Request, res: Response) => {
+router.post("/ai/chat", authMiddleware, aiRateLimiter, async (req: Request, res: Response) => {
     try {
         const { message, history } = req.body;
 
@@ -288,6 +309,15 @@ router.post("/ai/chat", async (req: Request, res: Response) => {
             message.trim(),
             Array.isArray(history) ? history : []
         );
+
+        if (result.error) {
+            return res.status(503).json({
+                success: false,
+                message: result.text,
+                tokensUsed: 0,
+                ideasUsed: 0,
+            });
+        }
 
         return res.json({
             success: true,

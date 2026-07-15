@@ -1,0 +1,17 @@
+export const ragConfig = {
+    universityWebsiteUrl: process.env.UNIVERSITY_WEBSITE_URL || "https://www.mu.edu.lb",
+    chromaPath: process.env.CHROMA_PATH || "./data/chroma",
+    chromaUrl: process.env.CHROMA_URL || "",
+    embeddingProvider: process.env.EMBEDDING_PROVIDER || "gemini",
+    embeddingModel: process.env.EMBEDDING_MODEL || "text-embedding-004",
+    scraperMaxPages: parseInt(process.env.SCRAPER_MAX_PAGES || "2000", 10),
+    scraperMaxDepth: parseInt(process.env.SCRAPER_MAX_DEPTH || "6", 10),
+    scraperDelayMs: parseInt(process.env.SCRAPER_DELAY_MS || "1200", 10),
+    liveScrapeTimeoutMs: parseInt(process.env.LIVE_SCRAPE_TIMEOUT_MS || "7000", 10),
+    liveScrapeMaxPages: parseInt(process.env.LIVE_SCRAPE_MAX_PAGES || "3", 10),
+    vectorTopK: parseInt(process.env.RAG_VECTOR_TOP_K || "8", 10),
+    keywordTopK: parseInt(process.env.RAG_KEYWORD_TOP_K || "8", 10),
+    confidenceThreshold: parseFloat(process.env.RAG_CONFIDENCE_THRESHOLD || "0.55"),
+    autoInitialCrawl: process.env.AUTO_INITIAL_CRAWL === "true",
+    browserProfilePath: process.env.BROWSER_PROFILE_PATH || "./data/browser-profile",
+};

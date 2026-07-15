@@ -1,8 +1,7 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import { env } from "../../config/env";
-import { APP_CONSTANTS } from "../../config/constants";
 
-const JWT_SECRET: jwt.Secret = env.jwtSecret || "fallback-secret";
+const JWT_SECRET: jwt.Secret = env.jwtSecret;
 
 export interface TokenPayload {
     userId: string;

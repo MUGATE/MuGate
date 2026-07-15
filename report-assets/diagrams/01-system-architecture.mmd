@@ -1,0 +1,41 @@
+flowchart TB
+    subgraph clients [Client Layer]
+        WEB[Web SPA<br/>React 19 + Vite 7]
+        MOB[Mobile App<br/>Expo 56 + React Native]
+    end
+
+    subgraph api [API Layer]
+        EXP[Express 5 API<br/>TypeScript :5000]
+    end
+
+    subgraph data [Data Layer]
+        SQL[(SQL Server<br/>MuGate Database)]
+        CHROMA[(ChromaDB / File Vectors<br/>RAG Embeddings)]
+    end
+
+    subgraph external [External Services]
+        PORTAL[MU Portal<br/>ums.mu.edu.lb]
+        MUWEB[MU Website<br/>mu.edu.lb]
+        DEEP[DeepSeek API]
+        GEM[Gemini API]
+        OR[OpenRouter API]
+        EVENTS[Event Sources<br/>Berytech AUB Eventbrite]
+    end
+
+    subgraph automation [Automation Layer]
+        PW[Playwright Scrapers]
+        CRON[node-cron Jobs]
+    end
+
+    WEB -->|HTTP REST JWT| EXP
+    MOB -->|HTTP REST JWT| EXP
+    EXP --> SQL
+    EXP --> CHROMA
+    EXP --> DEEP
+    EXP --> GEM
+    EXP --> OR
+    PW --> PORTAL
+    PW --> MUWEB
+    PW --> EVENTS
+    CRON --> PW
+    EXP --> PW

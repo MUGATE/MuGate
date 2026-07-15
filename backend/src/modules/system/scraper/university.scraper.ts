@@ -1,12 +1,27 @@
-import { chromium, Browser, BrowserContext, Page } from "playwright";
+import path from "path";
+import fs from "fs";
+import { chromium as chromiumExtra } from "playwright-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import { Browser, BrowserContext, Page } from "playwright";
 import { logger } from "../../../core/logger/logger";
 import { ContentCleaner } from "./content.cleaner";
+import { ragConfig } from "../../../config/rag.config";
 import {
     ScrapedPage,
     ScraperConfig,
     KnowledgeCategory,
     CategoryRule,
 } from "./scraper.types";
+import { HEADLESS_BROWSER_ARGS } from "../../../core/utils/launchHeadlessBrowser";
+import "../../../core/utils/windowsHideSpawn";
+
+chromiumExtra.use(StealthPlugin());
+
+const stealthLaunchArgs = [
+    ...HEADLESS_BROWSER_ARGS,
+    "--disable-setuid-sandbox",
+    "--disable-blink-features=AutomationControlled",
+];
 
 /**
  * University Website Scraper — Crawls the public university website,
@@ -40,6 +55,7 @@ export class UniversityScraper {
         { pattern: /tuition|fee|financial|scholar|payment|aid/i, category: "financial" },
         { pattern: /campus|library|lab|facilit|student.?life|club|activit/i, category: "campus" },
         { pattern: /research|publication|journal|conference/i, category: "research" },
+        { pattern: /staff|people|instructors?|professors?|faculty.?members/i, category: "faculty", subcategory: "instructors" },
     ];
 
     // URL patterns to skip (files, external resources, etc.)
@@ -63,13 +79,121 @@ export class UniversityScraper {
 
     constructor(config: Partial<ScraperConfig> = {}) {
         this.config = {
-            baseUrl: config.baseUrl || process.env.UNIVERSITY_WEBSITE_URL || "https://mu.edu.lb",
-            maxPages: config.maxPages || 300,
-            maxDepth: config.maxDepth || 4,
-            delayMs: config.delayMs || 1500,
+            baseUrl: config.baseUrl || ragConfig.universityWebsiteUrl,
+            maxPages: config.maxPages || ragConfig.scraperMaxPages,
+            maxDepth: config.maxDepth || ragConfig.scraperMaxDepth,
+            delayMs: config.delayMs || ragConfig.scraperDelayMs,
             timeoutMs: config.timeoutMs || 15000,
+            seedUrls: config.seedUrls,
             ...config,
         };
+    }
+
+    /** Shared warm browser for live on-demand fetches */
+    private static liveBrowser: Browser | null = null;
+    private static liveContext: BrowserContext | null = null;
+    private static liveInitPromise: Promise<void> | null = null;
+
+    private static async ensureLiveSession(): Promise<BrowserContext> {
+        if (UniversityScraper.liveContext) return UniversityScraper.liveContext;
+
+        if (!UniversityScraper.liveInitPromise) {
+            UniversityScraper.liveInitPromise = (async () => {
+                const profilePath = path.resolve(ragConfig.browserProfilePath);
+                fs.mkdirSync(profilePath, { recursive: true });
+
+                UniversityScraper.liveBrowser = await chromiumExtra.launch({
+                    headless: true,
+                    args: stealthLaunchArgs,
+                });
+
+                UniversityScraper.liveContext = await UniversityScraper.liveBrowser.newContext({
+                    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                    ignoreHTTPSErrors: true,
+                    viewport: { width: 1920, height: 1080 },
+                    locale: "en-US",
+                    timezoneId: "Asia/Beirut",
+                });
+
+                const page = await UniversityScraper.liveContext.newPage();
+                try {
+                    const base = ragConfig.universityWebsiteUrl.replace(/\/$/, "");
+                    await page.goto(base, { waitUntil: "networkidle", timeout: 30000 });
+                    await UniversityScraper.waitForCloudflareStatic(page, 20000);
+                } catch (err: any) {
+                    logger.warn(`Live session warm-up: ${err.message}`);
+                } finally {
+                    await page.close();
+                }
+            })();
+        }
+
+        await UniversityScraper.liveInitPromise;
+        return UniversityScraper.liveContext!;
+    }
+
+    /** Fetch a single page for live search (reuses warm session) */
+    static async fetchPage(url: string, timeoutMs: number = 10000): Promise<ScrapedPage | null> {
+        const scraper = new UniversityScraper({ maxPages: 1, maxDepth: 0, delayMs: 0, timeoutMs });
+        try {
+            const context = await UniversityScraper.ensureLiveSession();
+            scraper.context = context;
+            scraper.config.baseUrl = ragConfig.universityWebsiteUrl;
+            return await scraper.scrapePage(url, 1);
+        } catch (err: any) {
+            logger.warn(`Live fetch failed for ${url}: ${err.message}`);
+            return null;
+        }
+    }
+
+    /** Crawl only specific URLs (incremental / live search batch) */
+    async crawlUrls(urls: string[]): Promise<{ pages: ScrapedPage[]; errors: string[] }> {
+        this.errors = [];
+        this.results = [];
+        this.visited = new Set();
+
+        try {
+            const profilePath = path.resolve(ragConfig.browserProfilePath);
+            fs.mkdirSync(profilePath, { recursive: true });
+
+            this.browser = await chromiumExtra.launch({
+                headless: true,
+                args: stealthLaunchArgs,
+            });
+
+            this.context = await this.browser.newContext({
+                userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+                ignoreHTTPSErrors: true,
+                viewport: { width: 1920, height: 1080 },
+                locale: "en-US",
+                timezoneId: "Asia/Beirut",
+            });
+
+            await this.warmUpSession();
+
+            for (const url of urls) {
+                if (this.visited.has(url)) continue;
+                this.visited.add(url);
+                try {
+                    const page = await this.scrapePage(url);
+                    if (page) this.results.push(page);
+                    await this.delay(this.config.delayMs);
+                } catch (error: any) {
+                    this.errors.push(`Error scraping ${url}: ${error.message}`);
+                }
+            }
+
+            return { pages: this.results, errors: this.errors };
+        } finally {
+            if (this.context && this.context !== UniversityScraper.liveContext) {
+                await this.context.close();
+            }
+            this.context = null;
+            if (this.browser && this.browser !== UniversityScraper.liveBrowser) {
+                await this.browser.close();
+            }
+            this.browser = null;
+        }
     }
 
     /**
@@ -80,13 +204,12 @@ export class UniversityScraper {
         logger.info(`Config: maxPages=${this.config.maxPages}, maxDepth=${this.config.maxDepth}, delay=${this.config.delayMs}ms`);
 
         try {
-            this.browser = await chromium.launch({
+            const profilePath = path.resolve(ragConfig.browserProfilePath);
+            fs.mkdirSync(profilePath, { recursive: true });
+
+            this.browser = await chromiumExtra.launch({
                 headless: true,
-                args: [
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-blink-features=AutomationControlled",
-                ]
+                args: stealthLaunchArgs,
             });
 
             // Create ONE persistent browser context for the entire crawl
@@ -103,8 +226,16 @@ export class UniversityScraper {
             // Pass Cloudflare on the homepage first (warm up cookies)
             await this.warmUpSession();
 
-            // Seed the queue with the base URL and common entry points
+            // Seed the queue with sitemap URLs + default paths
             this.seedQueue();
+
+            if (this.config.seedUrls && this.config.seedUrls.length > 0) {
+                for (const url of this.config.seedUrls) {
+                    if (!this.visited.has(url)) {
+                        this.queue.unshift({ url, depth: 0 });
+                    }
+                }
+            }
 
             // Process queue with BFS
             while (this.queue.length > 0 && this.visited.size < this.config.maxPages) {
@@ -189,6 +320,10 @@ export class UniversityScraper {
      * indicators and waits until they disappear or timeout.
      */
     private async waitForCloudflare(page: Page, maxWaitMs: number = 15000): Promise<void> {
+        return UniversityScraper.waitForCloudflareStatic(page, maxWaitMs);
+    }
+
+    private static async waitForCloudflareStatic(page: Page, maxWaitMs: number = 15000): Promise<void> {
         const startTime = Date.now();
         while (Date.now() - startTime < maxWaitMs) {
             const title = await page.title().catch(() => "");
@@ -207,7 +342,7 @@ export class UniversityScraper {
             }
 
             logger.info("Cloudflare challenge detected, waiting...");
-            await this.delay(2000);
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
         logger.warn("Cloudflare challenge did not resolve within timeout");
     }
@@ -340,6 +475,10 @@ export class UniversityScraper {
             "/en/about",
             "/en/academics",
             "/en/student-life",
+            "/staff",
+            "/people",
+            "/instructors",
+            "/faculty-members",
         ];
 
         for (const path of seedPaths) {

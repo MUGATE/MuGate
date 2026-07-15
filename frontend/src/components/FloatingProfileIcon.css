@@ -1,0 +1,46 @@
+.floating-profile-icon {
+  position: fixed;
+  top: 30px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px var(--color-shadow);
+  border: 1px solid var(--color-border);
+  z-index: 1200;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floating-profile-icon.is-navbar-aligned {
+  top: auto;
+  right: auto;
+}
+
+.floating-profile-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px var(--color-shadow);
+}
+
+.floating-profile-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .floating-profile-icon {
+    top: 20px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .floating-profile-icon.is-navbar-aligned {
+    top: auto;
+    right: auto;
+  }
+}

@@ -1,11 +1,41 @@
 import { Router, Request, Response } from "express";
 import { ScraperService } from "./scraper.service";
 import { authMiddleware } from "../../../core/middleware/auth.middleware";
+import { adminMiddleware } from "../../../core/middleware/admin.middleware";
+import { ragConfig } from "../../../config/rag.config";
 
 const router = Router();
 
-// Legacy portal scrape endpoint
-router.post("/scrape", async (req: Request, res: Response) => {
+/** Only allow crawl baseUrls under the configured university host (SSRF guard). */
+function resolveAllowedCrawlBaseUrl(requested: unknown): string {
+    const fallback = ragConfig.universityWebsiteUrl;
+    if (!requested || typeof requested !== "string" || !requested.trim()) {
+        return fallback;
+    }
+
+    let requestedUrl: URL;
+    let allowedUrl: URL;
+    try {
+        requestedUrl = new URL(requested.trim());
+        allowedUrl = new URL(fallback);
+    } catch {
+        throw new Error("Invalid crawl baseUrl.");
+    }
+
+    if (requestedUrl.protocol !== "http:" && requestedUrl.protocol !== "https:") {
+        throw new Error("Crawl baseUrl must use http or https.");
+    }
+
+    const reqHost = requestedUrl.hostname.toLowerCase().replace(/^www\./, "");
+    const allowHost = allowedUrl.hostname.toLowerCase().replace(/^www\./, "");
+    if (reqHost !== allowHost && !reqHost.endsWith(`.${allowHost}`)) {
+        throw new Error(`Crawl baseUrl host must match ${allowHost}.`);
+    }
+
+    return requestedUrl.origin;
+}
+
+router.post("/scrape", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
     try {
         const result = await ScraperService.scrapePortal(req.body);
         res.json({ success: true, data: result });
@@ -14,12 +44,7 @@ router.post("/scrape", async (req: Request, res: Response) => {
     }
 });
 
-/**
- * POST /api/scraper/university/crawl
- * Trigger a full university website crawl. Long-running operation.
- * Protected: admin only.
- */
-router.post("/university/crawl", authMiddleware, async (req: Request, res: Response) => {
+router.post("/university/crawl", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
     try {
         if (ScraperService.running) {
             return res.status(409).json({
@@ -28,21 +53,26 @@ router.post("/university/crawl", authMiddleware, async (req: Request, res: Respo
             });
         }
 
+        let baseUrl: string;
+        try {
+            baseUrl = resolveAllowedCrawlBaseUrl(req.body.baseUrl);
+        } catch (err: any) {
+            return res.status(400).json({ success: false, message: err.message });
+        }
+
         const config = {
-            baseUrl: req.body.baseUrl || process.env.UNIVERSITY_WEBSITE_URL || "https://mu.edu.lb",
-            maxPages: Math.min(req.body.maxPages || 300, 500),
-            maxDepth: Math.min(req.body.maxDepth || 4, 5),
-            delayMs: Math.max(req.body.delayMs || 1500, 500),
+            baseUrl,
+            maxPages: Math.min(req.body.maxPages || ragConfig.scraperMaxPages, 3000),
+            maxDepth: Math.min(req.body.maxDepth || ragConfig.scraperMaxDepth, 8),
+            delayMs: Math.max(req.body.delayMs || ragConfig.scraperDelayMs, 500),
         };
 
-        // Start scraping in background (don't block the response)
         res.json({
             success: true,
             message: "University website crawl started in background.",
             config,
         });
 
-        // Run async in background
         ScraperService.scrapeUniversityWebsite(config).catch(err => {
             console.error("Background scrape error:", err.message);
         });
@@ -52,12 +82,7 @@ router.post("/university/crawl", authMiddleware, async (req: Request, res: Respo
     }
 });
 
-/**
- * POST /api/scraper/university/sync
- * Trigger an incremental sync (only re-check stale pages).
- * Protected: admin only.
- */
-router.post("/university/sync", authMiddleware, async (req: Request, res: Response) => {
+router.post("/university/sync", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
     try {
         if (ScraperService.running) {
             return res.status(409).json({
@@ -82,12 +107,7 @@ router.post("/university/sync", authMiddleware, async (req: Request, res: Respon
     }
 });
 
-/**
- * GET /api/scraper/university/stats
- * Get knowledge base statistics.
- * Protected: admin only.
- */
-router.get("/university/stats", authMiddleware, async (req: Request, res: Response) => {
+router.get("/university/stats", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
     try {
         const stats = await ScraperService.getKnowledgeBaseStats();
         res.json({ success: true, data: stats });
@@ -96,12 +116,7 @@ router.get("/university/stats", authMiddleware, async (req: Request, res: Respon
     }
 });
 
-/**
- * GET /api/scraper/university/runs
- * Get recent scraper run history.
- * Protected: admin only.
- */
-router.get("/university/runs", authMiddleware, async (req: Request, res: Response) => {
+router.get("/university/runs", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
     try {
         const limit = parseInt(req.query.limit as string) || 10;
         const runs = await ScraperService.getScraperRunHistory(limit);
@@ -111,21 +126,11 @@ router.get("/university/runs", authMiddleware, async (req: Request, res: Respons
     }
 });
 
-/**
- * GET /api/scraper/university/status
- * Check if a scraping job is currently running.
- */
-router.get("/university/status", async (req: Request, res: Response) => {
+router.get("/university/status", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
     res.json({ success: true, running: ScraperService.running });
 });
 
-/**
- * POST /api/scraper/university/rescrape
- * Full re-scrape: clears all existing KB data and does a fresh complete crawl.
- * Use when the KB data needs to be rebuilt from scratch.
- * Protected: admin only.
- */
-router.post("/university/rescrape", authMiddleware, async (req: Request, res: Response) => {
+router.post("/university/rescrape", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
     try {
         if (ScraperService.running) {
             return res.status(409).json({
@@ -134,10 +139,17 @@ router.post("/university/rescrape", authMiddleware, async (req: Request, res: Re
             });
         }
 
+        let baseUrl: string;
+        try {
+            baseUrl = resolveAllowedCrawlBaseUrl(req.body.baseUrl);
+        } catch (err: any) {
+            return res.status(400).json({ success: false, message: err.message });
+        }
+
         const config = {
-            baseUrl: req.body.baseUrl || process.env.UNIVERSITY_WEBSITE_URL || "https://mu.edu.lb",
-            maxPages: Math.min(req.body.maxPages || 500, 1000),
-            maxDepth: Math.min(req.body.maxDepth || 5, 6),
+            baseUrl,
+            maxPages: Math.min(req.body.maxPages || ragConfig.scraperMaxPages, 3000),
+            maxDepth: Math.min(req.body.maxDepth || ragConfig.scraperMaxDepth, 8),
             delayMs: Math.max(req.body.delayMs || 2000, 500),
         };
 
@@ -151,6 +163,30 @@ router.post("/university/rescrape", authMiddleware, async (req: Request, res: Re
             console.error("Background rescrape error:", err.message);
         });
 
+    } catch (err: any) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post("/university/reindex", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+    try {
+        res.json({
+            success: true,
+            message: "Vector reindex started in background.",
+        });
+
+        ScraperService.reindexVectors().catch(err => {
+            console.error("Background reindex error:", err.message);
+        });
+    } catch (err: any) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post("/university/sitemap-refresh", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+    try {
+        const added = await ScraperService.refreshSitemap();
+        res.json({ success: true, data: { urlsQueued: added } });
     } catch (err: any) {
         res.status(500).json({ success: false, message: err.message });
     }

@@ -1,5 +1,6 @@
 import { pool } from "../../../../core/database/connection";
 import { logger } from "../../../../core/logger/logger";
+import { isCompletedStatus } from "../../../../core/utils/academic-status.util";
 
 export class ChatbotContextService {
 
@@ -18,13 +19,12 @@ export class ChatbotContextService {
             if (!user) return "Context Error: Student not found.";
 
             // 2. Get Academic History (Completed credits & GPA logic)
-            // Simplified logic: calculating based on simple credit sum for this demo
             const historyResult = await pool.request()
                 .input("userId", userId)
-                .query("SELECT courseCode, courseName, grade, credits, semester, status FROM AcademicHistory WHERE userId = @userId AND status = 'Passed'");
+                .query("SELECT courseCode, courseName, grade, credits, semester, status FROM AcademicHistory WHERE userId = @userId");
 
-            const history = historyResult.recordset;
-            const completedCredits = history.reduce((acc, row) => acc + (row.credits || 0), 0);
+            const history = historyResult.recordset.filter((row: any) => isCompletedStatus(row.status));
+            const completedCredits = history.reduce((acc: number, row: any) => acc + (row.credits || 0), 0);
 
             // Generate summary of passed courses
             const passedCoursesStr = history.map(h => `- ${h.courseCode} (${h.courseName}): Grade ${h.grade}, ${h.credits} Credits`).join("\n") || "- None recorded.";
@@ -40,7 +40,7 @@ export class ChatbotContextService {
             // 4. Get Highest Valued Generated Schedule Data (if any)
             const scheduleResult = await pool.request()
                 .input("userId", userId)
-                .query("SELECT TOP 1 name, totalCredits FROM Schedules WHERE userId = @userId ORDER BY score DESC, createdAt DESC");
+                .query("SELECT name, totalCredits FROM Schedules WHERE userId = @userId ORDER BY score DESC, createdAt DESC LIMIT 1");
 
             const savedSchedule = scheduleResult.recordset[0];
             let scheduleStr = "- No recent schedules generated.";

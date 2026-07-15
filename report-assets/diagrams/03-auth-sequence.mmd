@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant U as Student Browser
+    participant F as Frontend Home.jsx
+    participant A as Express API
+    participant P as Portal Scraper
+    participant DB as SQL Server
+
+    U->>F: Enter universityId + password
+    F->>A: POST /api/auth/login
+    A->>P: verifyCredentials Playwright
+    P->>P: Login to ums.mu.edu.lb
+    P-->>A: valid + studentName
+    A->>DB: Upsert Users + PortalCredentials
+    A->>DB: Sync AcademicHistory
+    A-->>F: JWT token + user object
+    F->>F: Store mugate_token in localStorage
+    F-->>U: Logged-in navigation

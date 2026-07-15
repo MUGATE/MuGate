@@ -21,12 +21,31 @@ import eventRoutes from "./modules/events/event.routes";
 import { EventRepository } from "./modules/events/event.repository";
 import roadmapRoutes from "./modules/roadmap/roadmap.routes";
 import { RoadMapRepository } from "./modules/roadmap/roadmap.repository";
+import { bootstrapRag } from "./modules/ai/rag/rag.bootstrap";
+import { env } from "./config/env";
 
 const app = express();
 
-app.use(cors());
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
+app.set("trust proxy", 1);
+
+app.use(
+    cors({
+        origin: (origin, callback) => {
+            // Non-browser clients (mobile apps, curl) send no Origin
+            if (!origin) return callback(null, true);
+            if (env.corsOrigins.length === 0) {
+                // Dev fallback: allow all when CORS_ORIGINS unset
+                if (env.nodeEnv !== "production") return callback(null, true);
+                return callback(null, false);
+            }
+            if (env.corsOrigins.includes(origin)) return callback(null, true);
+            return callback(null, false);
+        },
+        credentials: true,
+    })
+);
+app.use(express.json({ limit: "8mb" }));
+app.use(express.urlencoded({ limit: "8mb", extended: true }));
 app.use(rateLimiter);
 
 // Register routes
@@ -52,14 +71,18 @@ app.get("/", (req, res) => {
     res.send("MuGate Backend Running 🚀");
 });
 
-// Test DB connection
-app.get("/test-db", async (req, res) => {
+/** Railway / load-balancer healthcheck */
+app.get("/api/health", async (_req, res) => {
     try {
-        await poolConnect; // Wait for connection to establish
-        const result = await pool.request().query("SELECT 1 AS test");
-        res.json({ success: true, result: result.recordset });
+        await poolConnect;
+        await pool.request().query("SELECT 1 AS ok");
+        res.status(200).json({ ok: true, db: true });
     } catch (err: any) {
-        res.json({ success: false, error: err.message });
+        res.status(503).json({
+            ok: false,
+            db: false,
+            error: process.env.NODE_ENV === "development" ? err.message : undefined,
+        });
     }
 });
 
@@ -81,5 +104,8 @@ RoadMapRepository.ensureTable();
 // Initialize background CRON jobs
 initCronJobs();
 
-// Trigger automatic backend reload and reseeding - V5
+// RAG bootstrap: migrations applied via poolConnect; seed, vector sync, optional crawl
+poolConnect.then(() => bootstrapRag()).catch(err => {
+    console.error("RAG bootstrap error:", err.message);
+});
 export default app;

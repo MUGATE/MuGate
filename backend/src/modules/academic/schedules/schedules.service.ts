@@ -1,4 +1,4 @@
-import { pool } from "../../../core/database/connection";
+import { pool, DbSql } from "../../../core/database/connection";
 import { logger } from "../../../core/logger/logger";
 import { v4 as uuidv4 } from "uuid";
 
@@ -10,7 +10,7 @@ export class SchedulesService {
      */
     static async saveSchedule(userId: string, name: string, score: number, totalCredits: number, sectionIds: string[]) {
         logger.info(`Saving schedule '${name}' for user ${userId}`);
-        const transaction = new (require("mssql").Transaction)(pool);
+        const transaction = new DbSql.Transaction(pool as any);
         await transaction.begin();
 
         try {

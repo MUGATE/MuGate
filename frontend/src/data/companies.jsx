@@ -18,9 +18,10 @@ import VanriseLogo from '../pages/Internship/Logos/Vanrise.png';
 
 // 3D Path Data for Logo Extrusion + SVG Strings for Texture
 // ORDER: Touch, Youbee, Whish (center default), XpertBot, IDS, 42 Beirut
+// IDs must match backend seed insert order (IDENTITY) so reviews share one DB.
 export const companyData = [
     {
-        id: 3,
+        id: 1,
         name: "Touch",
         description: "Leading mobile telecommunications and data services operator in Lebanon.",
         colors: ["#ea0c2c", "#c90022", "#ffffff"],
@@ -47,7 +48,7 @@ export const companyData = [
                 ratings: []
     },
     {
-        id: 1,
+        id: 3,
         name: "Whish Money",
         description: "Innovative digital wallet and financial services platform.",
         colors: ["#FF0000", "#cc0000", "#ffffff", "#ff4d4d"],

@@ -23,7 +23,8 @@ Permanent working rules for Claude (and humans) on this repo. Read alongside
 - **Icons:** prefer `lucide-react` over new inline SVG where practical.
 
 ## Security rules
-- No new hardcoded credentials, admin IDs, or API keys in code. (The existing `"101230004"` super-admin is legacy; don't copy the pattern, and don't remove it without asking — it may be demo-critical.)
+- No new hardcoded credentials, admin IDs, or API keys in code. Super-admin is configured via `SUPER_ADMIN_UNIVERSITY_ID` (plus the `Admins` table).
+- `JWT_SECRET` / `ENCRYPTION_SECRET` must be strong (≥32 chars); the process exits if they are missing or known-weak.
 - Validate/sanitize user input that flows into generated documents or SQL.
 - Frontend stores auth in `localStorage` (`mugate_token`, `mugate_user`); treat as untrusted on the backend — always re-verify on protected routes.
 

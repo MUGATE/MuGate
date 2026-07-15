@@ -80,6 +80,7 @@ If they ask to add, change, remove, or modify something in their resume, write o
             let ragContext = "";
             let ragSourcesFound = 0;
             let ragCategories: string[] = [];
+            let ragFreshlyScraped = false;
 
             // Personal academic context (for authenticated users)
             if (userId && (questionType === QuestionType.PERSONAL_ACADEMIC || questionType === QuestionType.UNIVERSITY_ACADEMIC)) {
@@ -92,14 +93,15 @@ If they ask to add, change, remove, or modify something in their resume, write o
                 ragContext = ragResult.context;
                 ragSourcesFound = ragResult.sourcesFound;
                 ragCategories = ragResult.categories;
-                logger.info(`RAG: Found ${ragSourcesFound} sources from [${ragCategories.join(", ")}]`);
+                ragFreshlyScraped = ragResult.freshlyScraped;
+                logger.info(`RAG: Found ${ragSourcesFound} sources (confidence=${ragResult.confidence.toFixed(2)}, live=${ragFreshlyScraped}) from [${ragCategories.join(", ")}]`);
             }
 
             // 6. Save User Message
             await ChatbotMemoryService.saveMessage(sessionId, "user", messageContent, 0);
 
             // 7. Generate AI Response with RAG-enhanced prompt
-            const systemPrompt = generateSystemPrompt(studentContext, ragContext, questionType, reasoning);
+            const systemPrompt = generateSystemPrompt(studentContext, ragContext, questionType, reasoning, ragFreshlyScraped);
 
             const startGenTime = Date.now();
             const aiResponse = await AiProvider.generateResponse(systemPrompt, history, messageContent);

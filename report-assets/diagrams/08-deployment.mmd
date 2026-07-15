@@ -1,0 +1,26 @@
+flowchart TB
+    subgraph dev [Development Environment]
+        DEV_PC[Developer PC]
+        subgraph dev_pc [Local Machine]
+            FE_DEV[Vite Dev Server :5173]
+            BE_DEV[Express API :5000]
+            SQL_DEV[(SQL Server Local)]
+            CHROMA_DEV[Chroma File Store]
+        end
+        PHONE[Expo Go Mobile]
+    end
+
+    subgraph prod [Production Topology - Not Containerized]
+        STATIC[Static Frontend Build dist/]
+        NODE_SRV[Node.js Process]
+        SQL_PROD[(SQL Server)]
+    end
+
+    DEV_PC --> FE_DEV
+    DEV_PC --> BE_DEV
+    BE_DEV --> SQL_DEV
+    BE_DEV --> CHROMA_DEV
+    PHONE -->|LAN WiFi| BE_DEV
+    FE_DEV --> BE_DEV
+    STATIC --> NODE_SRV
+    NODE_SRV --> SQL_PROD

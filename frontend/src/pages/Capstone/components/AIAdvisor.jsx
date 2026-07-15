@@ -88,9 +88,9 @@ const AIAdvisor = () => {
               </div>
               <h2>Capstone AI Advisor</h2>
               <p>
-                I'm trained on the history of all university capstone project ideas.
+                I'm trained on MU's historical CSC 499 capstone project database.
                 Tell me about your interests, niche, or skills — and I'll suggest
-                relevant project ideas for you.
+                relevant past projects and new ideas inspired by them.
               </p>
               <div className="cs-ai-suggestions">
                 {suggestions.map((s, i) => (

@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { UserPlus, Trash2, Shield, Activity, RefreshCw } from "lucide-react";
+import NotchedHeroNav from "../../components/layout/NotchedHeroNav";
+import { UserPlus, Trash2, Shield, Activity, RefreshCw, Database, Globe, Zap } from "lucide-react";
 import * as adminApi from "../../services/adminApi";
-import logo from "../Home/assets/Images/Logo2 colored.png";
+import * as scraperApi from "../../services/scraperApi";
 import "../Home/Home.css";
 import "./AdminControl.css";
 
@@ -22,6 +23,12 @@ const AdminControl = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [newAdminId, setNewAdminId] = useState("");
+
+  const [kbStats, setKbStats] = useState(null);
+  const [scraperRunning, setScraperRunning] = useState(false);
+  const [scraperRuns, setScraperRuns] = useState([]);
+  const [kbLoading, setKbLoading] = useState(false);
+  const [kbMessage, setKbMessage] = useState("");
 
   // Live admin status — starts null (checking), then true/false
   const [isAdmin, setIsAdmin] = useState(null);
@@ -59,6 +66,24 @@ const AdminControl = () => {
     }
   }, []);
 
+  const loadKbData = useCallback(async () => {
+    setKbLoading(true);
+    try {
+      const [stats, status, runs] = await Promise.all([
+        scraperApi.getKbStats(),
+        scraperApi.getScraperStatus(),
+        scraperApi.getScraperRuns(5),
+      ]);
+      setKbStats(stats);
+      setScraperRunning(status.running);
+      setScraperRuns(runs || []);
+    } catch (err) {
+      setKbMessage(err.message || "Failed to load knowledge base stats.");
+    } finally {
+      setKbLoading(false);
+    }
+  }, []);
+
   // ── Effect 1: Verify admin status via live DB call on mount ──────────────────
   useEffect(() => {
     if (!token) { navigate("/"); return; }
@@ -75,9 +100,10 @@ const AdminControl = () => {
   useEffect(() => {
     if (!isAdmin) return;
     loadData();
-    const interval = setInterval(loadData, 5000);
+    loadKbData();
+    const interval = setInterval(() => { loadData(); loadKbData(); }, 5000);
     return () => clearInterval(interval);
-  }, [isAdmin, loadData]);
+  }, [isAdmin, loadData, loadKbData]);
 
   // ── Effect 3: BroadcastChannel — receive admin changes from other tabs ────────
   useEffect(() => {
@@ -108,8 +134,8 @@ const AdminControl = () => {
     }
   };
 
-  const handleRemoveAdmin = async (universityId, name) => {
-    if (universityId === "101230004") {
+  const handleRemoveAdmin = async (universityId, name, isSuperAdmin) => {
+    if (isSuperAdmin) {
       setError("The primary super admin cannot be demoted.");
       return;
     }
@@ -132,6 +158,25 @@ const AdminControl = () => {
     }
   };
 
+  const handleKbAction = async (action) => {
+    setKbMessage("");
+    setError("");
+    try {
+      if (action === "crawl") await scraperApi.startFullCrawl();
+      else if (action === "sync") await scraperApi.startIncrementalSync();
+      else if (action === "rescrape") {
+        if (!window.confirm("This will delete all knowledge base data and rebuild from scratch. Continue?")) return;
+        await scraperApi.startRescrape();
+      }
+      else if (action === "reindex") await scraperApi.reindexVectors();
+      else if (action === "sitemap") await scraperApi.refreshSitemap();
+      setKbMessage(`Action "${action}" started successfully.`);
+      await loadKbData();
+    } catch (err) {
+      setKbMessage(err.message || `Failed to run ${action}.`);
+    }
+  };
+
   // ── Gate: show spinner while verifying access ────────────────────────────────
   if (isAdmin === null) {
     return (
@@ -148,29 +193,13 @@ const AdminControl = () => {
   return (
     <div className="admin-ctrl-container">
       {/* NAVBAR */}
-      <div className="hero-unified-frame" style={{ position: "absolute", top: 0, left: 0, width: "100%", zIndex: 100 }}>
-        <nav className="hero-nav-notched">
-          <div className="nav-group-left">
-            <Link to="/internships">Internships</Link>
-            <Link to="/resume-enhancer">Resume</Link>
-            <Link to="/chatbot">Chatbot</Link>
-            <Link to="/schedule">Scheduler</Link>
-            <Link to="/capstone">Capstone</Link>
-          </div>
-          <div className="nav-group-center">
-            <div className="branding-logo-box">
-              <img src={logo} alt="MuGate Logo" className="nav-logo-black" />
-              <span className="brand-name-black" style={{ color: "#0e220e" }}>MUGATE</span>
-            </div>
-            <Link to="/events" className="nav-events-link">Events</Link>
-            <Link to="/roadmap" className="nav-events-link" style={{ marginLeft: "10px" }}>RoadMap</Link>
-            <Link to="/about" className="nav-events-link" style={{ marginLeft: "10px" }}>About</Link>
-            <Link to="/admin-control" className="nav-events-link" style={{ marginLeft: "10px" }}>Control</Link>
-          </div>
-          <div className="nav-group-right">
+      <div className="admin-ctrl-nav-wrap">
+        <NotchedHeroNav
+          maskFrame={false}
+          rightSlot={
             <button
               className="nav-demo-btn-solidroad"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/profile", { replace: true })}
             >
               Back <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255,255,255,0.3)" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -179,8 +208,8 @@ const AdminControl = () => {
                 </svg>
               </span>
             </button>
-          </div>
-        </nav>
+          }
+        />
       </div>
 
       <div className="admin-ctrl-glow-left" />
@@ -224,6 +253,67 @@ const AdminControl = () => {
           </div>
         </div>
 
+        {/* Knowledge Base */}
+        <div className="admin-ctrl-section">
+          <h2 className="admin-ctrl-subtitle">
+            <Database size={18} style={{ marginRight: 8, verticalAlign: "middle" }} />
+            MuChat Knowledge Base
+            {scraperRunning && <span className="badge-self" style={{ marginLeft: 8 }}>Crawling...</span>}
+          </h2>
+          {kbMessage && <div className="admin-ctrl-alert success">{kbMessage}</div>}
+          {kbLoading && !kbStats ? (
+            <div className="admin-ctrl-loading"><div className="spinner" /><p>Loading KB stats...</p></div>
+          ) : kbStats && (
+            <div className="admin-kb-stats">
+              <div className="admin-kb-stat"><strong>{kbStats.activePages}</strong><span>Active Pages</span></div>
+              <div className="admin-kb-stat"><strong>{kbStats.totalChunks}</strong><span>SQL Chunks</span></div>
+              <div className="admin-kb-stat"><strong>{kbStats.chromaChunks ?? 0}</strong><span>Vector Chunks</span></div>
+              <div className="admin-kb-stat"><strong>{kbStats.unsyncedChunks ?? 0}</strong><span>Unsynced</span></div>
+            </div>
+          )}
+          <div className="admin-kb-actions">
+            <button onClick={() => handleKbAction("crawl")} disabled={scraperRunning} className="admin-ctrl-submit-btn">
+              <Globe size={14} /> Full Crawl
+            </button>
+            <button onClick={() => handleKbAction("sync")} disabled={scraperRunning} className="admin-ctrl-submit-btn">
+              <RefreshCw size={14} /> Incremental Sync
+            </button>
+            <button onClick={() => handleKbAction("reindex")} className="admin-ctrl-submit-btn">
+              <Zap size={14} /> Reindex Vectors
+            </button>
+            <button onClick={() => handleKbAction("sitemap")} className="admin-ctrl-submit-btn">
+              Sitemap Refresh
+            </button>
+            <button onClick={() => handleKbAction("rescrape")} disabled={scraperRunning} className="admin-demote-btn" style={{ padding: "8px 16px" }}>
+              Full Rescrape
+            </button>
+          </div>
+          {scraperRuns.length > 0 && (
+            <div className="admin-ctrl-table-wrapper" style={{ marginTop: 16 }}>
+              <table className="admin-ctrl-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Pages</th>
+                    <th>Started</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scraperRuns.map(run => (
+                    <tr key={run.id}>
+                      <td>{run.runType}</td>
+                      <td>{run.status}</td>
+                      <td>{run.pagesScraped}</td>
+                      <td>{run.startedAt ? new Date(run.startedAt).toLocaleString() : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         {/* Admin List */}
         <div className="admin-ctrl-section admin-list-section">
           <h2 className="admin-ctrl-subtitle">
@@ -250,7 +340,7 @@ const AdminControl = () => {
                 <tbody>
                   {sortedAdmins.map(adm => {
                     const isSelf = String(adm.universityId) === String(currentUniversityId);
-                    const isSuper = adm.universityId === "101230004";
+                    const isSuper = adm.isSuperAdmin === true || adm.isSuperAdmin === 1;
                     return (
                       <tr key={adm.id} className={isSelf ? "row-self" : ""}>
                         <td>
@@ -270,7 +360,7 @@ const AdminControl = () => {
                         </td>
                         <td style={{ textAlign: "center" }}>
                           <button
-                            onClick={() => handleRemoveAdmin(adm.universityId, adm.name)}
+                            onClick={() => handleRemoveAdmin(adm.universityId, adm.name, isSuper)}
                             disabled={isSuper || isSelf}
                             className="admin-demote-btn"
                             title={isSuper ? "Super Admin cannot be demoted" : isSelf ? "You cannot demote yourself" : "Revoke Admin Privileges"}
