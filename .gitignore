@@ -17,6 +17,4 @@ backend/node_modules/.package-lock.json
 backend/data/
 
 
-# Large binary; host via releases or local file
-frontend/public/downloads/mugate.apk
 
