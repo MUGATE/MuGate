@@ -97,7 +97,7 @@ Without `VITE_API_BASE_URL`, production would incorrectly call `hostname:5000`.
 In `MuGate/mobile/.env`:
 
 ```
-EXPO_PUBLIC_API_URL=https://YOUR-RAILWAY-URL/api
+EXPO_PUBLIC_API_URL=https://mugate-production.up.railway.app/api
 ```
 
 Rebuild the Expo app / EAS profile so the new URL is bundled.

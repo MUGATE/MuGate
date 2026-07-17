@@ -10,7 +10,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.0.2:5000/api"
+        "EXPO_PUBLIC_API_URL": "https://mugate-production.up.railway.app/api"
       }
     },
     "production": {
@@ -18,7 +18,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.0.2:5000/api"
+        "EXPO_PUBLIC_API_URL": "https://mugate-production.up.railway.app/api"
       }
     }
   }
