@@ -5,8 +5,8 @@ import "../Home/Home.css";
 import "./Download.css";
 
 const APK_PATH = (import.meta.env.VITE_APK_URL || "").trim();
-const APK_FILENAME = "MuGate-1.0.0.apk";
-const APP_VERSION = "1.0.0";
+const APK_FILENAME = "MuGate-1.0.2.apk";
+const APP_VERSION = "1.0.2";
 
 const INSTALL_STEPS = [
   {
@@ -32,22 +32,9 @@ const Download = () => {
   const [apkReady, setApkReady] = useState(null); // null = checking, true/false
 
   useEffect(() => {
-    if (!APK_PATH) {
-      setApkReady(false);
-      return undefined;
-    }
-
-    let cancelled = false;
-    fetch(APK_PATH, { method: "HEAD" })
-      .then((res) => {
-        if (!cancelled) setApkReady(res.ok);
-      })
-      .catch(() => {
-        if (!cancelled) setApkReady(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    // GitHub Release / CDN URLs often fail browser HEAD (CORS/redirects).
+    // If VITE_APK_URL is set, treat the download as available.
+    setApkReady(Boolean(APK_PATH));
   }, []);
 
   return (
