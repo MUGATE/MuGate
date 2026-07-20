@@ -89,8 +89,10 @@ Copy templates:
    Optional — Android APK download (hosted outside Vercel; the APK is excluded from the deploy via `.vercelignore`):
 
    ```
-   VITE_APK_URL=https://YOUR-HOST/MuGate.apk
+   VITE_APK_URL=https://github.com/MUGATE/MuGate/releases/download/v1.0.2/mugate.apk
    ```
+
+   SPA routes (`/download`, `/about`, …) are handled by [`vercel.json`](vercel.json) at the **repo root** (this project builds with Root Directory = repo root + `cd frontend` install/build commands, so `frontend/vercel.json` is not applied).
 
 5. Deploy. Open the site and sign in with an MU account.
 
