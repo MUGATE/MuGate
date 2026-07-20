@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, Command, Home, Compass, History, Library, GraduationCap,
@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import FluidTrail from './FluidTrail';
 
-const ChatSidebar = ({
+const ChatSidebar = forwardRef(function ChatSidebar({
   sessions,
   activeSessionId,
   handleSessionClick,
@@ -16,15 +16,29 @@ const ChatSidebar = ({
   setSearchQuery,
   userName,
   token,
-  LogoPath
-}) => {
+  LogoPath,
+  isNarrow = false,
+  open = false,
+}, ref) {
   const navigate = useNavigate();
   const filteredSessions = sessions.filter(s =>
     (s.title || 'New Chat').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const drawerHidden = isNarrow && !open;
+  const drawerOpen = isNarrow && open;
+
   return (
-    <aside className="chatbot-sidebar">
+    <aside
+      ref={ref}
+      id="chatbot-sidebar"
+      className={`chatbot-sidebar${drawerHidden ? ' is-drawer-hidden' : ''}${drawerOpen ? ' is-drawer-open' : ''}`}
+      aria-hidden={drawerHidden ? true : undefined}
+      inert={drawerHidden ? true : undefined}
+      role={drawerOpen ? 'dialog' : undefined}
+      aria-modal={drawerOpen ? true : undefined}
+      aria-label={drawerOpen ? 'Chat menu' : undefined}
+    >
       <FluidTrail />
       {/* Header / Logo */}
       <div className="sidebar-header">
@@ -36,7 +50,7 @@ const ChatSidebar = ({
         <span className="sidebar-title">MuBot</span>
 
         {/* New Chat Button */}
-        <button className="new-chat-btn" onClick={handleNewSession} title="New Chat">
+        <button type="button" className="new-chat-btn" onClick={handleNewSession} title="New Chat" aria-label="New chat">
           <Plus size={18} />
         </button>
       </div>
@@ -49,6 +63,7 @@ const ChatSidebar = ({
           placeholder="Search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          aria-label="Search sessions"
         />
         <div className="shortcut-icon"><Command size={14} /></div>
       </div>
@@ -102,15 +117,23 @@ const ChatSidebar = ({
         {filteredSessions.map(session => (
           <div
             key={session.id}
-            className={`session-item ${session.id === activeSessionId ? 'active' : ''}`}
-            onClick={() => handleSessionClick(session)}
+            className={`session-item-row${session.id === activeSessionId ? ' active' : ''}`}
           >
-            <MessageSquare size={14} className="session-icon" />
-            <span className="session-title">{session.title || 'New Chat'}</span>
             <button
+              type="button"
+              className="session-item"
+              onClick={() => handleSessionClick(session)}
+              aria-current={session.id === activeSessionId ? 'true' : undefined}
+            >
+              <MessageSquare size={14} className="session-icon" />
+              <span className="session-title">{session.title || 'New Chat'}</span>
+            </button>
+            <button
+              type="button"
               className="session-delete-btn"
               onClick={(e) => handleDeleteSession(e, session.id)}
               title="Delete session"
+              aria-label="Delete session"
             >
               <Trash2 size={14} />
             </button>
@@ -119,7 +142,18 @@ const ChatSidebar = ({
       </div>
 
       {/* User Profile */}
-      <div className="sidebar-profile" onClick={() => navigate('/profile')}>
+      <div
+        className="sidebar-profile"
+        onClick={() => navigate('/profile')}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            navigate('/profile');
+          }
+        }}
+        role="link"
+        tabIndex={0}
+      >
         <img
           src={`https://ui-avatars.com/api/?name=${userName || 'Guest'}&background=333&color=fff`}
           alt="User avatar"
@@ -133,6 +167,6 @@ const ChatSidebar = ({
       </div>
     </aside>
   );
-};
+});
 
 export default ChatSidebar;

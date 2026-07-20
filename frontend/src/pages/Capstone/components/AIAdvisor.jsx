@@ -113,6 +113,9 @@ const AIAdvisor = () => {
 
           {aiMessages.map((msg, idx) => (
             <div key={idx} className={`cs-ai-message ${msg.role}`}>
+              <span className="cs-ai-message-role">
+                {msg.role === 'user' ? 'You' : 'AI Advisor'}
+              </span>
               <div className="cs-ai-message-content">
                 {msg.role === 'assistant' ? (
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
@@ -125,6 +128,7 @@ const AIAdvisor = () => {
 
           {isAiLoading && (
             <div className="cs-ai-message assistant">
+              <span className="cs-ai-message-role">AI Advisor</span>
               <div className="cs-ai-message-content">
                 <div className="cs-ai-typing">
                   <span></span><span></span><span></span>

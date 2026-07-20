@@ -44,6 +44,25 @@ const DEFAULT_COURSES: RoadMapCourse[] = [
     { courseCode: "TECH ELEC", courseName: "Technical Elective", credits: 3, category: "Technical Electives", year: 3, semester: "Spring" }
 ];
 
+const MULTI_SLOT_CODES = new Set(["TECH ELEC"]);
+
+/** Collapse duplicate course rows; allow multi-slot electives per semester. */
+function dedupeCourses(courses: RoadMapCourse[]): RoadMapCourse[] {
+    const seen = new Set<string>();
+    const out: RoadMapCourse[] = [];
+    for (const c of courses) {
+        const code = String(c.courseCode || "").trim().toUpperCase();
+        if (!code) continue;
+        const key = MULTI_SLOT_CODES.has(code)
+            ? `${code}|${c.year}|${c.semester}`
+            : code;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(c);
+    }
+    return out;
+}
+
 export class RoadMapController {
     static async getRoadmap(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
@@ -55,11 +74,22 @@ export class RoadMapController {
             }
 
             let courses = await RoadMapRepository.getUserRoadmap(userId);
-            
+
             if (courses.length === 0) {
-                // Seed default courses
-                await RoadMapRepository.saveUserRoadmap(userId, DEFAULT_COURSES);
+                // Re-check inside seed path to reduce double-seed races
                 courses = await RoadMapRepository.getUserRoadmap(userId);
+                if (courses.length === 0) {
+                    await RoadMapRepository.saveUserRoadmap(userId, DEFAULT_COURSES);
+                    courses = await RoadMapRepository.getUserRoadmap(userId);
+                }
+            }
+
+            const cleaned = dedupeCourses(courses);
+            if (cleaned.length < courses.length) {
+                await RoadMapRepository.saveUserRoadmap(userId, cleaned);
+                courses = cleaned;
+            } else {
+                courses = cleaned;
             }
 
             res.json({ success: true, data: courses });
@@ -83,8 +113,9 @@ export class RoadMapController {
                 return;
             }
 
-            await RoadMapRepository.saveUserRoadmap(userId, courses);
-            res.json({ success: true, message: "Roadmap saved successfully" });
+            const cleaned = dedupeCourses(courses);
+            await RoadMapRepository.saveUserRoadmap(userId, cleaned);
+            res.json({ success: true, message: "Roadmap saved successfully", data: cleaned });
         } catch (error) {
             next(error);
         }

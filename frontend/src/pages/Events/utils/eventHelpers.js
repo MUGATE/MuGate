@@ -49,12 +49,55 @@ export const isThisWeek = (dateStr) => {
   return days !== null && days >= 0 && days <= 7;
 };
 
+/** YYYY-MM-DD in the viewer's local timezone (recovers legacy local-midnight rows). */
+const toCalendarDateLocal = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+const toCalendarDateUtc = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+};
+
+const isDateOnlyTimestamp = (value) => {
+  if (!value) return true;
+  const d = new Date(value);
+  const utcMid =
+    d.getUTCHours() === 0 &&
+    d.getUTCMinutes() === 0 &&
+    d.getUTCSeconds() === 0;
+  const utcEnd = d.getUTCHours() === 23 && d.getUTCMinutes() === 59;
+  const localMid =
+    d.getHours() === 0 &&
+    d.getMinutes() === 0 &&
+    d.getSeconds() === 0;
+  return utcMid || utcEnd || localMid;
+};
+
 export const mapBackendEvent = (ev) => {
-  const startStr = ev.startDate ? new Date(ev.startDate).toISOString().split("T")[0] : "";
-  const endStr = ev.endDate ? new Date(ev.endDate).toISOString().split("T")[0] : "";
-  const timeStr = ev.startDate
-    ? new Date(ev.startDate).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
-    : "";
+  const startStr = toCalendarDateLocal(ev.startDate);
+  const startUtc = toCalendarDateUtc(ev.startDate);
+  const endUtc = toCalendarDateUtc(ev.endDate);
+  // Same UTC calendar day (e.g. 00:00Z–23:59Z) is a single-day event, not a range.
+  const endStr =
+    endUtc && endUtc !== startUtc ? toCalendarDateLocal(ev.endDate) : "";
+  // Hide synthetic midnight/end-of-day times used for date-only community events.
+  const timeStr =
+    ev.startDate && !isDateOnlyTimestamp(ev.startDate)
+      ? new Date(ev.startDate).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        })
+      : "";
 
   const categoryToType = {
     workshop: "workshop", hackathon: "hackathon", competition: "competition",
@@ -76,6 +119,7 @@ export const mapBackendEvent = (ev) => {
     time: timeStr,
     location: ev.location || "Lebanon",
     description: ev.description || "",
+    organizer: ev.organizer || "",
     source: sourceLabels[rawSource] || rawSource,
     rawSource: rawSource,
     eventSource: ev.source || "scraped",

@@ -6,7 +6,6 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { darkColors, lightColors, ThemeColors } from '../theme/colors';
 
@@ -24,8 +23,7 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const deviceScheme = useColorScheme();
-  const [scheme, setSchemeState] = useState<Scheme>(deviceScheme === 'light' ? 'light' : 'dark');
+  const [scheme, setSchemeState] = useState<Scheme>('light');
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {

@@ -6,7 +6,7 @@
 .about-summary-section {
     position: relative;
     width: 100%;
-    min-height: 100vh;
+    min-height: var(--framed-vh, calc(100dvh - 2 * var(--hero-frame-gutter, 16px)));
     background: linear-gradient(to bottom, var(--color-surface-muted) 0%, var(--color-page) 100%);
     display: flex;
     align-items: center;
@@ -177,8 +177,94 @@
         gap: 24px;
     }
 
+    /* Keep stats on one horizontal row */
     .about-stats-row {
-        flex-direction: column;
-        gap: 40px;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: center;
+        gap: clamp(20px, 5vw, 48px);
+        width: 100%;
     }
+
+    .about-stat-number {
+        font-size: clamp(1.85rem, 4.5vw, 2.8rem);
+    }
+
+    .about-stat-label {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .about-summary-section {
+        min-height: 0;
+        padding: 64px var(--page-gutter);
+    }
+
+    .about-summary-inner {
+        gap: 40px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .about-headline {
+        font-size: clamp(1.85rem, 7vw, 2.6rem);
+        white-space: normal;
+    }
+
+    .about-headline-block {
+        max-width: 100%;
+    }
+
+    .about-pillars-grid {
+        gap: 16px;
+        min-width: 0;
+    }
+
+    .about-pillar-card {
+        padding: 28px 22px;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .about-stats-row {
+        gap: clamp(16px, 4vw, 32px);
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: nowrap;
+    }
+
+    .about-stat-number {
+        font-size: clamp(1.6rem, 5.5vw, 2.2rem);
+    }
+
+    .about-stat-label {
+        font-size: 0.72rem;
+    }
+}
+
+/* -- Dark mode: black/dark-blue section, white text -- */
+[data-theme="dark"] .about-summary-section {
+    background: var(--color-page);
+}
+
+[data-theme="dark"] .about-headline,
+[data-theme="dark"] .about-headline-sub,
+[data-theme="dark"] .about-pillar-title,
+[data-theme="dark"] .about-pillar-desc,
+[data-theme="dark"] .about-stat-number,
+[data-theme="dark"] .about-stat-label {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .about-pillar-card {
+    background: var(--color-panel);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .about-pillar-icon {
+    background: linear-gradient(135deg, #1a3a6b 0%, #2b5ea7 100%);
+    color: #ffffff;
 }

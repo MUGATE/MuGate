@@ -6,7 +6,7 @@
 .capstone-showcase-section {
     position: relative;
     width: 100%;
-    min-height: 100vh;
+    min-height: var(--framed-vh, calc(100dvh - 2 * var(--hero-frame-gutter, 16px)));
     background: linear-gradient(to bottom, var(--color-surface-muted) 0%, var(--color-page) 100%);
     display: flex;
     align-items: center;
@@ -158,4 +158,62 @@
     .capstone-showcase-inner {
         gap: 48px;
     }
+}
+
+@media (max-width: 768px) {
+    .capstone-showcase-section {
+        min-height: 0;
+        padding: 64px var(--page-gutter);
+    }
+
+    .capstone-showcase-inner {
+        gap: 36px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .capstone-headline {
+        font-size: clamp(1.85rem, 7vw, 2.6rem);
+        white-space: normal;
+    }
+
+    .capstone-headline-block {
+        max-width: 100%;
+    }
+
+    .capstone-features-grid {
+        gap: 16px;
+        min-width: 0;
+    }
+
+    .capstone-feature-card {
+        padding: 28px 22px;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+/* -- Dark mode: black/dark-blue section, white text -- */
+[data-theme="dark"] .capstone-showcase-section {
+    background: var(--color-page);
+}
+
+[data-theme="dark"] .capstone-headline,
+[data-theme="dark"] .capstone-headline-sub,
+[data-theme="dark"] .capstone-feature-title,
+[data-theme="dark"] .capstone-feature-desc,
+[data-theme="dark"] .capstone-bottom-text {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .capstone-feature-card {
+    background: var(--color-panel);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .capstone-feature-icon {
+    background: linear-gradient(135deg, #1a3a6b 0%, #2b5ea7 100%);
+    color: #ffffff;
 }

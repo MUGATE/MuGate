@@ -7,9 +7,11 @@
 .events-page {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--color-page);
   padding: 0 0 80px;
   overflow-x: hidden;
+  overflow-x: clip;
   color: var(--color-text);
   isolation: isolate;
 }
@@ -21,6 +23,13 @@
   display: none;
 }
 
+/* Navbar — shared NotchedHeroNav; wrap reserves space (frame is height:0) */
+.ev-nav-wrap {
+  height: 80px;
+  position: relative;
+  z-index: 1001;
+}
+
 /* ── Glass utility ── */
 
 .ev-glass {
@@ -29,68 +38,7 @@
 }
 
 /* ══════════════════════════════════════════════════
-   NAVBAR (matches Schedule page glass-card style)
-   ══════════════════════════════════════════════════ */
-
-.ev-navbar {
-  display: flex;
-  align-items: center;
-
-
-
-  justify-content: center;
-  gap: 36px;
-  padding: 16px 40px;
-  margin: 16px auto 0;
-  width: min(1500px, calc(100vw - 280px));
-  border-radius: 20px;
-  position: relative;
-  z-index: 1001;
-  box-sizing: border-box;
-
-  background-color: var(--color-glass-solid);
-  box-shadow: 0 4px 20px var(--color-shadow);
-  border: 1px solid var(--color-border);
-}
-
-.ev-navbar.has-admin {
-  width: min(1500px, calc(100vw - 220px));
-}
-
-.ev-navbar a {
-
-
-
-
-  text-decoration: none;
-
-
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  padding: 8px 18px;
-  border-radius: 12px;
-  transition: all 0.25s ease;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-}
-
-.ev-navbar a:hover {
-
-  color: #1a6bdb;
-  background: rgba(26, 107, 219, 0.08);
-}
-
-.ev-navbar a.active {
-
-  color: #1a6bdb;
-  background: rgba(26, 107, 219, 0.1);
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(26, 107, 219, 0.1);
-}
-
-/* ══════════════════════════════════════════════════
-   SECTIONS
+   PAGE TABS
    ══════════════════════════════════════════════════ */
 
 .ev-section {
@@ -104,7 +52,7 @@
 
 .ev-page-tabs {
   position: sticky;
-  top: 12px;
+  top: 80px;
   z-index: 50;
   display: flex;
   align-items: center;
@@ -282,16 +230,16 @@
   flex-shrink: 0;
 }
 
-.ev-filter-pill:hover {
-  border-color: rgba(43, 94, 167, 0.3);
-  color: #2b5ea7;
+.ev-filter-pill:hover:not(.active) {
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #8B5CF6;
 }
 
 .ev-filter-pill.active {
-  background: linear-gradient(135deg, #2b5ea7, #4a90d9);
+  background: linear-gradient(135deg, #8B5CF6, #A78BFA);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 4px 16px rgba(43, 94, 167, 0.22);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.25);
 }
 
 /* ── Source pill styling ── */
@@ -359,7 +307,7 @@
 }
 
 .ev-search-input::placeholder {
-  color: #bbb;
+  color: var(--color-text-muted);
 }
 
 .ev-search-input:focus {
@@ -857,7 +805,6 @@
 
 /* ══════════════════════════════════════════════════
    ADD / EDIT EVENT MODAL
-   Above navbar (1001) and floating profile (1200)
    ══════════════════════════════════════════════════ */
 
 .ev-modal-overlay {
@@ -879,13 +826,13 @@
   background: var(--color-surface);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--color-border);
   width: 100%;
   max-width: 500px;
   margin: auto;
   padding: 30px;
   border-radius: 16px;
-  box-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 20px 50px -12px var(--color-shadow);
   box-sizing: border-box;
 }
 
@@ -917,13 +864,106 @@
 }
 
 .ev-modal-btn-cancel {
-  background: #e2e8f0;
-  color: #475569;
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
 }
 
 .ev-modal-btn-save {
-  background: #3b82f6;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.ev-modal-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px;
+}
+
+.ev-modal-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.ev-modal-file-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+}
+
+.ev-modal-file-badge {
+  width: 48px;
+  height: 48px;
+  background: var(--color-surface-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  font-weight: bold;
+  font-size: 10px;
+}
+
+.ev-modal-file-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ev-modal-file-size {
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.ev-modal-file-remove {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.ev-modal-file-remove:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.ev-modal-drop-hint {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.ev-modal-drop-icon {
+  margin: 0 auto 8px;
+  color: var(--color-text-muted);
+  display: block;
+}
+
+.ev-modal-drop-browse {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.ev-modal-drop-note {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
 }
 
 /* ── Date picker ── */
@@ -1167,12 +1207,27 @@
 }
 
 @media (max-width: 768px) {
-  .ev-navbar {
-    margin: 12px 20px 0;
-    width: calc(100% - 40px);
-    padding: 14px 20px;
-    gap: 12px;
-    flex-wrap: wrap;
+  /* Match collapsed NotchedHeroNav (~60px) + flat-page top offset (~24px) */
+  .ev-nav-wrap {
+    height: 84px;
+  }
+
+  .ev-page-tabs {
+    top: 84px;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .ev-page-tab {
+    flex: 1 1 auto;
+    text-align: center;
+    min-height: 44px;
+  }
+
+  .ev-add-event-btn {
+    margin-left: 0;
+    width: 100%;
+    min-height: 44px;
   }
 
   .ev-header-actions .ev-search-wrapper {
@@ -1181,14 +1236,9 @@
     min-width: 0;
   }
 
-  .ev-navbar a {
-    font-size: 13px;
-    padding: 6px 12px;
-  }
-
   .ev-section {
     padding: 0 16px;
-    margin-top: 32px;
+    margin-top: 24px;
   }
 
   .ev-section--community {
@@ -1205,12 +1255,34 @@
     grid-template-columns: 1fr;
   }
 
+  /* Toolbar: wrap type + source pills; search full width */
   .ev-toolbar {
     gap: 10px;
+    align-items: stretch;
+  }
+
+  .ev-filter-pills {
+    flex-wrap: wrap;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .ev-toolbar-divider {
+    display: none;
+  }
+
+  .ev-source-pills-group {
+    margin-left: 0;
+  }
+
+  .ev-filter-pill {
+    min-height: 40px;
   }
 
   .ev-search-wrapper {
-    flex: 1;
+    flex: 1 1 100%;
+    max-width: none;
+    min-width: 0;
   }
 
   .ev-card-image-wrap {
@@ -1220,6 +1292,63 @@
   .ev-divider {
     margin: 40px auto;
     padding: 0 16px;
+  }
+
+  /* Full-width modals on phone */
+  .ev-modal-overlay {
+    padding: 12px 8px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    align-items: flex-start;
+  }
+
+  .ev-modal-content {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .ev-modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .ev-modal-btn {
+    min-height: 44px;
+  }
+
+  .ev-modal-file-name {
+    max-width: min(200px, 52vw);
+  }
+
+  /* Readable calendar / date picker */
+  .ev-datepicker-popover {
+    width: 100%;
+    left: 0;
+    right: 0;
+    box-sizing: border-box;
+  }
+
+  .ev-datepicker-trigger {
+    min-height: 44px;
+  }
+
+  .ev-datepicker-nav {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .ev-datepicker-day {
+    font-size: 14px;
+    min-height: 40px;
+    border-radius: 10px;
+  }
+
+  .ev-datepicker-weekdays span {
+    font-size: 12px;
+    padding: 6px 0;
   }
 }
 
@@ -1241,14 +1370,41 @@
   .ev-refresh-btn {
     min-width: 100%;
   }
+
+  .ev-modal-overlay {
+    padding: 8px;
+  }
+
+  .ev-modal-content {
+    padding: 16px 12px;
+    border-radius: 12px;
+  }
 }
-/* ── Dark mode text contrast ── */
+/* ── Dark mode text contrast + layered surfaces ── */
+[data-theme="dark"] .ev-section--community,
+[data-theme="dark"] .ev-page-tabs,
+[data-theme="dark"] .ev-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .ev-filter-pill,
+[data-theme="dark"] .ev-search-input {
+  background: var(--color-inset);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+[data-theme="dark"] .ev-search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
 [data-theme="dark"] .ev-section-title,
 [data-theme="dark"] .ev-card-title,
 [data-theme="dark"] .ev-modal-title,
 [data-theme="dark"] .ev-filter-label,
 [data-theme="dark"] .ev-stat-value {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .ev-section-subtitle,
@@ -1256,5 +1412,5 @@
 [data-theme="dark"] .ev-card-meta,
 [data-theme="dark"] .ev-empty-text,
 [data-theme="dark"] .ev-meta-text {
-  color: #cbd5e1 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }

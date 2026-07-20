@@ -73,9 +73,12 @@ export class ScraperService {
             const sitemapUrls = await SitemapDiscovery.discoverUrls(baseUrl);
             await KnowledgeRepository.enqueueUrls(sitemapUrls, runId, 1);
 
+            const queuedUrls = await KnowledgeRepository.getPendingQueueUrls(500);
+            const seedUrls = Array.from(new Set([...queuedUrls, ...sitemapUrls])).slice(0, 500);
+
             const scraper = new UniversityScraper({
                 ...mergedConfig,
-                seedUrls: sitemapUrls.slice(0, 500),
+                seedUrls,
             });
             const { pages, errors } = await scraper.crawl();
 
@@ -186,12 +189,52 @@ export class ScraperService {
         }
     }
 
+    /**
+     * Discover sitemap URLs, enqueue them, then crawl pending queue URLs
+     * so Sitemap Refresh actually updates the knowledge base.
+     */
     static async refreshSitemap(): Promise<number> {
         const baseUrl = ragConfig.universityWebsiteUrl;
         SitemapDiscovery.clearCache();
         const urls = await SitemapDiscovery.discoverUrls(baseUrl);
         const added = await KnowledgeRepository.enqueueUrls(urls, undefined, 2);
         logger.info(`Sitemap refresh: queued ${added} URLs`);
+
+        // Consume the queue so refresh is not a no-op
+        const pending = await KnowledgeRepository.getPendingQueueUrls(200);
+        if (pending.length > 0 && !this.isRunning) {
+            this.isRunning = true;
+            const runId = await KnowledgeRepository.createScraperRun("sitemap", baseUrl);
+            try {
+                const scraper = new UniversityScraper({
+                    baseUrl,
+                    maxPages: pending.length,
+                    delayMs: 1500,
+                });
+                const { pages, errors } = await scraper.crawlUrls(pending);
+                const storeStats = await this.storePages(pages);
+                await KnowledgeRepository.markQueueUrlsDone(pages.map((p) => p.url));
+                await KnowledgeRepository.completeScraperRun(runId, "completed", {
+                    pagesScraped: pages.length,
+                    pagesNew: storeStats.pagesNew,
+                    pagesUpdated: storeStats.pagesUpdated,
+                    pagesUnchanged: storeStats.pagesUnchanged,
+                    errorCount: errors.length + storeStats.errors,
+                    errorDetails: errors.length > 0 ? errors.slice(0, 20).join("\n") : undefined,
+                });
+                logger.info(`Sitemap crawl done: ${pages.length} pages from queue`);
+            } catch (error: any) {
+                await KnowledgeRepository.completeScraperRun(runId, "failed", {
+                    pagesScraped: 0,
+                    errorCount: 1,
+                    errorDetails: error.message,
+                });
+                logger.error(`Sitemap queue crawl failed: ${error.message}`);
+            } finally {
+                this.isRunning = false;
+            }
+        }
+
         return added;
     }
 

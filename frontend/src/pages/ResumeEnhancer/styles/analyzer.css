@@ -19,18 +19,23 @@
 }
 .re-analyzer-back {
   align-self: flex-start;
-  margin: 12px 0 0;
+  flex-shrink: 0;
+  margin: 16px 0 4px;
+  position: relative;
+  z-index: 3;
 }
 
 .re-left-col {
-  width: 205px;
-  min-width: 195px;
+  width: 260px;
+  min-width: 240px;
+  max-width: 280px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   flex-shrink: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Score Card */
@@ -41,6 +46,9 @@
   align-items: center;
   text-align: center;
   position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .score-ring-container {
@@ -125,7 +133,7 @@
 .re-format-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000; /* below the navbar (1001) so the navbar stays sharp */
+  z-index: 999; /* below the navbar (1000) so the navbar stays sharp */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -135,6 +143,9 @@
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   animation: re-overlay-fade 0.28s ease both;
+}
+[data-theme="dark"] .re-format-overlay {
+  background: rgba(11, 18, 32, 0.65);
 }
 @keyframes re-overlay-fade { from { opacity: 0; } to { opacity: 1; } }
 .re-format-modal {
@@ -302,11 +313,13 @@
 /* Suggestions List */
 .re-suggestions-card {
   padding: 18px 18px;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .suggestions-list {
@@ -315,8 +328,9 @@
   gap: 8px;
   margin-top: 10px;
   overflow-y: auto;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
 }
 
 .suggestions-list::-webkit-scrollbar {
@@ -923,7 +937,10 @@
 
   .re-left-col {
     width: 100%;
+    max-width: none;
+    min-width: 0;
     flex-direction: row;
+    flex-wrap: wrap;
     gap: 16px;
     overflow: visible;
   }
@@ -934,14 +951,38 @@
   }
   .re-suggestions-card {
     flex: 1;
+    min-width: 0;
     overflow: visible;
   }
   .re-center-col {
     flex: 1;
-    min-width: 300px;
+    min-width: 0;
   }
   .re-upload-area {
     min-height: 380px;
+  }
+}
+
+@media (max-width: 768px) {
+  .re-analyzer-page,
+  .re-builder-page {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .re-left-col,
+  .re-center-col {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .re-score-card,
+  .re-suggestions-card {
+    width: 100%;
+    min-width: 0;
   }
 }
 

@@ -7,14 +7,21 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background-color: var(--color-bg);
-  padding: 16px var(--page-gutter);
+  padding: 0 var(--page-gutter) 16px;
   gap: 12px;
   box-sizing: border-box;
 }
 
-/* Navbar — see GlassNavBar.css */
+/* Navbar — shared NotchedHeroNav; wrap reserves space (frame is height:0) */
+.capstone-nav-wrap {
+  flex-shrink: 0;
+  height: 80px;
+  position: relative;
+  z-index: 100;
+}
 
 /* ─── Body: Sidebar + Main ─────────────────────────────── */
 .capstone-body {
@@ -204,6 +211,15 @@
   background: var(--color-surface);
   border: 1px solid rgba(0,0,0,0.05);
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.cs-sidebar-profile:hover {
+  background: var(--color-surface-muted, rgba(0, 0, 0, 0.03));
+  border-color: var(--color-border);
 }
 
 .cs-profile-avatar {
@@ -568,7 +584,7 @@
 
 .cs-partner-card {
   background: var(--color-surface);
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 20px;
   transition: all 0.25s;
@@ -610,7 +626,7 @@
 .cs-partner-name {
   font-size: 15px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: var(--color-text);
   margin: 0;
 }
 
@@ -642,7 +658,7 @@
 
 .cs-partner-desc {
   font-size: 13px;
-  color: #666;
+  color: var(--color-text-secondary, #666);
   margin: 0 0 10px 0;
   line-height: 1.6;
 }
@@ -665,13 +681,13 @@
 
 .cs-partner-looking {
   font-size: 12px;
-  color: #888;
+  color: var(--color-text-muted, #888);
   margin-bottom: 10px;
   line-height: 1.5;
 }
 
 .cs-partner-looking strong {
-  color: #555;
+  color: var(--color-text-secondary, #555);
 }
 
 .cs-partner-contact {
@@ -679,7 +695,7 @@
   gap: 14px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(0,0,0,0.06);
+  border-top: 1px solid var(--color-border);
   flex-wrap: wrap;
 }
 
@@ -707,7 +723,7 @@
 
 .cs-idea-card {
   background: var(--color-surface);
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 18px;
   transition: all 0.25s;
@@ -727,7 +743,7 @@
 .cs-idea-title {
   font-size: 14.5px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: var(--color-text);
   margin: 0 0 6px 0;
   line-height: 1.4;
 }
@@ -748,16 +764,19 @@
 }
 
 .cs-idea-year {
-  color: #888;
+  color: var(--color-text-muted, #888);
 }
 
-.cs-idea-year {
-  color: #888;
+.cs-idea-faculty {
+  color: #5157d9;
+  background: rgba(81, 87, 217, 0.12);
+  padding: 2px 8px;
+  border-radius: 6px;
 }
 
 .cs-idea-desc {
   font-size: 13px;
-  color: #666;
+  color: var(--color-text-secondary, #666);
   margin: 0 0 10px 0;
   line-height: 1.6;
   display: -webkit-box;
@@ -776,9 +795,9 @@
   display: flex;
   align-items: center;
   gap: 3px;
-  font-size: 10.5px;
-  padding: 3px 8px;
-  background: rgba(81,87,217,0.06);
+  font-size: 11px;
+  padding: 2px 8px;
+  background: rgba(81, 87, 217, 0.12);
   color: #5157d9;
   border-radius: 6px;
   font-weight: 500;
@@ -836,7 +855,7 @@
   font-size: 22px;
   font-weight: 800;
   margin: 0;
-  color: #1a1a2e;
+  color: var(--color-text);
 }
 
 .cs-ai-welcome p {
@@ -874,11 +893,23 @@
 
 /* AI Messages */
 .cs-ai-message {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   max-width: 75%;
-  padding: 14px 18px;
+  padding: 12px 16px 14px;
   border-radius: 16px;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.cs-ai-message-role {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  line-height: 1.2;
 }
 
 .cs-ai-message.user {
@@ -889,6 +920,11 @@
   box-shadow: 0 2px 12px rgba(81,87,217,0.2);
 }
 
+.cs-ai-message.user .cs-ai-message-role {
+  color: rgba(255, 255, 255, 0.85);
+  text-align: right;
+}
+
 .cs-ai-message.user p {
   margin: 0;
 }
@@ -896,10 +932,19 @@
 .cs-ai-message.assistant {
   align-self: flex-start;
   background: var(--color-surface);
-  border: 1px solid rgba(0,0,0,0.06);
-  color: #1a1a2e;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   border-bottom-left-radius: 4px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+
+.cs-ai-message.assistant .cs-ai-message-role {
+  color: #5157d9;
+  opacity: 1;
+}
+
+.cs-ai-message-content {
+  min-width: 0;
 }
 
 .cs-ai-message-content p {
@@ -983,12 +1028,18 @@
   background: none;
   border: none;
   outline: none;
-  color: #1a1a2e;
+  box-shadow: none;
+  color: var(--color-text);
   font-size: 14px;
 }
 
+.cs-ai-input-box input:focus {
+  box-shadow: none;
+  border: none;
+}
+
 .cs-ai-input-box input::placeholder {
-  color: #bbb;
+  color: var(--color-text-muted);
 }
 
 .cs-ai-send-btn {
@@ -1120,7 +1171,7 @@
 /* ─── Responsive ───────────────────────────────────────── */
 @media (max-width: 900px) {
   .capstone-page-wrapper {
-    padding: 10px var(--page-gutter);
+    padding: 0 var(--page-gutter) 10px;
     gap: 8px;
   }
 
@@ -1190,6 +1241,71 @@
 
   .cs-ai-panel {
     height: calc(100vh - 140px);
+    height: calc(100dvh - 140px);
+  }
+}
+
+/* Feature tabs only — site links live in NotchedHeroNav, do not duplicate here */
+@media (max-width: 768px) {
+  .capstone-nav-wrap {
+    height: 84px;
+  }
+
+  .capstone-sidebar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px;
+    gap: 0;
+    scrollbar-width: none;
+  }
+
+  .capstone-sidebar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cs-sidebar-header {
+    display: none;
+  }
+
+  .cs-sidebar-features {
+    width: 100%;
+    flex: 1;
+    justify-content: stretch;
+    gap: 4px;
+    overflow-x: visible;
+  }
+
+  .cs-feature-item {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    justify-content: center;
+    padding: 10px 8px;
+    margin-bottom: 0;
+    gap: 8px;
+  }
+
+  .cs-feature-text {
+    align-items: center;
+    text-align: center;
+  }
+
+  .cs-feature-label {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .cs-feature-desc {
+    display: none;
+  }
+
+  .cs-ai-panel {
+    height: calc(100dvh - 160px);
   }
 }
 
@@ -1207,6 +1323,30 @@
     flex-direction: column;
   }
 
+  .cs-feature-label {
+    display: block;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 4.5rem;
+  }
+
+  .cs-feature-item {
+    flex-direction: column;
+    padding: 8px 6px;
+    min-width: 44px;
+    min-height: 44px;
+    width: auto;
+    gap: 4px;
+  }
+
+  .cs-feature-text {
+    align-items: center;
+    text-align: center;
+  }
+
   .cs-ai-message {
     max-width: 95%;
   }
@@ -1221,9 +1361,9 @@
 }
 
 
-/* ── Dark mode: main panel matches menu surface ── */
+/* ── Dark mode: layered navy panels + white text ── */
 [data-theme="dark"] .capstone-page-wrapper {
-  background-color: var(--color-glass-solid);
+  background-color: var(--color-page);
 }
 
 [data-theme="dark"] .capstone-main {
@@ -1231,6 +1371,10 @@
   background-image: none;
   border-color: var(--color-border);
   box-shadow: none;
+}
+
+[data-theme="dark"] .capstone-sidebar {
+  background-color: var(--color-surface);
 }
 
 [data-theme="dark"] .cs-panel-title,
@@ -1244,8 +1388,9 @@
 [data-theme="dark"] .cs-faculty-filter select,
 [data-theme="dark"] .cs-form-field input,
 [data-theme="dark"] .cs-form-field textarea,
+[data-theme="dark"] .cs-ai-input-box input,
 [data-theme="dark"] .cs-action-btn {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .cs-panel-subtitle,
@@ -1254,29 +1399,125 @@
 [data-theme="dark"] .cs-result-count,
 [data-theme="dark"] .cs-profile-status,
 [data-theme="dark"] .cs-profile-action {
-  color: #94a3b8 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 [data-theme="dark"] .cs-faculty-filter select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 
 [data-theme="dark"] .cs-search-box,
 [data-theme="dark"] .cs-faculty-filter select,
 [data-theme="dark"] .cs-form-field input,
 [data-theme="dark"] .cs-form-field textarea,
+[data-theme="dark"] .cs-ai-input-box,
 [data-theme="dark"] .cs-action-btn:not(.primary) {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: var(--color-surface-muted);
+  border-color: rgba(255, 255, 255, 0.14);
+  background: var(--color-inset);
+}
+
+[data-theme="dark"] .cs-ai-input-box input {
+  background: transparent !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .cs-ai-input-box input::placeholder,
+[data-theme="dark"] .cs-search-box input::placeholder {
+  color: var(--color-text-muted) !important;
 }
 
 [data-theme="dark"] .cs-add-form {
-  background: var(--color-surface-muted);
+  background: var(--color-panel);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .cs-sidebar-profile {
+  background: var(--color-panel);
   border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .cs-sidebar-profile:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .cs-partner-name,
+[data-theme="dark"] .cs-idea-title,
+[data-theme="dark"] .cs-ai-welcome h2,
+[data-theme="dark"] .cs-ai-message.assistant {
+  color: var(--color-text) !important;
+}
+
+[data-theme="dark"] .cs-partner-desc,
+[data-theme="dark"] .cs-idea-desc,
+[data-theme="dark"] .cs-partner-looking,
+[data-theme="dark"] .cs-idea-year {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="dark"] .cs-idea-faculty,
+[data-theme="dark"] .cs-idea-tag {
+  background: rgba(129, 140, 248, 0.18);
+  color: #a5b4fc;
+}
+
+[data-theme="dark"] .cs-partner-looking strong {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .cs-partner-card,
+[data-theme="dark"] .cs-idea-card,
+[data-theme="dark"] .cs-ai-message.assistant,
+[data-theme="dark"] .cs-partner-contact {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .cs-ai-message.assistant .cs-ai-message-role {
+  color: #8b90f0;
 }
 
 [data-theme="dark"] .cs-feature-item:hover,
 [data-theme="dark"] .cs-feature-item.active {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.cs-restore-card {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px;
+  background: var(--color-surface-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.cs-restore-id {
+  font-size: 10px;
+  background: rgba(81, 87, 217, 0.12);
+  color: var(--color-primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.cs-restore-btn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: none;
+}
+
+.cs-restore-btn:hover {
+  background: rgba(59, 130, 246, 0.1);
+  transform: none;
+  box-shadow: none;
 }
 

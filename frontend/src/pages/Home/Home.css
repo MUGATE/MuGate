@@ -1,72 +1,118 @@
 /* SOLIDROAD STYLE REDESIGN - HIGH FIDELITY */
 
-/* CUSTOM FONTS */
+/* CUSTOM FONTS — WOFF2 from public/fonts (matches index.html preload URLs) */
 @font-face {
     font-family: 'SolidroadCustom';
-    src: url('./assets/Fonts/1ZFS7N918ojhhd0nQWdj3jz4w.ttf') format('truetype');
+    src: url('/fonts/1ZFS7N918ojhhd0nQWdj3jz4w.woff2') format('woff2');
     font-weight: 400;
+    font-display: swap;
 }
 
 @font-face {
     font-family: 'SolidroadCustom';
-    src: url('./assets/Fonts/JnSOH7RupDCN6KVnC1gWkQOKE.ttf') format('truetype');
+    src: url('/fonts/JnSOH7RupDCN6KVnC1gWkQOKE.woff2') format('woff2');
     font-weight: 500;
+    font-display: swap;
 }
 
 @font-face {
     font-family: 'SolidroadCustom';
-    src: url('./assets/Fonts/vQyevYAyHtARFwPqUzQGpnDs.ttf') format('truetype');
+    src: url('/fonts/vQyevYAyHtARFwPqUzQGpnDs.woff2') format('woff2');
     font-weight: 600;
+    font-display: swap;
 }
 
 @font-face {
     font-family: 'SolidroadCustom';
-    src: url('./assets/Fonts/dcBhZgAFiyqqQO8SkGjomdakHJ8.ttf') format('truetype');
+    src: url('/fonts/dcBhZgAFiyqqQO8SkGjomdakHJ8.woff2') format('woff2');
     font-weight: 700;
+    font-display: swap;
 }
 
-/* CONSOLIDATED MATTER FONT FAMILY */
+/* Matter — weights map 1:1 to Solidroad faces (no confusing remaps) */
 @font-face {
     font-family: 'Matter';
-    src: url('./assets/Fonts/vQyevYAyHtARFwPqUzQGpnDs.ttf') format('truetype');
-    font-weight: 300;
-}
-
-@font-face {
-    font-family: 'Matter';
-    src: url('./assets/Fonts/JnSOH7RupDCN6KVnC1gWkQOKE.ttf') format('truetype');
+    src: url('/fonts/1ZFS7N918ojhhd0nQWdj3jz4w.woff2') format('woff2');
     font-weight: 400;
-    /* Use this for sharpest regular look */
+    font-display: swap;
 }
 
 @font-face {
     font-family: 'Matter';
-    src: url('./assets/Fonts/dcBhZgAFiyqqQO8SkGjomdakHJ8.ttf') format('truetype');
+    src: url('/fonts/JnSOH7RupDCN6KVnC1gWkQOKE.woff2') format('woff2');
+    font-weight: 500;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Matter';
+    src: url('/fonts/dcBhZgAFiyqqQO8SkGjomdakHJ8.woff2') format('woff2');
     font-weight: 700;
+    font-display: swap;
 }
 
 .home-container {
     background-color: var(--color-page);
     width: 100%;
+    height: 100%;
+    padding: var(--hero-frame-gutter, 16px);
+    padding-right: calc(var(--hero-frame-gutter, 16px) - 8px);
+    box-sizing: border-box;
+    overflow: hidden;
     font-family: 'SolidroadCustom', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     position: relative;
-    min-height: 100vh;
+}
+
+/* Scrollport lives inside the frame so the scrollbar doesn't thicken the right edge */
+.home-scroll {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-x: clip;
+    overflow-y: auto;
+    border-radius: 24px;
+    background: var(--color-page);
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(15, 23, 42, 0.28) transparent;
+}
+
+.home-scroll::-webkit-scrollbar {
+    width: 10px;
+}
+
+.home-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.home-scroll::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.22);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+/* Lock document scroll while home uses its own framed scrollport */
+html:has(.home-container),
+body:has(.home-container),
+html:has(.home-container) #root {
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--color-page);
 }
 
 .video-hero {
     position: relative;
     width: 100%;
-    height: 100vh;
+    height: 100%;
+    min-height: 100%;
     background: var(--color-page);
     overflow: clip;
-    /* STRUCTURAL MASK: the section itself has a themed border + rounded corners.
-       This ensures that even if the sticky overlay has a sub-pixel rendering gap,
-       behind the gap is this section's own page border — never video content. */
-    border: 16px solid var(--color-page);
-    border-radius: 40px;
+    /* Outer .home-container padding is the white frame — no extra border here */
+    border: none;
+    border-radius: 0;
     box-sizing: border-box;
 }
 
@@ -75,10 +121,8 @@
 /* FULLSCREEN HERO VIDEO - SEALED INSIDE THE ROUNDED FRAME */
 .hero-video-container {
     position: absolute;
-    /* inset: 0 — parent .video-hero border handles the 16px white spacing */
     inset: 0;
-    /* border-radius matches the inner curve of the 40px frame minus the 16px border */
-    border-radius: 24px;
+    border-radius: 0;
     overflow: hidden;
     background: var(--color-page);
     z-index: 1;
@@ -124,6 +168,9 @@
     line-height: 1.15;
     margin-bottom: 12px;
     letter-spacing: -0.03em;
+    max-width: min(11em, 92vw);
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .hero-subtext-sharp {
@@ -188,6 +235,8 @@
 .input-with-icon-stacked input {
     border: none;
     outline: none;
+    background: transparent;
+    box-shadow: none;
     font-family: 'Matter', sans-serif !important;
     font-weight: 500;
     font-size: 1rem;
@@ -200,8 +249,13 @@
 }
 
 .input-with-icon-stacked input::placeholder {
-    color: #9ca3af;
+    color: var(--color-text-muted);
     font-weight: 400;
+}
+
+.input-with-icon-stacked input:focus {
+    border: none;
+    box-shadow: none;
 }
 
 /* WIDE LOGIN BUTTON */
@@ -389,8 +443,17 @@
     }
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .logo-carousel-slow-wrapper,
+    .logo-carousel-track {
+        animation: none;
+        will-change: auto;
+        transform: none;
+    }
+}
+
 .home-section {
-    height: 100vh;
+    height: var(--framed-vh, calc(100dvh - 2 * var(--hero-frame-gutter, 16px)));
     background: var(--color-surface);
     display: flex;
     align-items: center;
@@ -457,7 +520,7 @@
 }
 
 .footer-brand-name {
-    font-family: "Montserrat", sans-serif;
+    font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
     font-weight: 900;
     font-size: 2.4rem;
     color: #ffffff;
@@ -514,6 +577,65 @@
     letter-spacing: -0.01em;
 }
 
+/* ── Dark mode: black page, layered navy surfaces, white text ── */
+[data-theme="dark"] .home-container {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .home-container,
+[data-theme="dark"] .home-scroll,
+[data-theme="dark"] .video-hero,
+[data-theme="dark"] .hero-video-container,
+[data-theme="dark"] .home-section {
+    background-color: var(--color-page);
+    background: var(--color-page);
+}
+
+/* Home-only: nav matches page background in dark mode */
+[data-theme="dark"] .home-scroll .hero-nav-notched {
+    background: var(--color-page);
+}
+
+[data-theme="dark"] .home-scroll {
+    scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+}
+
+[data-theme="dark"] .home-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+[data-theme="dark"] .intro p {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .login-form-container {
+    background: var(--color-surface);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .input-with-icon-stacked {
+    border-bottom-color: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .input-with-icon-stacked:focus-within {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .input-with-icon-stacked input {
+    color: #ffffff;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+[data-theme="dark"] .input-with-icon-stacked input::placeholder {
+    color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .input-icon {
+    color: #ffffff;
+}
+
 @media (max-width: 900px) {
     .home-footer {
         padding: 60px var(--page-gutter) 0;
@@ -522,5 +644,116 @@
     .footer-inner {
         grid-template-columns: 1fr;
         gap: 40px;
+    }
+}
+
+/* ── Mobile ≤768: soften framed vh, fluid login, footer gutters ── */
+@media (max-width: 768px) {
+    .home-container {
+        --hero-frame-gutter: 8px;
+        --framed-vh: calc(100dvh - 2 * var(--hero-frame-gutter, 8px));
+        padding: var(--hero-frame-gutter, 8px);
+        padding-right: var(--hero-frame-gutter, 8px);
+        padding-bottom: max(var(--hero-frame-gutter, 8px), env(safe-area-inset-bottom, 0px));
+    }
+
+    .home-scroll {
+        border-radius: 16px;
+    }
+
+    .video-hero {
+        height: auto;
+        min-height: var(--framed-vh, calc(100dvh - 2 * var(--hero-frame-gutter, 8px)));
+    }
+
+    .hero-content-wrapper {
+        height: auto;
+        min-height: var(--framed-vh, calc(100dvh - 2 * var(--hero-frame-gutter, 8px)));
+        padding: 88px 16px 120px;
+        box-sizing: border-box;
+        justify-content: center;
+    }
+
+    .hero-heading-sharp {
+        font-size: clamp(1.85rem, 7vw, 2.5rem);
+    }
+
+    .hero-subtext-sharp {
+        font-size: 0.95rem;
+        margin-bottom: 24px;
+        max-width: 100%;
+    }
+
+    .login-form-container {
+        max-width: min(420px, 100%);
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .input-with-icon-stacked {
+        padding: 14px 16px;
+    }
+
+    .hero-login-btn {
+        padding: 14px 20px;
+        font-size: 1rem;
+        min-height: 48px;
+    }
+
+    .logo-carousel-mask {
+        bottom: 56px;
+    }
+
+    .logo-item {
+        font-size: 1.25rem;
+        margin-right: 64px;
+    }
+
+    .home-section {
+        height: auto;
+        min-height: 0;
+        padding: 72px var(--page-gutter);
+    }
+
+    .home-footer {
+        padding: 48px var(--page-gutter) 0;
+        /* Clear fixed BottomNavbar + safe-area so footer isn’t covered */
+        padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .footer-inner {
+        gap: 32px;
+        padding-inline: 0;
+        padding-bottom: 40px;
+    }
+
+    .footer-brand-name {
+        font-size: clamp(1.6rem, 8vw, 2.2rem);
+    }
+
+    .footer-bottom {
+        padding: 20px 0;
+    }
+}
+
+@media (max-width: 768px) and (max-height: 700px) {
+    .hero-content-wrapper {
+        padding-top: 72px;
+        padding-bottom: 96px;
+        justify-content: flex-start;
+    }
+
+    .hero-heading-sharp {
+        font-size: clamp(1.6rem, 6vw, 2rem);
+        margin-bottom: 8px;
+    }
+
+    .hero-subtext-sharp {
+        margin-bottom: 16px;
+        line-height: 1.5;
+    }
+
+    .logo-carousel-mask {
+        bottom: 40px;
     }
 }

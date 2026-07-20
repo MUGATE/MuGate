@@ -15,10 +15,12 @@
 .hero-unified-frame::before {
   content: '';
   position: absolute;
-  top: var(--page-gutter, 16px);
-  left: var(--page-gutter, 16px);
-  width: calc(100% - 2 * var(--page-gutter, 16px));
-  height: calc(100vh - 2 * var(--page-gutter, 16px));
+  top: var(--hero-frame-gutter, 16px);
+  left: var(--hero-frame-gutter, 16px);
+  right: var(--hero-frame-gutter, 16px);
+  /* Parent is height:0 — explicit height required; left+right keep sides equal */
+  height: var(--framed-vh, calc(100dvh - 2 * var(--hero-frame-gutter, 16px)));
+  width: auto;
   border-radius: 24px;
   box-shadow: 0 0 0 100vmax var(--color-page);
   box-sizing: border-box;
@@ -26,8 +28,26 @@
   z-index: 2;
 }
 
+/* Home provides the frame via .home-container padding — drop the viewport mask */
+.home-scroll .hero-unified-frame::before {
+  display: none;
+}
+
 .hero-unified-frame.no-frame-mask::before {
   display: none;
+}
+
+/*
+ * Flat pages: tiny gap under the viewport edge (Home keeps flush via .home-scroll).
+ * Use padding (not margin) so the gap stays inside the page shell and paints with
+ * the page background — margin-top collapses through overflow:clip shells and
+ * exposes body/--glow-base (#e8ecf4) above the navbar.
+ */
+.hero-unified-frame.no-frame-mask {
+  top: 0;
+  margin-top: 0;
+  padding-top: 12px;
+  box-sizing: content-box;
 }
 
 /* Flat pages: no hero frame, so drop notch ears and use a simple pill bar */
@@ -59,10 +79,17 @@
   width: min(1200px, calc(100% - 2 * var(--page-gutter, 16px)));
   height: 68px;
   position: relative;
-  top: 15px;
+  top: 0px;
   pointer-events: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 10px 40px var(--color-shadow);
+  border: 1px solid var(--color-border);
   box-sizing: border-box;
+}
+
+/* Home page: nudge the nav 1px toward the top; slightly narrower bar */
+.home-scroll .hero-nav-notched {
+  top: -1px;
+  width: min(1080px, calc(100% - 2 * var(--page-gutter, 16px)));
 }
 
 .hero-nav-notched::before,
@@ -80,13 +107,13 @@
 .hero-nav-notched::before {
   left: -30px;
   border-radius: 0 30px 0 0;
-  box-shadow: 16px -16px 0 16px var(--color-page);
+  box-shadow: var(--hero-frame-gutter, 16px) calc(-1 * var(--hero-frame-gutter, 16px)) 0 var(--hero-frame-gutter, 16px) var(--color-page);
 }
 
 .hero-nav-notched::after {
   right: -30px;
   border-radius: 30px 0 0 0;
-  box-shadow: -16px -16px 0 16px var(--color-page);
+  box-shadow: calc(-1 * var(--hero-frame-gutter, 16px)) calc(-1 * var(--hero-frame-gutter, 16px)) 0 var(--hero-frame-gutter, 16px) var(--color-page);
 }
 
 .nav-group-left,
@@ -158,16 +185,34 @@
   flex-shrink: 0;
 }
 
+a.branding-logo-box {
+  text-decoration: none;
+  color: inherit;
+}
+
+.nav-logo,
 .nav-logo-black {
   height: 42px;
   width: auto;
 }
 
+.nav-logo-dark {
+  display: none;
+}
+
+[data-theme="dark"] .nav-logo-light {
+  display: none;
+}
+
+[data-theme="dark"] .nav-logo-dark {
+  display: block;
+}
+
 .brand-name-black {
-  font-family: 'Impact', 'Montserrat', sans-serif !important;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif !important;
   font-weight: 400;
   font-size: 2rem;
-  color: var(--color-brand);
+  color: var(--color-nav-text);
   letter-spacing: 0;
   text-transform: uppercase;
   line-height: 1;
@@ -202,13 +247,14 @@
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: var(--color-text);
+  color: var(--color-nav-text);
+  font-family: 'Matter', sans-serif !important;
   font-weight: 600;
   font-size: 0.95rem;
   padding: 8px 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
   transition: background 0.2s ease, transform 0.2s ease;
   flex-shrink: 0;
   white-space: nowrap;
@@ -216,7 +262,7 @@
 }
 
 .nav-profile-ref:hover {
-  background: var(--color-surface);
+  background: var(--color-surface-light);
   transform: translateY(-1px);
 }
 
@@ -232,22 +278,26 @@
   justify-content: center;
   background: #2b5ea7;
   color: #ffffff;
-  font-weight: 800;
+  font-family: 'Matter', sans-serif !important;
+  font-weight: 700;
   font-size: 0.9rem;
   flex-shrink: 0;
   line-height: 1;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0;
   overflow: hidden;
   box-sizing: border-box;
 }
 
 [data-theme="dark"] .nav-profile-ref {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-glass-solid);
   border-color: rgba(255, 255, 255, 0.14);
-  color: #f0f4f8;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .nav-profile-ref:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 
@@ -283,6 +333,7 @@
     font-size: 1.6rem;
   }
 
+  .nav-logo,
   .nav-logo-black {
     height: 36px;
   }
@@ -293,9 +344,10 @@
   }
 }
 
-@media (max-width: 768px) {
+/* Collapse site links into MobileNavDrawer at tablet+phone; keep brand + rightSlot */
+@media (max-width: 900px) {
   .hero-nav-notched {
-    padding: 0 12px;
+    padding: 0 14px;
     height: 60px;
     column-gap: 8px;
   }
@@ -305,45 +357,80 @@
     display: none;
   }
 
-  .nav-group-left,
-  .nav-group-right-links {
-    gap: 10px;
+  .nav-group-left {
+    justify-content: flex-start;
+    gap: 0;
   }
 
-  .nav-group-left a,
-  .nav-group-right-links a {
-    font-size: 0.75rem;
+  .nav-group-left > a {
+    display: none;
+  }
+
+  .nav-group-right-links {
+    display: none;
+  }
+
+  .nav-group-right {
+    justify-content: flex-end;
+    gap: 0;
+  }
+
+  .brand-name-black {
+    font-size: 1.35rem;
+  }
+
+  .nav-logo,
+  .nav-logo-black {
+    height: 32px;
+  }
+
+  .nav-demo-btn-solidroad {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    box-sizing: border-box;
+  }
+
+  .nav-profile-ref {
+    justify-content: center;
+    gap: 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    font-size: 0.8rem;
+    margin-left: 0;
+    box-sizing: border-box;
+  }
+
+  .nav-profile-avatar {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    font-family: 'Matter', sans-serif !important;
+    font-weight: 700;
+    font-size: 0.8rem;
+  }
+
+  .nav-profile-ref span:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-nav-notched {
+    padding: 0 12px;
+    height: 60px;
   }
 
   .brand-name-black {
     font-size: 1.25rem;
   }
 
+  .nav-logo,
   .nav-logo-black {
     height: 30px;
-  }
-
-  .nav-demo-btn-solidroad {
-    padding: 8px 12px;
-    font-size: 0.8rem;
-  }
-
-  .nav-profile-ref {
-    gap: 6px;
-    padding: 6px 8px;
-    font-size: 0.8rem;
-  }
-
-  .nav-profile-avatar {
-    width: 26px;
-    height: 26px;
-    min-width: 26px;
-    min-height: 26px;
-    font-size: 0.8rem;
-  }
-
-  .nav-profile-ref span:last-child {
-    display: none;
   }
 }
 

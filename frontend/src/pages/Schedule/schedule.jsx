@@ -1,8 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
 import { Clock, CalendarDays, PartyPopper } from 'lucide-react';
-import FloatingProfileIcon from '../../components/FloatingProfileIcon';
-import GlassNavBar from '../../components/layout/GlassNavBar';
+import NotchedHeroNav from '../../components/layout/NotchedHeroNav';
+import '../Home/Home.css';
 import './schedule.css';
 
 import {
@@ -35,7 +35,8 @@ const Schedule = () => {
   const [currentIndex, setCurrentIndex] = useState(0); // Which one we are viewing
   const [courses, setCourses] = useState([]); // UI representation of the current schedule
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [scheduleVisible, setScheduleVisible] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -85,7 +86,7 @@ const Schedule = () => {
   useEffect(() => {
     const token = localStorage.getItem("mugate_token");
     if (!token) {
-      window.location.href = "/";
+      window.location.href = "/?auth=login";
       return;
     }
 
@@ -117,7 +118,7 @@ const Schedule = () => {
 
   /* Generate schedule handler */
   const handleGenerateSchedule = async () => {
-    setIsLoading(true);
+    setIsGenerating(true);
     setErrorMsg("");
     setScheduleVisible(false);
 
@@ -153,7 +154,7 @@ const Schedule = () => {
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
     }
   };
 
@@ -184,7 +185,7 @@ const Schedule = () => {
   const handleConfirmSchedule = async () => {
     if (!generatedSchedules || generatedSchedules.length === 0) return;
 
-    setIsLoading(true);
+    setIsSaving(true);
     setErrorMsg("");
 
     try {
@@ -212,7 +213,7 @@ const Schedule = () => {
     } catch (err) {
       setErrorMsg(err.message || "Failed to save the schedule.");
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -296,12 +297,9 @@ const Schedule = () => {
       <span className="sparkle sparkle-5">✧</span>
       <span className="sparkle sparkle-6">✦</span>
 
-      {/* ── Navbar ── */}
-      <GlassNavBar activePath="/schedule" className="glass-card" />
-      <FloatingProfileIcon
-        className="floating-profile-icon--schedule"
-        navbarSelector=".glass-navbar"
-      />
+      <div className="schedule-nav-wrap">
+        <NotchedHeroNav maskFrame={false} />
+      </div>
 
       {/* ── Three-column Layout ── */}
       <div className="schedule-layout">
@@ -360,8 +358,8 @@ const Schedule = () => {
             </div>
           )}
 
-          <button className="generate-btn" onClick={handleGenerateSchedule} disabled={isLoading}>
-            {isLoading ? "Generating with AI✦..." : "Generate Schedule"}
+          <button className="generate-btn" onClick={handleGenerateSchedule} disabled={isGenerating || isSaving}>
+            {isGenerating ? "Generating with AI✦..." : "Generate Schedule"}
           </button>
         </div>
 
@@ -504,9 +502,9 @@ const Schedule = () => {
               <button
                 className="confirm-btn"
                 onClick={handleConfirmSchedule}
-                disabled={isLoading}
+                disabled={isGenerating || isSaving}
               >
-                {isLoading ? "Saving..." : "Confirm & Save Selection"}
+                {isSaving ? "Saving..." : "Confirm & Save Selection"}
               </button>
             </div>
           )}

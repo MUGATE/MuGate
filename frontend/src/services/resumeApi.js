@@ -1,7 +1,32 @@
 // Resume backend API client.
-import { API_BASE_URL } from '../utils/api';
+import { apiFetch, API_BASE_URL } from '../utils/api';
 
-const RESUME_API_BASE = `${API_BASE_URL}/resume`;
+/**
+ * Authenticated fetch for binary responses (PDF/DOCX blobs).
+ * apiFetch always parses JSON, so blob endpoints need this helper.
+ */
+async function resumeBlobFetch(endpoint, options = {}) {
+  const token = localStorage.getItem('mugate_token');
+  const isFormData = options.body instanceof FormData;
+  const headers = {
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    ...options.headers,
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+  if (!res.ok) {
+    if (res.status === 401) {
+      localStorage.removeItem('mugate_token');
+      localStorage.removeItem('mugate_user');
+      window.location.href = '/?auth=session';
+      throw new Error('Authentication failed. Please login again.');
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Request failed (${res.status})`);
+  }
+  return res.blob();
+}
 
 /**
  * Request explainable AI analysis of a resume.
@@ -11,13 +36,10 @@ const RESUME_API_BASE = `${API_BASE_URL}/resume`;
  * @throws if the request fails (caller should fall back to local scoring)
  */
 export async function analyzeResume(resumeText, jobDescription = '') {
-  const res = await fetch(`${RESUME_API_BASE}/analyze`, {
+  const data = await apiFetch('/resume/analyze', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ resumeText, jobDescription }),
   });
-  if (!res.ok) throw new Error(`Analyze failed (${res.status})`);
-  const data = await res.json();
   if (!data?.success || !data.analysis) throw new Error('Malformed analysis response');
   return data.analysis;
 }
@@ -31,13 +53,10 @@ export async function analyzeResume(resumeText, jobDescription = '') {
  * @returns {Promise<{resume: object, changed: boolean, source: string, tokensUsed: number, message: string, reason: string, updatedSections?: string[]}>}
  */
 export async function aiEditResume(resume, instruction = '', scope = 'all') {
-  const res = await fetch(`${RESUME_API_BASE}/ai-edit`, {
+  const data = await apiFetch('/resume/ai-edit', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ resume, instruction, scope }),
   });
-  if (!res.ok) throw new Error(`AI edit failed (${res.status})`);
-  const data = await res.json();
   if (!data?.success || !data.resume) throw new Error('Malformed AI edit response');
   return {
     resume: data.resume,
@@ -57,13 +76,10 @@ export async function aiEditResume(resume, instruction = '', scope = 'all') {
  * @returns {Promise<object>} normalized resume data for the live editor
  */
 export async function parseResumeFile(resumeText, template = 'local') {
-  const res = await fetch(`${RESUME_API_BASE}/parse`, {
+  const data = await apiFetch('/resume/parse', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ resumeText, template }),
   });
-  if (!res.ok) throw new Error(`Parse failed (${res.status})`);
-  const data = await res.json();
   if (!data?.success || !data.resume) throw new Error('Malformed parse response');
   return data.resume;
 }
@@ -79,12 +95,7 @@ export async function convertResumeFile(file, template = 'local') {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('template', template);
-  const res = await fetch(`${RESUME_API_BASE}/convert`, { method: 'POST', body: formData });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Convert failed (${res.status})`);
-  }
-  const data = await res.json();
+  const data = await apiFetch('/resume/convert', { method: 'POST', body: formData });
   if (!data?.success || !data.resume) throw new Error('Malformed convert response');
   return { resume: data.resume, text: data.text || '' };
 }
@@ -95,13 +106,10 @@ export async function convertResumeFile(file, template = 'local') {
  * @returns {Promise<Blob>} the generated document
  */
 export async function generateResumeFile(payload) {
-  const res = await fetch(`${RESUME_API_BASE}/generate`, {
+  return resumeBlobFetch('/resume/generate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`Generation failed (${res.status})`);
-  return res.blob();
 }
 
 /**
@@ -114,10 +122,5 @@ export async function editResumeFile(file, instructions) {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('instructions', instructions);
-  const res = await fetch(`${RESUME_API_BASE}/edit`, { method: 'POST', body: formData });
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.message || `Edit failed (${res.status})`);
-  }
-  return res.blob();
+  return resumeBlobFetch('/resume/edit', { method: 'POST', body: formData });
 }

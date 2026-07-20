@@ -7,8 +7,8 @@ import EventCard from './components/EventCard';
 import AdminCard from './components/AdminCard';
 import Lightbox from './components/Lightbox';
 import EventModal from './components/EventModal';
-import FloatingProfileIcon from '../../components/FloatingProfileIcon';
-import GlassNavBar from '../../components/layout/GlassNavBar';
+import NotchedHeroNav from '../../components/layout/NotchedHeroNav';
+import '../Home/Home.css';
 import './events.css';
 
 const Events = () => {
@@ -217,11 +217,9 @@ const Events = () => {
 
   return (
     <div className="events-page">
-      <GlassNavBar activePath="/events" className="ev-glass" />
-      <FloatingProfileIcon
-        className="floating-profile-icon--events"
-        navbarSelector=".glass-navbar"
-      />
+      <div className="ev-nav-wrap">
+        <NotchedHeroNav maskFrame={false} />
+      </div>
 
       <div className="ev-page-tabs" role="tablist" aria-label="Events sections">
         <button
@@ -342,7 +340,7 @@ const Events = () => {
           )}
         </div>
       ) : (
-        <div className="ev-section">
+        <div className="ev-section ev-section--community">
           <div className="ev-section-header">
             <div className="ev-section-title-block">
               <h2 className="ev-section-title">

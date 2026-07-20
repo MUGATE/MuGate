@@ -1,23 +1,20 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { lazy, Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { createSession, sendMessage as sendChatbotMessage } from '../../services/chatbotApi';
 import { generateResumeFile, aiEditResume } from '../../services/resumeApi';
 
 import WelcomeView from './pages/WelcomeView';
-import ResumeAnalyzerPage from './pages/ResumeAnalyzerPage';
-import ResumeBuilderPage from './pages/ResumeBuilderPage';
 import DownloadModal from './components/DownloadModal';
 import usePersistentState from './hooks/usePersistentState';
-import ResumeEditor from './editor/ResumeEditor';
-import FloatingProfileIcon from '../../components/FloatingProfileIcon';
-import GlassNavBar from '../../components/layout/GlassNavBar';
+import NotchedHeroNav from '../../components/layout/NotchedHeroNav';
+import RouteLoader from '../../components/layout/RouteLoader';
+import '../Home/Home.css';
 import { createEmptyResume, normalizeResume } from './editor/resumeSchema';
 import { fromLocalForm, fromGlobalForm, toBackendPayload } from './editor/adapters';
 
-// Import modular styling stylesheets
-import './styles/welcome.css';
-import './styles/analyzer.css';
-import './styles/builder.css';
-import './styles/chat.css';
+// Heavy sub-views load only when the user picks a mode (welcome stays eager).
+const ResumeAnalyzerPage = lazy(() => import('./pages/ResumeAnalyzerPage'));
+const ResumeBuilderPage = lazy(() => import('./pages/ResumeBuilderPage'));
+const ResumeEditor = lazy(() => import('./editor/ResumeEditor'));
 
 const INITIAL_LOCAL_FORM = {
   fullName: '', address: '', phone: '', email: '', linkedin: '',
@@ -57,6 +54,17 @@ const CHAT_FALLBACK_GLOBAL = [
 
 const ResumeEnhancerRouter = () => {
   const [mode, setMode] = useState('welcome');
+  const [isAuthed, setIsAuthed] = useState(() => !!localStorage.getItem('mugate_token'));
+
+  // Require login — redirect home with AuthNoticeModal (same as Schedule).
+  useEffect(() => {
+    const token = localStorage.getItem('mugate_token');
+    if (!token) {
+      window.location.href = '/?auth=login';
+      return;
+    }
+    setIsAuthed(true);
+  }, []);
 
   // Shared Download States
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -288,12 +296,16 @@ const ResumeEnhancerRouter = () => {
       a.remove();
       URL.revokeObjectURL(url);
       setShowDownloadModal(null);
-    } catch {
+    } catch (err) {
+      // Auth failures already redirect to /?auth=session — skip browser alert.
+      if (/auth|login|unauthorized|401/i.test(err?.message || '')) return;
       alert('Failed to generate document. Make sure the backend is running.');
     } finally {
       setDownloadLoading(false);
     }
   }, [showDownloadModal, localForm, globalForm, localExtraEdu, localExtraExp, localExtraProjects, globalExtraExp, globalExtraLead, downloadFileType, downloadFileName]);
+
+  if (!isAuthed) return null;
 
   return (
     <div className="resume-page">
@@ -307,12 +319,9 @@ const ResumeEnhancerRouter = () => {
       <span className="re-sparkle re-sparkle-4">✦</span>
       <span className="re-sparkle re-sparkle-5">✧</span>
 
-      {/* Global Portal Navigation */}
-      <GlassNavBar activePath="/resume-enhancer" />
-      <FloatingProfileIcon
-        className="floating-profile-icon--resume"
-        navbarSelector=".glass-navbar"
-      />
+      <div className="re-nav-wrap">
+        <NotchedHeroNav maskFrame={false} />
+      </div>
 
       {/* Decoupled SPA Routing Context */}
       {mode === 'welcome' && (
@@ -327,67 +336,69 @@ const ResumeEnhancerRouter = () => {
         />
       )}
 
-      {mode === 'enhance' && (
-        <ResumeAnalyzerPage
-          onBack={() => setMode('welcome')}
-        />
-      )}
-
-      {(mode === 'local' || mode === 'global') && (
-        <div className="re-layout">
-          <ResumeBuilderPage
-            type={mode}
-            form={mode === 'local' ? localForm : globalForm}
-            updateField={mode === 'local' ? updateLocal : updateGlobal}
-            messages={mode === 'local' ? localMessages : globalMessages}
-            input={mode === 'local' ? localInput : globalInput}
-            setInput={mode === 'local' ? setLocalInput : setGlobalInput}
-            sendMessage={mode === 'local' ? sendLocalMessage : sendGlobalMessage}
-            isLoading={mode === 'local' ? isLocalChatLoading : isGlobalChatLoading}
-            chatRef={mode === 'local' ? localChatRef : globalChatRef}
-            
-            // Dynamic extra arrays
-            extraEdu={localExtraEdu}
-            addEdu={addLocalEdu}
-            removeEdu={removeLocalEdu}
-            updateEdu={updateLocalExtraEdu}
-            
-            extraExp={mode === 'local' ? localExtraExp : globalExtraExp}
-            addExp={mode === 'local' ? addLocalExp : addGlobalExp}
-            removeExp={mode === 'local' ? removeLocalExp : removeGlobalExp}
-            updateExp={mode === 'local' ? updateLocalExtraExp : updateGlobalExtraExp}
-            
-            extraProjects={localExtraProjects}
-            addProject={addLocalProject}
-            removeProject={removeLocalProject}
-            updateProject={updateLocalExtraProject}
-            
-            extraLead={globalExtraLead}
-            addLead={addGlobalLead}
-            removeLead={removeGlobalLead}
-            updateLead={updateGlobalExtraLead}
-            
-            showPreview={showPreview}
-            setShowPreview={setShowPreview}
-            openDownloadModal={(fmt) => {
-              setShowPreview(null);
-              setDownloadFileName('My Resume');
-              setDownloadFileType('pdf');
-              setShowDownloadModal(fmt);
-            }}
-            onOpenEditor={() => openLiveEditor(mode)}
+      <Suspense fallback={<RouteLoader compact />}>
+        {mode === 'enhance' && (
+          <ResumeAnalyzerPage
             onBack={() => setMode('welcome')}
           />
-        </div>
-      )}
+        )}
 
-      {mode === 'editor' && (
-        <ResumeEditor
-          data={editorData}
-          setData={setEditorData}
-          onBack={() => setMode(editorReturnMode)}
-        />
-      )}
+        {(mode === 'local' || mode === 'global') && (
+          <div className="re-layout">
+            <ResumeBuilderPage
+              type={mode}
+              form={mode === 'local' ? localForm : globalForm}
+              updateField={mode === 'local' ? updateLocal : updateGlobal}
+              messages={mode === 'local' ? localMessages : globalMessages}
+              input={mode === 'local' ? localInput : globalInput}
+              setInput={mode === 'local' ? setLocalInput : setGlobalInput}
+              sendMessage={mode === 'local' ? sendLocalMessage : sendGlobalMessage}
+              isLoading={mode === 'local' ? isLocalChatLoading : isGlobalChatLoading}
+              chatRef={mode === 'local' ? localChatRef : globalChatRef}
+              
+              // Dynamic extra arrays
+              extraEdu={localExtraEdu}
+              addEdu={addLocalEdu}
+              removeEdu={removeLocalEdu}
+              updateEdu={updateLocalExtraEdu}
+              
+              extraExp={mode === 'local' ? localExtraExp : globalExtraExp}
+              addExp={mode === 'local' ? addLocalExp : addGlobalExp}
+              removeExp={mode === 'local' ? removeLocalExp : removeGlobalExp}
+              updateExp={mode === 'local' ? updateLocalExtraExp : updateGlobalExtraExp}
+              
+              extraProjects={localExtraProjects}
+              addProject={addLocalProject}
+              removeProject={removeLocalProject}
+              updateProject={updateLocalExtraProject}
+              
+              extraLead={globalExtraLead}
+              addLead={addGlobalLead}
+              removeLead={removeGlobalLead}
+              updateLead={updateGlobalExtraLead}
+              
+              showPreview={showPreview}
+              setShowPreview={setShowPreview}
+              openDownloadModal={(fmt) => {
+                setShowPreview(null);
+                setDownloadFileName('My Resume');
+                setDownloadFileType('pdf');
+                setShowDownloadModal(fmt);
+              }}
+              onOpenEditor={() => openLiveEditor(mode)}
+              onBack={() => setMode('welcome')}
+            />
+          </div>
+        )}
+
+        {mode === 'editor' && (
+          <ResumeEditor
+            data={editorData}
+            setData={setEditorData}
+            onBack={() => setMode(editorReturnMode)}
+          />
+        )}
+      </Suspense>
 
       {/* Unified Download Configurations overlay */}
       <DownloadModal

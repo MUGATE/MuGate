@@ -7,7 +7,7 @@
 .instructor-carousel-section {
     position: relative;
     width: 100%;
-    min-height: 100vh;
+    min-height: var(--framed-vh, calc(100dvh - 2 * var(--hero-frame-gutter, 16px)));
     background: transparent;
     display: flex;
     flex-direction: column;
@@ -57,6 +57,46 @@
     line-height: 1.5;
 }
 
+/* ── CAROUSEL STAGE (track + optional mobile controls) ── */
+.carousel-stage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 1800px;
+    gap: 0;
+}
+
+.carousel-nav-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--color-border, rgba(15, 23, 42, 0.12));
+    border-radius: 12px;
+    background: var(--color-surface-muted, rgba(255, 255, 255, 0.85));
+    color: var(--color-nav-text, #0f172a);
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.carousel-nav-btn:hover {
+    background: var(--color-surface-light, #ffffff);
+}
+
+.carousel-nav-btn:focus-visible {
+    outline: 2px solid #2b5ea7;
+    outline-offset: 2px;
+}
+
 /* ── CAROUSEL TRACK ── */
 .carousel-track {
     position: relative;
@@ -68,6 +108,8 @@
     height: 580px;
     perspective: 1600px;
     z-index: 1;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 /* ── INDIVIDUAL CARD WRAPPER ── */
@@ -671,4 +713,164 @@
         font-size: 1.15rem;
         padding: 20px 56px;
     }
+}
+
+/* ── Mobile ≤768: single centered card; hide large side-card fan ── */
+@media (max-width: 768px) {
+    .instructor-carousel-section {
+        min-height: 0;
+        padding: 72px var(--page-gutter) 64px;
+        overflow: hidden;
+    }
+
+    .instructor-carousel-heading {
+        margin-bottom: 36px;
+        padding: 0 4px;
+    }
+
+    .instructor-carousel-heading h2 {
+        font-size: clamp(1.75rem, 6.5vw, 2.4rem);
+        -webkit-text-stroke: 0;
+    }
+
+    .carousel-stage {
+        width: 100%;
+        max-width: 100%;
+        gap: 8px;
+        padding: 0 4px;
+        box-sizing: border-box;
+    }
+
+    .carousel-nav-btn {
+        display: inline-flex;
+        position: relative;
+        z-index: 6;
+    }
+
+    .carousel-track {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        min-height: 400px;
+        perspective: none;
+        touch-action: pan-y;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .carousel-card-wrapper {
+        width: min(280px, 78vw);
+        height: auto;
+        aspect-ratio: 5 / 7;
+        max-height: 420px;
+    }
+
+    /* Drop large translateX fan — only the center card is interactive */
+    .carousel-card-wrapper.pos-neg3,
+    .carousel-card-wrapper.pos-neg2,
+    .carousel-card-wrapper.pos-neg1,
+    .carousel-card-wrapper.pos-pos1,
+    .carousel-card-wrapper.pos-pos2,
+    .carousel-card-wrapper.pos-pos3,
+    .carousel-card-wrapper.pos-hidden {
+        transform: translateX(0) scale(0.92) translateY(0);
+        opacity: 0;
+        filter: none;
+        pointer-events: none;
+        visibility: hidden;
+        z-index: 0;
+    }
+
+    .carousel-card-wrapper.pos-0 {
+        transform: translateX(0) scale(1) translateY(0);
+        z-index: 5;
+        opacity: 1;
+        filter: none;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    /* Keep entry/exit motion short so it doesn’t push past the viewport */
+    .carousel-card-wrapper.entering-from-right,
+    .carousel-card-wrapper.entering-from-left,
+    .carousel-card-wrapper.exiting-to-right,
+    .carousel-card-wrapper.exiting-to-left {
+        visibility: visible;
+    }
+
+    @keyframes slideInFromRight {
+        from {
+            transform: translateX(40vw) scale(0.92) translateY(0);
+            opacity: 0;
+            filter: none;
+        }
+    }
+
+    @keyframes slideInFromLeft {
+        from {
+            transform: translateX(-40vw) scale(0.92) translateY(0);
+            opacity: 0;
+            filter: none;
+        }
+    }
+
+    @keyframes slideOutToLeft {
+        to {
+            transform: translateX(-40vw) scale(0.9) translateY(0);
+            opacity: 0;
+            filter: none;
+        }
+    }
+
+    @keyframes slideOutToRight {
+        to {
+            transform: translateX(40vw) scale(0.9) translateY(0);
+            opacity: 0;
+            filter: none;
+        }
+    }
+
+    .carousel-generate-btn {
+        font-size: 1.05rem;
+        padding: 16px 40px;
+        min-height: 48px;
+    }
+}
+
+[data-theme="dark"] .carousel-nav-btn {
+    background: var(--color-glass-solid, rgba(15, 23, 42, 0.75));
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .carousel-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* -- Dark mode: white text on dark home -- */
+[data-theme="dark"] .instructor-carousel-section {
+    background: var(--color-page);
+}
+
+[data-theme="dark"] .instructor-carousel-heading h2 {
+    color: #ffffff;
+    -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="dark"] .instructor-carousel-heading p,
+[data-theme="dark"] .carousel-subtitle-secondary,
+[data-theme="dark"] .card-back-name,
+[data-theme="dark"] .card-back-department,
+[data-theme="dark"] .card-back-bio,
+[data-theme="dark"] .card-back-meta {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .card-back {
+    background: var(--color-panel);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .card-back-divider {
+    background: rgba(255, 255, 255, 0.2);
 }

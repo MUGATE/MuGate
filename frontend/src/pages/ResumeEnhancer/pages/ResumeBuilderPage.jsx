@@ -4,8 +4,11 @@ import SuggestionCard from '../components/SuggestionCard';
 import CVField, { CVSection, CVRow } from '../components/CVField';
 import ChatInterface from '../components/ChatInterface';
 import LebanonFlag from '../components/LebanonFlag';
+import { fromLocalForm, fromGlobalForm } from '../editor/adapters';
+import { scoreCv } from '../utils/scoreCv';
 
 import '../styles/builder.css';
+import '../styles/analyzer.css';
 import '../styles/chat.css';
 
 const LOCAL_SUGGESTIONS = [
@@ -60,8 +63,10 @@ const ResumeBuilderPage = ({
 }) => {
   const isLocal = type === 'local';
 
-  const fillRatio = Math.round(
-    Object.values(form).filter(v => v.trim()).length / Object.keys(form).length * 100
+  const resumeScore = scoreCv(
+    isLocal
+      ? fromLocalForm(form, { edu: extraEdu, exp: extraExp, projects: extraProjects })
+      : fromGlobalForm(form, { exp: extraExp, lead: extraLead })
   );
 
   const tipsList = isLocal ? LOCAL_SUGGESTIONS : GLOBAL_SUGGESTIONS;
@@ -282,8 +287,8 @@ const ResumeBuilderPage = ({
     <>
       <div className="re-left-col">
         <div className="re-score-card re-glass">
-          <h3 className="re-section-title">CV Progress</h3>
-          <ScoreRing score={fillRatio} />
+          <h3 className="re-section-title">Resume Score</h3>
+          <ScoreRing score={resumeScore} />
         </div>
         <div className="re-suggestions-card re-glass">
           <h3 className="re-section-title">Tips for {isLocal ? 'Local' : 'Global'} CV</h3>

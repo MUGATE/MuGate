@@ -2,6 +2,7 @@
 
 .resume-page {
   height: 100vh;
+  height: 100dvh;
   background-color: var(--color-bg);
   position: relative;
   overflow: hidden;
@@ -28,7 +29,13 @@
   z-index: 2;
 }
 
-/* Navbar — see GlassNavBar.css */
+/* Navbar — shared NotchedHeroNav; wrap reserves space (frame is height:0) */
+.re-nav-wrap {
+  flex-shrink: 0;
+  height: 80px;
+  position: relative;
+  z-index: 1001;
+}
 
 .re-layout {
   display: flex;
@@ -72,8 +79,9 @@
 }
 
 .re-modal-card {
-  width: 480px;
+  width: min(480px, calc(100vw - 2rem));
   max-width: 92vw;
+  box-sizing: border-box;
   padding: 44px 40px 36px;
   text-align: center;
   position: relative;
@@ -201,8 +209,10 @@
   .resume-page {
     height: auto;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow-y: auto;
     overflow-x: hidden;
+    overflow-x: clip;
   }
 
   .re-layout {
@@ -216,11 +226,57 @@
   }
 }
 
+/* Stack panes from tablet-phone boundary */
+@media (max-width: 768px) {
+  .resume-page {
+    height: auto;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+
+  .re-nav-wrap {
+    height: 84px;
+  }
+
+  .re-layout {
+    flex-direction: column;
+    width: calc(100% - 2 * var(--page-gutter));
+    padding: 14px 0;
+    gap: 14px;
+    overflow: visible;
+  }
+
+  .re-modal-overlay {
+    padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  .re-modal-card {
+    width: calc(100vw - 2rem);
+    max-width: none;
+    padding: 28px 20px 24px;
+  }
+
+  .re-modal-options {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .re-modal-option-btn {
+    width: 100%;
+  }
+
+  .re-modal-title {
+    font-size: 20px;
+  }
+}
+
 /* Mobile viewports */
 @media (max-width: 640px) {
   .resume-page {
     height: auto;
-    min-height: 100vh;
+    min-height: 100dvh;
     overflow: auto;
   }
   .re-layout {
@@ -231,7 +287,7 @@
     overflow: visible;
   }
   .re-modal-card {
-    padding: 32px 24px 28px;
+    padding: 24px 16px 20px;
   }
   .re-modal-options {
     flex-direction: column;
@@ -242,97 +298,125 @@
   }
 }
 
-/* ── Dark mode: lighter popups + visible field borders ── */
+/* ── Dark mode: layered navy boxes/forms + white text ── */
 [data-theme="dark"] .re-modal-card,
 [data-theme="dark"] .re-format-modal {
-  background: #1e2a42;
-  border-color: rgba(148, 183, 255, 0.28);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  background: var(--color-surface);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
 [data-theme="dark"] .re-modal-title,
 [data-theme="dark"] .re-format-name,
 [data-theme="dark"] .re-cv-builder-title,
 [data-theme="dark"] .re-section-title {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .re-modal-subtitle,
 [data-theme="dark"] .re-format-desc,
 [data-theme="dark"] .re-modal-btn-desc {
-  color: #b6c4d8 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 [data-theme="dark"] .re-modal-option-btn,
 [data-theme="dark"] .re-format-option {
-  background: #243352;
-  border-color: rgba(170, 195, 235, 0.28);
-  color: #f0f4f8;
+  background: var(--color-panel);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
 }
 
 [data-theme="dark"] .re-modal-btn-label {
-  color: #f0f4f8;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .re-modal-back {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-panel);
   border-color: rgba(255, 255, 255, 0.18);
-  color: #cbd5e1;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .re-modal-back:hover {
-  background: rgba(255, 255, 255, 0.14);
-  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
   border-color: rgba(255, 255, 255, 0.28);
 }
 
+/* Themed inputs — CV paper .re-edit-input is locked light in editor.css */
 [data-theme="dark"] .cv-field-input,
 [data-theme="dark"] .cv-textarea,
 [data-theme="dark"] .dl-modal-input,
-[data-theme="dark"] .re-edit-input,
 [data-theme="dark"] .re-editor-ai-input,
 [data-theme="dark"] .re-editor-ai-select {
-  background: #243352;
-  color: #f8fafc;
-  border: 1.5px solid rgba(170, 195, 235, 0.45);
+  background: var(--color-inset);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
 }
 
 [data-theme="dark"] .cv-field-input:focus,
 [data-theme="dark"] .cv-textarea:focus,
 [data-theme="dark"] .dl-modal-input:focus,
-[data-theme="dark"] .re-edit-input:focus,
 [data-theme="dark"] .re-editor-ai-input:focus,
 [data-theme="dark"] .re-editor-ai-select:focus {
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.22);
-  background: #2a3b5c;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  background: var(--color-inset);
 }
 
 [data-theme="dark"] .cv-field-input::placeholder,
 [data-theme="dark"] .cv-textarea::placeholder,
-[data-theme="dark"] .dl-modal-input::placeholder {
-  color: #94a3b8;
+[data-theme="dark"] .dl-modal-input::placeholder,
+[data-theme="dark"] .re-editor-ai-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
 }
 
 [data-theme="dark"] .cv-field-label {
-  color: #93c5fd;
+  color: #ffffff;
 }
 
 [data-theme="dark"] .re-cv-form-card,
 [data-theme="dark"] .re-cv-builder,
+[data-theme="dark"] .re-cv-edit-body,
 [data-theme="dark"] .re-glass {
-  background: #17233a;
-  border-color: rgba(148, 183, 255, 0.2);
+  background: var(--color-surface);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 [data-theme="dark"] .re-editor-doc-paper {
-  background: #ffffff;
-  color: #0f172a;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.12);
 }
 
 [data-theme="dark"] .re-editor-doc-paper .re-doc-name,
-[data-theme="dark"] .re-editor-doc-paper .re-doc-section-title {
+[data-theme="dark"] .re-editor-doc-paper .re-doc-section-title,
+[data-theme="dark"] .re-editor-doc-paper .re-doc-org,
+[data-theme="dark"] .re-editor-doc-paper .re-doc-line,
+[data-theme="dark"] .re-editor-doc-paper .re-doc-body,
+[data-theme="dark"] .re-editor-doc-paper .re-doc-bullet {
   color: #0f172a !important;
+}
+
+[data-theme="dark"] .re-editor-doc-paper .re-edit-input {
+  background: rgba(74, 144, 217, 0.06);
+  color: #0f172a;
+  border: 1px solid transparent;
+}
+
+[data-theme="dark"] .re-editor-doc-paper .re-edit-input:hover {
+  background: rgba(74, 144, 217, 0.12);
+}
+
+[data-theme="dark"] .re-editor-doc-paper .re-edit-input:focus {
+  outline: none;
+  border-color: #4a90d9;
+  background: #ffffff;
+  box-shadow: none;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .re-editor-doc-paper .re-edit-input::placeholder {
+  color: rgba(15, 23, 42, 0.4);
 }
 
 /* After selecting create/enhance — builder + analyzer copy */
@@ -346,7 +430,7 @@
 [data-theme="dark"] .suggestion-title,
 [data-theme="dark"] .re-analyzing-text,
 [data-theme="dark"] .re-section-title {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .re-cv-back-btn,
@@ -359,23 +443,24 @@
 [data-theme="dark"] .re-cv-builder-placeholder,
 [data-theme="dark"] .re-cv-edit-label,
 [data-theme="dark"] .re-converting-sub {
-  color: #c5d0e0 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 [data-theme="dark"] .re-cv-back-btn {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-surface);
   border-color: rgba(255, 255, 255, 0.18);
+  color: var(--color-text-muted) !important;
 }
 
 [data-theme="dark"] .re-cv-back-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
-  color: #f8fafc !important;
+  background: var(--color-panel);
+  color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.28);
 }
 
 [data-theme="dark"] .cv-form-section-title {
-  color: #93c5fd !important;
-  border-bottom-color: rgba(147, 197, 253, 0.25);
+  color: #ffffff !important;
+  border-bottom-color: rgba(255, 255, 255, 0.12);
 }
 
 [data-theme="dark"] .cv-form-header,
@@ -384,12 +469,12 @@
 }
 
 [data-theme="dark"] .re-upload-area {
-  border-color: rgba(147, 197, 253, 0.35);
-  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-panel);
 }
 
 [data-theme="dark"] .re-upload-area:hover {
-  border-color: rgba(147, 197, 253, 0.55);
+  border-color: rgba(255, 255, 255, 0.35);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -398,19 +483,19 @@
 [data-theme="dark"] .re-suggestions-card,
 [data-theme="dark"] .re-preview-card,
 [data-theme="dark"] .suggestion-card {
-  background: #1a2438;
-  border-color: rgba(148, 183, 255, 0.18);
-  color: #e2e8f0;
+  background: var(--color-panel);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 [data-theme="dark"] .dl-modal-label,
 [data-theme="dark"] .dl-modal-formats button,
 [data-theme="dark"] .format-option-label {
-  color: #c5d0e0 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 [data-theme="dark"] .dl-modal-title,
 [data-theme="dark"] .dl-modal-heading {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 

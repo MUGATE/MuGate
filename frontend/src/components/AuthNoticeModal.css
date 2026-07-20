@@ -1,0 +1,81 @@
+/* Above framed hero nav (1000), BottomNavbar (1100), and burger drawer (1200)
+   so the dim covers the navbar when auth is open. Drawer still wins when closed. */
+.auth-notice-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+}
+
+.auth-notice-modal {
+  background: var(--color-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-border);
+  padding: 30px;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 20px 50px -12px var(--color-shadow);
+}
+
+.auth-notice-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.auth-notice-modal h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+.auth-notice-modal p {
+  margin: 0 0 24px;
+  font-size: 15px;
+  color: var(--color-text-muted, var(--color-text-secondary));
+  line-height: 1.6;
+}
+
+.auth-notice-actions {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+}
+
+.auth-notice-btn {
+  min-width: 120px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.3);
+  transition: all 0.2s ease;
+}
+
+.auth-notice-btn:hover {
+  background: var(--color-primary-dark);
+  box-shadow: 0 6px 16px -2px rgba(37, 99, 235, 0.5);
+}

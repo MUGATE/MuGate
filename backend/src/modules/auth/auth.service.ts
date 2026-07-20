@@ -90,21 +90,34 @@ export class AuthService {
                     updatedAt = NOW()
             `);
 
-        // 5. Auto-scrape the student's academic history so the generator knows what they passed
-        try {
-            await HistoryService.syncStudentHistoryFromPortal(user.id);
-            logger.info(`Successfully synced academic history for user ${user.id} on login`);
-        } catch (historyErr: any) {
-            logger.warn(`Non-fatal: Failed to sync history on login for ${user.id}: ${historyErr.message}`);
-        }
-
-        // 5b. Re-read GPA after sync so login payload is current
+        // 5. Return cached GPA immediately; sync history in the background when stale
+        const HISTORY_SYNC_TTL_MS = 24 * 60 * 60 * 1000;
         let gpa: number | null = null;
+        let gpaUpdatedAt: Date | string | null = null;
         try {
             const summary = await HistoryService.getAcademicSummary(user.id);
             gpa = summary.gpa;
+            gpaUpdatedAt = summary.gpaUpdatedAt;
         } catch (gpaErr: any) {
             logger.warn(`Non-fatal: Failed to read GPA for ${user.id}: ${gpaErr.message}`);
+        }
+
+        const gpaAgeMs = gpaUpdatedAt != null
+            ? Date.now() - new Date(gpaUpdatedAt).getTime()
+            : Number.POSITIVE_INFINITY;
+        const shouldSyncHistory = !Number.isFinite(gpaAgeMs) || gpaAgeMs > HISTORY_SYNC_TTL_MS;
+
+        if (shouldSyncHistory) {
+            // Fire-and-forget: do not block the login response on a second portal scrape
+            void HistoryService.syncStudentHistoryFromPortal(user.id)
+                .then(() => {
+                    logger.info(`Successfully synced academic history for user ${user.id} after login`);
+                })
+                .catch((historyErr: any) => {
+                    logger.warn(`Non-fatal: Failed to sync history after login for ${user.id}: ${historyErr.message}`);
+                });
+        } else {
+            logger.info(`Skipping history sync on login for user ${user.id}: GPA updated within 24h`);
         }
 
         // 6. Generate and return MuGate JWT

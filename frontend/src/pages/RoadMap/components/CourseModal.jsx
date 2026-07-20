@@ -6,6 +6,7 @@ const CATEGORIES = [
   { id: "Mathematics & Sciences", label: "Mathematics & Sciences Requirements", color: "cat-math" },
   { id: "Major Requirements", label: "Major Requirements", color: "cat-major" },
   { id: "Technical Electives", label: "Technical Electives", color: "cat-elective" },
+  { id: "Remedial", label: "Remedial Courses", color: "cat-remedial" },
 ];
 
 export const COURSE_COLORS = CATEGORIES.reduce((acc, cat) => {

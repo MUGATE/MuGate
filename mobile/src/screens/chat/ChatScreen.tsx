@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -24,10 +26,13 @@ import {
   sendMessage,
 } from '../../api/chatbotApi';
 import { Button } from '../../components/Button';
+import { SignInGate } from '../../components/SignInGate';
+import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { radii, ThemeColors } from '../../theme/colors';
 
 export function ChatScreen() {
+  const { isAuthenticated } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const markdownStyles = useMemo(
@@ -46,32 +51,66 @@ export function ChatScreen() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return undefined;
+    const baselineHeight = Dimensions.get('window').height;
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      const kb = e.endCoordinates?.height ?? 0;
+      const shrunk = Math.max(0, baselineHeight - Dimensions.get('window').height);
+      // OEM fallback: only pad when resize did not absorb most of the keyboard
+      setAndroidKeyboardHeight(shrunk < kb * 0.5 ? Math.max(0, kb - shrunk) : 0);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setAndroidKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const loadSessions = useCallback(async () => {
-    const list = await getSessions();
-    setSessions(list);
-    if (!activeSession && list.length > 0) {
-      setActiveSession(list[0]);
+    if (!isAuthenticated) return;
+    try {
+      const list = await getSessions();
+      setSessions(list);
+      if (!activeSession && list.length > 0) {
+        setActiveSession(list[0]);
+      }
+    } catch {
+      setSessions([]);
     }
-  }, [activeSession]);
+  }, [activeSession, isAuthenticated]);
 
   const loadMessages = useCallback(async (sessionId: string) => {
-    const msgs = await getSessionMessages(sessionId);
-    setMessages(msgs);
+    try {
+      const msgs = await getSessionMessages(sessionId);
+      setMessages(msgs);
+    } catch {
+      setMessages([]);
+    }
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     setLoading(true);
     loadSessions().finally(() => setLoading(false));
-  }, [loadSessions]);
+  }, [isAuthenticated, loadSessions]);
 
   useEffect(() => {
-    if (activeSession) loadMessages(activeSession.id);
-  }, [activeSession, loadMessages]);
+    if (!isAuthenticated || !activeSession) return;
+    loadMessages(activeSession.id);
+  }, [activeSession, isAuthenticated, loadMessages]);
 
   const scrollToEnd = useCallback(() => {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
   }, []);
+
+  if (!isAuthenticated) {
+    return <SignInGate message="Sign in to use MuChat." header={false} />;
+  }
 
   const handleNewChat = async () => {
     const session = await createSession('New Chat');
@@ -148,7 +187,7 @@ export function ChatScreen() {
       </View>
 
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={[styles.flex, androidKeyboardHeight > 0 && { paddingBottom: androidKeyboardHeight }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >

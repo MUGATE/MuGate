@@ -3,6 +3,7 @@ import { createSession, sendMessage as sendChatbotMessage } from '../../../servi
 import { analyzeResume as analyzeResumeApi, editResumeFile, convertResumeFile, aiEditResume, generateResumeFile } from '../../../services/resumeApi';
 import { toBackendPayload } from '../editor/adapters';
 import { analyzeResumeText } from '../utils/analyzeResume';
+import { scoreCv } from '../utils/scoreCv';
 import ScoreRing from '../components/ScoreRing';
 import SuggestionCard from '../components/SuggestionCard';
 import ChatInterface from '../components/ChatInterface';
@@ -85,51 +86,6 @@ const cvToText = (d) => {
   return parts.join('\n');
 };
 
-// Deterministic, INSTANT resume score from the structured CV (0–100). Used for
-// live feedback while editing — rewards completeness + quality (action verbs,
-// metrics, all sections) so a strong, complete CV reaches 100 and removing
-// content lowers the score immediately.
-const ACTION_VERBS = /\b(develop(?:ed)?|built?|design(?:ed)?|manag(?:ed)?|led|create(?:d)?|implement(?:ed)?|improv(?:ed)?|increas(?:ed)?|reduc(?:ed)?|launch(?:ed)?|organiz(?:ed)?|analyz(?:ed)?|engineer(?:ed)?|optimiz(?:ed)?|deliver(?:ed)?|coordinat(?:ed)?|assist(?:ed)?|support(?:ed)?|provid(?:ed)?|collaborat(?:ed)?|automat(?:ed)?|maintain(?:ed)?|wrote|test(?:ed)?|achiev(?:ed)?)\b/i;
-const scoreCv = (d) => {
-  if (!d) return 0;
-  let s = 0;
-  const p = d.personal || {};
-  // Contact (15)
-  if (p.fullName?.trim()) s += 3;
-  if (p.email?.trim()) s += 4;
-  if (p.phone?.trim()) s += 3;
-  if (p.address?.trim()) s += 2;
-  if (p.linkedin?.trim()) s += 3;
-  // Summary / objective (10)
-  if (d.summary?.trim()) s += d.summary.trim().length >= 60 ? 10 : 5;
-  // Education (15)
-  const edu = (d.education || []).filter((e) => e.institution?.trim());
-  if (edu.length >= 1) s += 8;
-  if (edu.some((e) => e.degree?.trim())) s += 4;
-  if (edu.some((e) => e.gpa?.trim() || e.gradDate?.trim() || e.dates?.trim())) s += 3;
-  // Experience (30)
-  const exp = (d.experience || []).filter((e) => e.title?.trim() || e.organization?.trim());
-  const bullets = exp.flatMap((e) => (e.bullets || []).filter((b) => b && b.trim()));
-  if (exp.length >= 1) s += 8;
-  if (exp.length >= 2) s += 4;
-  if (bullets.length >= 2) s += 6;
-  if (bullets.length >= 4) s += 4;
-  if (bullets.some((b) => ACTION_VERBS.test(b))) s += 4;
-  if (bullets.some((b) => /\d/.test(b))) s += 4;
-  // Projects / leadership (12)
-  const proj = (d.projects || []).filter((x) => x.text?.trim());
-  const lead = (d.leadership || []).filter((e) => e.organization?.trim() || e.role?.trim());
-  if (proj.length + lead.length >= 1) s += 6;
-  if (proj.length + lead.length >= 2) s += 6;
-  // Skills (18)
-  const sk = d.skills || {};
-  const skillVals = ['languages', 'computer', 'technical', 'research', 'soft', 'laboratory', 'interests'].map((k) => sk[k]).filter((v) => v && v.trim());
-  if (skillVals.length >= 1) s += 6;
-  if (skillVals.length >= 2) s += 6;
-  if (skillVals.length >= 3) s += 6;
-  return Math.max(0, Math.min(100, Math.round(s)));
-};
-
 const ResumeAnalyzerPage = ({ onBack }) => {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -200,7 +156,9 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    } catch {
+    } catch (err) {
+      // Auth failures already redirect to /?auth=session — skip browser alert.
+      if (/auth|login|unauthorized|401/i.test(err?.message || '')) return;
       alert('Could not export the CV. Make sure the backend is running.');
     } finally {
       setIsExportingCv(false);
@@ -383,7 +341,10 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       runAiAnalysis(text, '');
     } catch (err) {
       console.error('Resume convert failed:', err);
-      alert(err?.message || 'Could not convert this resume into an editable CV. Please try again.');
+      // Auth failures already redirect to /?auth=session — skip browser alert.
+      if (!/auth|login|unauthorized|401/i.test(err?.message || '')) {
+        alert(err?.message || 'Could not convert this resume into an editable CV. Please try again.');
+      }
       setUploadedFile(null);
     } finally {
       setIsConverting(false);
@@ -414,7 +375,10 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ];
-    if (!validTypes.includes(file.type)) {
+    const name = (file.name || '').toLowerCase();
+    const hasValidExt = /\.(pdf|docx?)$/i.test(name);
+    // Windows often reports an empty MIME type — fall back to the extension.
+    if (!validTypes.includes(file.type) && !hasValidExt) {
       alert('Please upload a PDF, DOC, or DOCX file.');
       return;
     }
@@ -422,8 +386,8 @@ const ResumeAnalyzerPage = ({ onBack }) => {
       alert('That file appears to be empty. Please upload a valid resume.');
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      alert('That file is too large. Please upload a resume under 10 MB.');
+    if (file.size > 5 * 1024 * 1024) {
+      alert('That file is too large. Please upload a resume under 5 MB.');
       return;
     }
     // Reset prior state and open the Local/Global popup.

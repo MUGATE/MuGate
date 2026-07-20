@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import { pool, poolConnect } from "./core/database/connection";
 import { errorMiddleware } from "./core/middleware/error.middleware";
 import { rateLimiter } from "./core/middleware/rateLimiter.middleware";
@@ -21,13 +22,13 @@ import eventRoutes from "./modules/events/event.routes";
 import { EventRepository } from "./modules/events/event.repository";
 import roadmapRoutes from "./modules/roadmap/roadmap.routes";
 import { RoadMapRepository } from "./modules/roadmap/roadmap.repository";
-import { bootstrapRag } from "./modules/ai/rag/rag.bootstrap";
 import { env } from "./config/env";
 
 const app = express();
 
 app.set("trust proxy", 1);
 
+app.use(compression());
 app.use(
     cors({
         origin: (origin, callback) => {
@@ -104,8 +105,5 @@ RoadMapRepository.ensureTable();
 // Initialize background CRON jobs
 initCronJobs();
 
-// RAG bootstrap: migrations applied via poolConnect; seed, vector sync, optional crawl
-poolConnect.then(() => bootstrapRag()).catch(err => {
-    console.error("RAG bootstrap error:", err.message);
-});
+// RAG bootstrap is started from main.ts after listen() so health checks answer first.
 export default app;

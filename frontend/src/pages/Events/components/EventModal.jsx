@@ -135,20 +135,20 @@ const EventModal = ({ isOpen, onClose, editingEvent, onSave, todayStr }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const selectedDate = new Date(formStartDate + "T00:00:00");
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (selectedDate < today) {
+    // Compare calendar dates as YYYY-MM-DD strings to avoid timezone shifts.
+    if (!formStartDate || (todayStr && formStartDate < todayStr)) {
       alert("You cannot schedule or add events with a date in the past.");
       return;
     }
 
+    // Store as a full UTC calendar day so "today" events stay upcoming all day
+    // and mapBackendEvent can round-trip the same YYYY-MM-DD.
     onSave({
       title: formTitle,
       description: formDesc,
       location: formLocation,
-      startDate: selectedDate,
+      startDate: `${formStartDate}T00:00:00.000Z`,
+      endDate: `${formStartDate}T23:59:59.999Z`,
       category: formCategory,
       tags: "",
       organizer: formOrganizer,
@@ -165,27 +165,27 @@ const EventModal = ({ isOpen, onClose, editingEvent, onSave, todayStr }) => {
           {editingEvent ? "Edit Pinned Event" : "Pin New Event"}
         </h2>
         <form onSubmit={handleSubmit} className="ev-modal-form">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>Title *</label>
+          <div className="mg-field">
+            <label className="mg-label">Title *</label>
             <input
               type="text"
+              className="mg-input"
               required
               value={formTitle}
               onChange={e => setFormTitle(e.target.value)}
-              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
             />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>Description</label>
+          <div className="mg-field">
+            <label className="mg-label">Description</label>
             <textarea
+              className="mg-textarea"
               value={formDesc}
               onChange={e => setFormDesc(e.target.value)}
-              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', minHeight: '80px' }}
             />
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>Start Date *</label>
+            <div className="mg-field" style={{ flex: 1 }}>
+              <label className="mg-label">Start Date *</label>
               <EventDatePicker
                 value={formStartDate}
                 onChange={setFormStartDate}
@@ -193,12 +193,12 @@ const EventModal = ({ isOpen, onClose, editingEvent, onSave, todayStr }) => {
                 required
               />
             </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>Category *</label>
+            <div className="mg-field" style={{ flex: 1 }}>
+              <label className="mg-label">Category *</label>
               <select
+                className="mg-select"
                 value={formCategory}
                 onChange={e => setFormCategory(e.target.value)}
-                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff' }}
               >
                 <option value="workshop">Workshop</option>
                 <option value="hackathon">Hackathon</option>
@@ -210,42 +210,33 @@ const EventModal = ({ isOpen, onClose, editingEvent, onSave, todayStr }) => {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>Location</label>
+            <div className="mg-field" style={{ flex: 1 }}>
+              <label className="mg-label">Location</label>
               <input
                 type="text"
+                className="mg-input"
                 value={formLocation}
                 onChange={e => setFormLocation(e.target.value)}
-                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
               />
             </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>Organizer</label>
+            <div className="mg-field" style={{ flex: 1 }}>
+              <label className="mg-label">Organizer</label>
               <input
                 type="text"
+                className="mg-input"
                 value={formOrganizer}
                 onChange={e => setFormOrganizer(e.target.value)}
-                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
               />
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>Event Image / Document Attachment</label>
+          <div className="mg-field">
+            <label className="mg-label">Event Image / Document Attachment</label>
             <div
+              className={`mg-dropzone${dragActive ? ' mg-dropzone--active' : ''}`}
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
               onDragLeave={handleDrag}
               onDrop={handleDrop}
-              style={{
-                border: dragActive ? '2px dashed #3b82f6' : '2px dashed #cbd5e1',
-                borderRadius: '12px',
-                padding: '20px',
-                textAlign: 'center',
-                background: dragActive ? 'rgba(59, 130, 246, 0.05)' : '#f8fafc',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                position: 'relative'
-              }}
             >
               <input
                 type="file"
@@ -257,55 +248,53 @@ const EventModal = ({ isOpen, onClose, editingEvent, onSave, todayStr }) => {
               />
               
               {droppedFile ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left' }}>
+                <div className="ev-modal-file-row">
+                  <div className="ev-modal-file-meta">
                     {droppedFile.type && droppedFile.type.startsWith('image/') ? (
                       <img
                         src={droppedFile.dataUrl}
                         alt="Preview"
-                        style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e2e8f0' }}
+                        className="ev-modal-file-thumb"
                       />
                     ) : (
-                      <div style={{ width: '48px', height: '48px', background: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', color: '#475569', fontWeight: 'bold', fontSize: '10px' }}>
-                        FILE
-                      </div>
+                      <div className="ev-modal-file-badge">FILE</div>
                     )}
                     <div>
-                      <p style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: '#1e293b', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{droppedFile.name}</p>
-                      <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>{droppedFile.size}</p>
+                      <p className="ev-modal-file-name">{droppedFile.name}</p>
+                      <p className="ev-modal-file-size">{droppedFile.size}</p>
                     </div>
                   </div>
                   <button
                     type="button"
+                    className="ev-modal-file-remove"
                     onClick={handleRemoveFile}
-                    style={{ padding: '4px 8px', borderRadius: '6px', background: '#fee2e2', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}
                   >
                     Remove
                   </button>
                 </div>
               ) : (
                 <label htmlFor="event-file-upload" style={{ cursor: 'pointer', display: 'block', width: '100%', height: '100%' }}>
-                  <div style={{ color: '#64748b', fontSize: '13px' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 8px', color: '#94a3b8' }}>
+                  <div className="ev-modal-drop-hint">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ev-modal-drop-icon">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="17 8 12 3 7 8" />
                       <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
-                    Drag & Drop or <span style={{ color: '#3b82f6', fontWeight: '600' }}>Browse</span>
-                    <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#94a3b8' }}>Supports Images, PDF, Word Documents</p>
+                    Drag & Drop or <span className="ev-modal-drop-browse">Browse</span>
+                    <p className="ev-modal-drop-note">Supports Images, PDF, Word Documents</p>
                   </div>
                 </label>
               )}
             </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontSize: '14px', fontWeight: '600', color: '#475569' }}>Registration URL</label>
+          <div className="mg-field">
+            <label className="mg-label">Registration URL</label>
             <input
               type="text"
+              className="mg-input"
               placeholder="https://example.com/register"
               value={formRegUrl}
               onChange={e => setFormRegUrl(e.target.value)}
-              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -315,7 +304,7 @@ const EventModal = ({ isOpen, onClose, editingEvent, onSave, todayStr }) => {
               checked={formIsFree}
               onChange={e => setFormIsFree(e.target.checked)}
             />
-            <label htmlFor="formIsFree" style={{ fontSize: '14px', fontWeight: '600', color: '#475569', cursor: 'pointer' }}>This event is free</label>
+            <label htmlFor="formIsFree" className="mg-label" style={{ cursor: 'pointer', margin: 0 }}>This event is free</label>
           </div>
           <div className="ev-modal-actions">
             <button type="button" className="ev-modal-btn ev-modal-btn-cancel" onClick={onClose}>Cancel</button>

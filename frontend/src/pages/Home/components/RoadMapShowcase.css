@@ -250,3 +250,69 @@
         transform: scale(1.02);
     }
 }
+
+@media (max-width: 768px) {
+    .roadmap-showcase-section {
+        padding: 64px var(--page-gutter);
+        overflow: hidden;
+    }
+
+    .roadmap-showcase-container {
+        gap: 36px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .roadmap-showcase-content,
+    .roadmap-showcase-visual {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .roadmap-showcase-title {
+        font-size: clamp(1.85rem, 7vw, 2.6rem);
+        white-space: normal;
+    }
+
+    .mock-roadmap-container {
+        max-width: 100%;
+        width: 100%;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    .mock-course {
+        font-size: 0.88rem;
+        padding: 10px 14px;
+        min-width: 0;
+    }
+
+    .mock-dragged {
+        transform: none;
+        animation: none;
+    }
+}
+
+/* -- Dark mode: black/dark-blue section, white text -- */
+[data-theme="dark"] .roadmap-showcase-section {
+    background: var(--color-page);
+}
+
+[data-theme="dark"] .roadmap-showcase-title,
+[data-theme="dark"] .roadmap-showcase-desc,
+[data-theme="dark"] .mock-semester-title {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .mock-roadmap-container {
+    background: var(--color-panel);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .mock-course {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}

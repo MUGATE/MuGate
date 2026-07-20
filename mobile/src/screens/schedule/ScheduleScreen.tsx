@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../components/Button';
 import { Screen } from '../../components/Screen';
+import { SignInGate } from '../../components/SignInGate';
 import { CourseDetailModal } from '../../components/schedule/CourseDetailModal';
 import { ScheduleGrid } from '../../components/schedule/ScheduleGrid';
 import { useAuth } from '../../context/AuthContext';
@@ -21,9 +22,6 @@ import {
   saveSchedule,
   SchedulePreferences,
 } from '../../api/scheduleApi';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/types';
 import { radii, ThemeColors } from '../../theme/colors';
 import {
   BackendScheduleItem,
@@ -44,7 +42,6 @@ export function ScheduleScreen() {
   const { isAuthenticated } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [prefs, setPrefs] = useState<SchedulePreferences>(defaultPrefs);
   const [loading, setLoading] = useState(false);
@@ -83,12 +80,7 @@ export function ScheduleScreen() {
   }, [isAuthenticated, applySchedule]);
 
   if (!isAuthenticated) {
-    return (
-      <Screen header>
-        <Text style={styles.locked}>Sign in to generate personalized schedules.</Text>
-        <Button title="Sign In" icon="log-in-outline" onPress={() => rootNav.navigate('Login')} />
-      </Screen>
-    );
+    return <SignInGate message="Sign in to generate personalized schedules." />;
   }
 
   const toggle = (key: keyof SchedulePreferences) => {
@@ -385,7 +377,6 @@ function PrefRow({
 const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
     scroll: { paddingBottom: 32 },
-    locked: { color: c.textMuted, marginBottom: 16, marginTop: 8, lineHeight: 22 },
     desc: { color: c.textMuted, marginBottom: 20, marginTop: 8, lineHeight: 22 },
     group: {
       backgroundColor: c.card,

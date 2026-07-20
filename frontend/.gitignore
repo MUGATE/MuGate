@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.vercel
+.env*
+
+# Heavy source masters (compress script reads when present; do not ship)
+**/MU VIDEO LANDING PAGE.mp4
+!**/MU VIDEO LANDING PAGE.compressed.mp4

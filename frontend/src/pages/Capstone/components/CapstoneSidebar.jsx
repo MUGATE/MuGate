@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   Users, Lightbulb, Sparkles,
   GraduationCap, ChevronsUpDown
@@ -40,8 +41,10 @@ const CapstoneSidebar = ({ activeFeature, setActiveFeature }) => {
           return (
             <button
               key={feature.id}
+              type="button"
               className={`cs-feature-item ${activeFeature === feature.id ? 'active' : ''}`}
               onClick={() => setActiveFeature(feature.id)}
+              aria-label={feature.label}
             >
               <div className="cs-feature-icon">
                 <Icon size={18} />
@@ -56,7 +59,7 @@ const CapstoneSidebar = ({ activeFeature, setActiveFeature }) => {
       </div>
 
       {/* User Profile */}
-      <div className="cs-sidebar-profile">
+      <Link to="/profile" className="cs-sidebar-profile">
         <img
           src={`https://ui-avatars.com/api/?name=${userName || 'Guest'}&background=333&color=fff`}
           alt="User avatar"
@@ -67,7 +70,7 @@ const CapstoneSidebar = ({ activeFeature, setActiveFeature }) => {
           <span className="cs-profile-status">{token ? 'Authenticated' : 'Public Mode'}</span>
         </div>
         <ChevronsUpDown size={16} className="cs-profile-action" />
-      </div>
+      </Link>
     </aside>
   );
 };

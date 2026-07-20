@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
   <script>
     (function () {
       try {
@@ -11,15 +12,19 @@
         var scheme = stored === "light" || stored === "dark" ? stored : "light";
         document.documentElement.setAttribute("data-theme", scheme);
         document.documentElement.style.colorScheme = scheme;
+        if (scheme === "dark") {
+          document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#0b1220");
+        }
       } catch (e) {
         document.documentElement.setAttribute("data-theme", "light");
       }
     })();
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" sizes="48x48" href="/Logo2.png">
+  <!-- LCP poster + critical hero fonts (stable public URLs; see compress-home-assets.mjs) -->
+  <link rel="preload" as="image" href="/home-hero-poster.webp" fetchpriority="high" />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/JnSOH7RupDCN6KVnC1gWkQOKE.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/1ZFS7N918ojhhd0nQWdj3jz4w.woff2" crossorigin />
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
   <title>MuGate</title>
 </head>
 

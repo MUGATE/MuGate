@@ -1,12 +1,16 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import GlobalGlow from "./components/layout/GlobalGlow";
+import RouteLoader from "./components/layout/RouteLoader";
 import { ThemeProvider } from "./context/ThemeContext";
 import { rememberProfileReturnPath } from "./utils/profileNavigation";
+import { prefetchPopularRoutes } from "./utils/routePrefetch";
+import { shouldPrefetchRoutes } from "./utils/deviceCapability";
+import { API_BASE_URL } from "./utils/api";
+// Eager Home: avoid Suspense waterfall so LCP (hero poster) is not gated on a lazy chunk.
+import Home from "./pages/Home";
 
-// Route-level code splitting: each page loads on demand so the initial bundle
-// stays small (the landing page no longer ships every feature's code up front).
-const Home = lazy(() => import("./pages/Home"));
+// Route-level code splitting for non-landing pages keeps the initial bundle small.
 const Chatbot = lazy(() => import("./pages/Chatbot"));
 const Schedule = lazy(() => import("./pages/Schedule"));
 const ResumeEnhancer = lazy(() => import("./pages/ResumeEnhancer"));
@@ -34,13 +38,41 @@ function ProfileReturnTracker() {
   return null;
 }
 
+function IdleRoutePrefetch() {
+  useEffect(() => {
+    if (!shouldPrefetchRoutes()) return undefined;
+    prefetchPopularRoutes();
+    return undefined;
+  }, []);
+  return null;
+}
+
+/** Fire-and-forget ping so a sleeping Railway instance starts warming on first visit. */
+function BackendWakePing() {
+  useEffect(() => {
+    if (!API_BASE_URL || API_BASE_URL.includes("__mugate_api_url_not_configured__")) {
+      return undefined;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 4000);
+    fetch(`${API_BASE_URL}/health`, { signal: controller.signal, method: "GET" }).catch(() => {});
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, []);
+  return null;
+}
+
 function App() {
   return (
     <ThemeProvider>
       <Router>
         <ProfileReturnTracker />
+        <BackendWakePing />
+        <IdleRoutePrefetch />
         <GlobalGlow />
-        <Suspense fallback={<div className="route-fallback" />}>
+        <Suspense fallback={<RouteLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/chatbot" element={<Chatbot />} />

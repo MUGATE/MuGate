@@ -284,19 +284,19 @@
 }
 
 [data-theme="dark"] .chat-subtitle {
-  color: #c5d0e0 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 [data-theme="dark"] .re-section-title,
 [data-theme="dark"] .chat-header .re-section-title {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 [data-theme="dark"] .chat-input {
-  color: #f8fafc;
-  background: #243352;
-  border-color: rgba(170, 195, 235, 0.35);
+  color: #ffffff;
+  background: var(--color-inset);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 [data-theme="dark"] .chat-input::placeholder {
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.45);
 }
 [data-theme="dark"] .chat-header,
 [data-theme="dark"] .chat-input-area {

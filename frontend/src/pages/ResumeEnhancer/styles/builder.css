@@ -38,19 +38,21 @@
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
+  min-height: 44px;
+  box-sizing: border-box;
   border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.5);
-  color: #6b7280;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 .re-cv-back-btn:hover {
   background: var(--color-glass);
-  color: #1a1a2e;
-  border-color: rgba(0, 0, 0, 0.15);
+  color: var(--color-text);
+  border-color: rgba(74, 144, 217, 0.45);
 }
 
 .re-cv-builder-title {
@@ -293,13 +295,18 @@
 /* Download CV Section */
 .cv-download-section {
   padding: 16px 24px 24px;
-  background: rgba(255, 255, 255, 0.4);
+  background: transparent;
   border-top: 1px solid rgba(100, 140, 200, 0.12);
   display: flex;
   justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
   flex-shrink: 0;
+}
+
+[data-theme="dark"] .cv-download-section {
+  background: transparent;
+  border-top-color: rgba(255, 255, 255, 0.1);
 }
 
 .cv-editor-btn {

@@ -432,14 +432,14 @@ export class InternshipRepository {
         const result = await pool.request().query(`
             SELECT 
                 s.companyId,
-                s.avgRating,
-                s.reviewCount,
-                latest.feedback AS latestFeedback
+                s."avgRating",
+                s."reviewCount",
+                latest.feedback AS "latestFeedback"
             FROM (
                 SELECT 
                     companyId,
-                    AVG(CAST(rating AS FLOAT)) AS avgRating,
-                    COUNT(*) AS reviewCount
+                    AVG(CAST(rating AS FLOAT)) AS "avgRating",
+                    COUNT(*) AS "reviewCount"
                 FROM InternshipReviews
                 GROUP BY companyId
             ) s

@@ -7,7 +7,7 @@
 .chatbot-showcase-section {
     position: relative;
     width: 100%;
-    min-height: 100vh;
+    min-height: var(--framed-vh, calc(100dvh - 2 * var(--hero-frame-gutter, 16px)));
     background: linear-gradient(to bottom, var(--color-surface-muted) 0%, var(--color-page) 100%);
     display: flex;
     align-items: center;
@@ -311,4 +311,79 @@
         .chatbot-figure-wrapper .chat-bubble {
         display: none;
     }
+}
+
+/* ── Mobile ≤768: stack, wrap title, drop figure offset ── */
+@media (max-width: 768px) {
+    .chatbot-showcase-section {
+        min-height: 0;
+        padding: 64px var(--page-gutter);
+        overflow: hidden;
+    }
+
+    .chatbot-showcase-inner {
+        gap: 36px;
+        width: 100%;
+    }
+
+    .chatbot-title {
+        white-space: normal;
+        font-size: clamp(1.85rem, 7vw, 2.4rem);
+    }
+
+    .chatbot-content-section {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .chatbot-figure-container {
+        flex: none;
+        width: 100%;
+        max-width: 100%;
+        padding-left: 0;
+        min-width: 0;
+    }
+
+    .chatbot-figure-wrapper {
+        width: min(280px, 80vw);
+        height: auto;
+        aspect-ratio: 340 / 420;
+        max-height: 360px;
+    }
+
+    .chatbot-robot-svg {
+        width: min(220px, 70vw);
+        height: auto;
+        max-height: 280px;
+    }
+
+    .chatbot-ambient-glow {
+        width: 200px;
+        height: 200px;
+    }
+
+    .chatbot-feature-item {
+        font-size: 0.95rem;
+        text-align: left;
+        width: 100%;
+        max-width: 360px;
+    }
+}
+
+/* -- Dark mode: black/dark-blue section, white text -- */
+[data-theme="dark"] .chatbot-showcase-section {
+    background: var(--color-page);
+}
+
+[data-theme="dark"] .chatbot-title,
+[data-theme="dark"] .chatbot-subtitle,
+[data-theme="dark"] .chatbot-feature-item,
+[data-theme="dark"] .chatbot-hint {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .chatbot-figure-wrapper .chat-bubble {
+    background: var(--color-panel);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }

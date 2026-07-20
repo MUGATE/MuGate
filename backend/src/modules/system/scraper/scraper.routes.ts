@@ -185,8 +185,21 @@ router.post("/university/reindex", authMiddleware, adminMiddleware, async (req: 
 
 router.post("/university/sitemap-refresh", authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
     try {
-        const added = await ScraperService.refreshSitemap();
-        res.json({ success: true, data: { urlsQueued: added } });
+        if (ScraperService.running) {
+            return res.status(409).json({
+                success: false,
+                message: "A scraping job is already running. Please wait for it to complete.",
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Sitemap refresh started — discovering URLs and crawling the queue.",
+        });
+
+        ScraperService.refreshSitemap().catch(err => {
+            console.error("Background sitemap refresh error:", err.message);
+        });
     } catch (err: any) {
         res.status(500).json({ success: false, message: err.message });
     }

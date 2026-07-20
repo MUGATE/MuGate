@@ -3,8 +3,8 @@ import CapstoneSidebar from './components/CapstoneSidebar';
 import FindPartner from './components/FindPartner';
 import IdeasDatabase from './components/IdeasDatabase/IdeasDatabase';
 import AIAdvisor from './components/AIAdvisor';
-import FloatingProfileIcon from '../../components/FloatingProfileIcon';
-import GlassNavBar from '../../components/layout/GlassNavBar';
+import NotchedHeroNav from '../../components/layout/NotchedHeroNav';
+import '../Home/Home.css';
 import './capstone.css';
 
 const Capstone = () => {
@@ -24,12 +24,9 @@ const Capstone = () => {
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="capstone-page-wrapper">
-      {/* Navbar */}
-      <GlassNavBar activePath="/capstone" />
-      <FloatingProfileIcon
-        className="floating-profile-icon--capstone"
-        navbarSelector=".glass-navbar"
-      />
+      <div className="capstone-nav-wrap">
+        <NotchedHeroNav maskFrame={false} />
+      </div>
 
       {/* Body: Sidebar + Main */}
       <div className="capstone-body">

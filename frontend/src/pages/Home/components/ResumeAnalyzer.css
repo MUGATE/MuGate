@@ -6,7 +6,7 @@
 .resume-analyzer-section {
     position: relative;
     width: 100%;
-    min-height: 100vh;
+    min-height: var(--framed-vh, calc(100dvh - 2 * var(--hero-frame-gutter, 16px)));
     background: linear-gradient(to bottom, var(--color-surface-muted) 0%, var(--color-page) 100%);
     display: flex;
     align-items: center;
@@ -108,7 +108,7 @@
     font-family: "Matter", sans-serif;
     font-size: 0.82rem;
     font-weight: 600;
-    color: var(--color-text);
+    color: #0f172a;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -365,4 +365,72 @@
     .ai-badge {
         display: none;
     }
+}
+
+/* ── Mobile ≤768: fluid widths, wrap titles ── */
+@media (max-width: 768px) {
+    .resume-analyzer-section {
+        min-height: 0;
+        padding: 64px var(--page-gutter);
+    }
+
+    .resume-analyzer-inner {
+        gap: 40px;
+        width: 100%;
+    }
+
+    .resume-cv-container {
+        max-width: min(340px, 100%);
+        width: 100%;
+    }
+
+    .resume-cv-glass {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .resume-title {
+        white-space: normal;
+        font-size: clamp(1.85rem, 7vw, 2.4rem);
+    }
+
+    .resume-content-section {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .resume-subtitle {
+        margin-bottom: 28px;
+    }
+
+    .resume-features-list {
+        margin-bottom: 32px;
+        width: 100%;
+    }
+
+    .resume-feature-item {
+        font-size: 0.95rem;
+        text-align: left;
+        width: 100%;
+        max-width: 360px;
+    }
+}
+
+/* -- Dark mode: black/dark-blue section, white text -- */
+[data-theme="dark"] .resume-analyzer-section {
+    background: var(--color-page);
+}
+
+[data-theme="dark"] .resume-title,
+[data-theme="dark"] .resume-subtitle,
+[data-theme="dark"] .resume-feature-item,
+[data-theme="dark"] .resume-trust-text,
+[data-theme="dark"] .resume-trust-rating,
+[data-theme="dark"] .resume-trust-rating span {
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .resume-cv-glass {
+    background: rgba(18, 26, 43, 0.92);
+    border-color: rgba(255, 255, 255, 0.14);
 }

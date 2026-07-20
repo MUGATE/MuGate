@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Menu } from 'lucide-react';
 import './Chatbot.css';
 import LogoPath from './assets/images/Logo2.png';
 import FluidTrail from './components/FluidTrail';
@@ -22,12 +23,96 @@ const Chatbot = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
+  );
   const recordingTimerRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const recognitionRef = useRef(null);
+  const menuBtnRef = useRef(null);
+  const sidebarRef = useRef(null);
+
+  const FOCUSABLE_SEL =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  const closeSidebar = useCallback((restoreFocus = true) => {
+    setSidebarOpen(false);
+    if (restoreFocus) {
+      requestAnimationFrame(() => menuBtnRef.current?.focus());
+    }
+  }, []);
+
+  const openSidebar = useCallback(() => {
+    setSidebarOpen(true);
+  }, []);
+
+  // Track narrow viewport for drawer mode
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mq = window.matchMedia('(max-width: 640px)');
+    const sync = () => {
+      const narrow = mq.matches;
+      setIsNarrow(narrow);
+      if (!narrow) setSidebarOpen(false);
+    };
+    sync();
+    mq.addEventListener?.('change', sync);
+    mq.addListener?.(sync);
+    return () => {
+      mq.removeEventListener?.('change', sync);
+      mq.removeListener?.(sync);
+    };
+  }, []);
+
+  // Focus first control when drawer opens; trap Tab while open
+  useEffect(() => {
+    if (!isNarrow || !sidebarOpen) return undefined;
+    const panel = sidebarRef.current;
+    if (!panel) return undefined;
+
+    const focusables = () =>
+      Array.from(panel.querySelectorAll(FOCUSABLE_SEL)).filter(
+        (el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true'
+      );
+
+    requestAnimationFrame(() => {
+      const first = focusables()[0];
+      first?.focus();
+    });
+
+    const onPanelKeyDown = (e) => {
+      if (e.key !== 'Tab') return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    const onDocumentKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeSidebar(true);
+      }
+    };
+
+    panel.addEventListener('keydown', onPanelKeyDown);
+    document.addEventListener('keydown', onDocumentKeyDown);
+    return () => {
+      panel.removeEventListener('keydown', onPanelKeyDown);
+      document.removeEventListener('keydown', onDocumentKeyDown);
+    };
+  }, [isNarrow, sidebarOpen, closeSidebar]);
 
   // Derive user info from JWT in localStorage
   const token = localStorage.getItem('mugate_token');
@@ -120,6 +205,7 @@ const Chatbot = () => {
       const session = await chatbotApi.createSession('New Chat');
       setActiveSessionId(session.id);
       setMessages([]);
+      closeSidebar(isNarrow);
 
       // Refresh sessions list
       const updatedSessions = await chatbotApi.getSessions();
@@ -333,6 +419,7 @@ const Chatbot = () => {
 
   // ─── Switch active session ──────────────────────────────
   const handleSessionClick = async (session) => {
+    closeSidebar(isNarrow);
     if (session.id === activeSessionId) return;
     setActiveSessionId(session.id);
     setMessages([]);
@@ -372,9 +459,31 @@ const Chatbot = () => {
   })();
 
   return (
-    <div className="chatbot-container">
+    <div className={`chatbot-container${isNarrow ? ' is-narrow' : ''}${sidebarOpen ? ' sidebar-open' : ''}`}>
+      <button
+        ref={menuBtnRef}
+        type="button"
+        className="chatbot-menu-btn"
+        onClick={openSidebar}
+        aria-label="Open chat menu"
+        aria-expanded={sidebarOpen}
+        aria-controls="chatbot-sidebar"
+      >
+        <Menu size={22} />
+      </button>
+
+      {sidebarOpen ? (
+        <button
+          type="button"
+          className="chatbot-sidebar-backdrop"
+          aria-label="Close chat menu"
+          onClick={() => closeSidebar(true)}
+        />
+      ) : null}
+
       {/* Sidebar */}
       <ChatSidebar
+        ref={sidebarRef}
         sessions={sessions}
         activeSessionId={activeSessionId}
         handleSessionClick={handleSessionClick}
@@ -386,6 +495,8 @@ const Chatbot = () => {
         token={token}
         isAdmin={isAdmin}
         LogoPath={LogoPath}
+        isNarrow={isNarrow}
+        open={sidebarOpen}
       />
 
       {/* Main Content Area */}

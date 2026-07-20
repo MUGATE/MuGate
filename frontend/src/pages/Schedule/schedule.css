@@ -1,10 +1,13 @@
 /* ===== Schedule Page ===== */
 .schedule-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--color-bg);
   padding-bottom: 60px;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /* ===== Background Gradient Mesh Overlays ===== */
@@ -27,6 +30,13 @@
   border: 1px solid var(--color-border);
   position: relative;
   z-index: 2;
+}
+
+/* Navbar — shared NotchedHeroNav; wrap reserves space (frame is height:0) */
+.schedule-nav-wrap {
+  height: 80px;
+  position: relative;
+  z-index: 1001;
 }
 
 /* ===== Main Layout ===== */
@@ -424,11 +434,11 @@
 
 .instructor-select {
   padding: 10px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
-  background: var(--color-glass-card);
+  background: var(--color-input-bg);
   font-size: 13px;
-  color: var(--color-text-secondary);
+  color: var(--color-text);
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
@@ -495,7 +505,7 @@
 @media (max-width: 1100px) {
   .schedule-layout {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     padding: 20px var(--page-gutter) 0;
     margin: 0 auto;
   }
@@ -503,28 +513,71 @@
   .preferences-panel,
   .edit-panel {
     width: 100%;
-    max-width: 500px;
+    max-width: none;
+    min-width: 0;
     max-height: none;
+    box-sizing: border-box;
   }
 
   .schedule-grid-wrapper {
-    min-width: auto;
+    min-width: 0;
     width: 100%;
-    max-width: 700px;
+    max-width: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 768px) {
+  .schedule-nav-wrap {
+    height: 84px;
+  }
+
+  .preferences-panel,
+  .edit-panel {
+    width: 100%;
+    padding: 20px 16px;
+  }
+
+  .preference-item {
+    gap: 12px;
+  }
+
+  .schedule-grid-wrapper {
+    padding: 16px 12px;
+    min-height: 320px;
+  }
+
+  .schedule-grid {
+    min-width: 560px;
+  }
+
+  .regenerate-btn,
+  .confirm-btn {
+    min-height: 44px;
+    box-sizing: border-box;
   }
 }
 
 @media (max-width: 640px) {
-
   .schedule-actions {
     flex-direction: column;
-    align-items: center;
-    padding: 0 20px;
+    align-items: stretch;
+    padding: 0;
+    width: 100%;
   }
 
   .regenerate-btn,
   .confirm-btn {
     width: 100%;
+  }
+
+  .modal-card {
+    min-width: 0;
+    width: calc(100vw - 2rem);
+    max-width: 400px;
+    padding: 24px 20px;
+    box-sizing: border-box;
   }
 }
 
@@ -736,9 +789,10 @@
   font-size: 13px;
   color: #555;
 }
-/* ── Dark mode: readable white text on dark panels ── */
+/* ── Dark mode: layered navy panels + white text ── */
 [data-theme="dark"] .schedule-page {
-  color: #f0f4f8;
+  color: #ffffff;
+  background-color: var(--color-page);
 }
 
 [data-theme="dark"] .preferences-header h2,
@@ -748,8 +802,8 @@
 [data-theme="dark"] .modal-value,
 [data-theme="dark"] .modal-slots-title,
 [data-theme="dark"] .modal-slot-day {
-  color: #f8fafc !important;
-  -webkit-text-fill-color: #f8fafc;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
 }
 
 [data-theme="dark"] .preference-text p,
@@ -758,22 +812,27 @@
 [data-theme="dark"] .modal-label,
 [data-theme="dark"] .modal-slot-time,
 [data-theme="dark"] .modal-close {
-  color: #cbd5e1 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 [data-theme="dark"] .glass-card,
 [data-theme="dark"] .course-select,
 [data-theme="dark"] .schedule-btn-secondary {
-  color: #e2e8f0;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .glass-card {
+  background-color: var(--color-surface);
 }
 
 [data-theme="dark"] .course-select {
-  color: #f0f4f8;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  color: #ffffff;
+  background-color: var(--color-inset);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 
 [data-theme="dark"] .preference-item {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 [data-theme="dark"] .modal-divider {
@@ -781,7 +840,7 @@
 }
 
 [data-theme="dark"] .modal-slot {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-panel);
   border-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -797,38 +856,38 @@
 /* Right "Edit Instructors" panel */
 [data-theme="dark"] .edit-panel h2,
 [data-theme="dark"] .edit-instructor-item label {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .instructor-select {
-  color: #f0f4f8 !important;
-  background-color: #1a2438;
+  color: #ffffff !important;
+  background-color: var(--color-inset);
   border-color: rgba(255, 255, 255, 0.18);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
 }
 
 [data-theme="dark"] .instructor-select option {
-  background: #1a2438;
-  color: #f0f4f8;
+  background: var(--color-inset);
+  color: #ffffff;
 }
 
 [data-theme="dark"] .regenerate-btn {
-  color: #f0f4f8 !important;
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff !important;
+  background: var(--color-panel);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 [data-theme="dark"] .regenerate-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 [data-theme="dark"] .edit-panel-scroll {
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
 }
 
 [data-theme="dark"] .edit-panel-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
 }
 

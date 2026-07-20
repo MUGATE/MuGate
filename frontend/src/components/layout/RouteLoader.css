@@ -1,0 +1,46 @@
+.route-loader {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-page, #0b1220);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.route-loader--compact {
+  min-height: 40vh;
+  background: transparent;
+}
+
+.route-loader-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.12);
+  border-top-color: rgba(120, 180, 140, 0.9);
+  border-radius: 50%;
+  animation: route-loader-spin 0.7s linear infinite;
+}
+
+.route-loader-text {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="light"] .route-loader-spinner {
+  border-color: rgba(0, 0, 0, 0.1);
+  border-top-color: rgba(40, 100, 60, 0.85);
+}
+
+[data-theme="light"] .route-loader-text {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+@keyframes route-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

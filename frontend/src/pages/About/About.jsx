@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NotchedHeroNav from '../../components/layout/NotchedHeroNav';
-import leftImg from '../../assets/Images/left.png';
-import rightImg from '../../assets/Images/right.png';
+import leftImg from '../../assets/images/left.png';
+import rightImg from '../../assets/images/right.png';
 import '../Home/Home.css';
 import './About.css';
 
@@ -163,24 +163,8 @@ const About = () => {
 
 
   return (
-    <div className={`about-page-root ${selectedGuy ? 'focus-mode' : ''}`} style={{ position: 'relative', width: '100%', minHeight: '100vh', background: 'var(--color-page)' }}>
-      {/* ORIGINAL NAVBAR FROM HOME */}
-      <NotchedHeroNav
-        maskFrame={false}
-        rightSlot={
-          <button
-            className="nav-demo-btn-solidroad"
-            onClick={() => navigate('/')}
-          >
-            Back <span className="circle-arrow-icon" style={{ display: "inline-flex", marginLeft: "8px", background: "rgba(255, 255, 255, 0.3)" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-              </svg>
-            </span>
-          </button>
-        }
-      />
+    <div className={`about-page-root ${selectedGuy ? 'focus-mode' : ''}`} style={{ position: 'relative', width: '100%', minHeight: '100dvh', background: 'var(--color-page)' }}>
+      <NotchedHeroNav maskFrame={false} />
 
       <div className="about-container">
         {selectedGuy && <div className="focus-overlay" onClick={() => setSelectedGuy(null)}></div>}

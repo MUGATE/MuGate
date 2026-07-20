@@ -65,7 +65,7 @@ const IdeaCard = ({ idea, isAdmin, onEdit, onDelete, confirmDeleteId, setConfirm
             </span>
           )}
           {idea.faculty && (
-            <span className="cs-idea-faculty" style={{ color: '#5157d9', background: 'rgba(81,87,217,0.06)', padding: '2px 8px', borderRadius: 4 }}>
+            <span className="cs-idea-faculty">
               {idea.faculty}
             </span>
           )}
@@ -75,9 +75,9 @@ const IdeaCard = ({ idea, isAdmin, onEdit, onDelete, confirmDeleteId, setConfirm
       
       {/* Tags list */}
       {idea.tags && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10 }}>
+        <div className="cs-idea-tags">
           {idea.tags.split(',').map((tag, idx) => (
-            <span key={idx} style={{ fontSize: '11px', background: '#f0f2f5', color: '#65676b', padding: '2px 8px', borderRadius: 4 }}>
+            <span key={idx} className="cs-idea-tag">
               {tag.trim()}
             </span>
           ))}
@@ -103,10 +103,10 @@ const IdeaCard = ({ idea, isAdmin, onEdit, onDelete, confirmDeleteId, setConfirm
           textAlign: 'center',
           boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
         }}>
-          <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 600, color: '#1a1a2e' }}>
+          <p style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>
             Are you sure you want to delete this?
           </p>
-          <p style={{ margin: '0 0 12px 0', fontSize: '0.75rem', color: '#666' }}>
+          <p style={{ margin: '0 0 12px 0', fontSize: '0.75rem', color: 'var(--color-text-secondary, #666)' }}>
             {idea.id <= 187 ? "This is a stable default project. You can restore it later." : "This is a custom project. Deletion is permanent."}
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -133,10 +133,10 @@ const IdeaCard = ({ idea, isAdmin, onEdit, onDelete, confirmDeleteId, setConfirm
                 padding: '6px 14px',
                 fontSize: '0.78rem',
                 fontWeight: 500,
-                border: '1px solid #ccc',
+                border: '1px solid var(--color-border)',
                 borderRadius: 6,
-                background: '#fff',
-                color: '#333',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text-secondary)',
                 cursor: 'pointer'
               }}
             >

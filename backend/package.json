@@ -18,6 +18,7 @@
     "@types/pdfkit": "^0.17.5",
     "bcrypt": "^6.0.0",
     "chromadb": "^3.5.0",
+    "compression": "^1.8.1",
     "cors": "^2.8.6",
     "docx": "^9.6.0",
     "dotenv": "^17.3.1",
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
+    "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",

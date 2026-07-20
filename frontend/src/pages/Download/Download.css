@@ -7,12 +7,14 @@
   position: relative;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(ellipse 80% 55% at 85% 10%, rgba(26, 107, 219, 0.12), transparent 55%),
     radial-gradient(ellipse 70% 50% at 5% 90%, rgba(59, 130, 246, 0.08), transparent 50%),
     linear-gradient(165deg, var(--color-bg) 0%, var(--color-page) 42%, var(--color-surface-muted) 100%);
   color: var(--dl-ink);
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .download-hero {
@@ -24,6 +26,7 @@
   margin: 0 auto;
   padding: clamp(5.5rem, 12vh, 7.5rem) 0 clamp(3rem, 6vh, 4.5rem);
   min-height: calc(100vh - 4rem);
+  min-height: calc(100dvh - 4rem);
   box-sizing: border-box;
 }
 
@@ -320,17 +323,53 @@
   }
 }
 
+/* Collapsed NotchedHeroNav (~60px) + Back/profile slot — clear the bar */
+@media (max-width: 768px) {
+  .download-hero {
+    padding-top: calc(4.75rem + env(safe-area-inset-top, 0px));
+    padding-bottom: 2.5rem;
+    gap: 1.75rem;
+    min-height: auto;
+  }
+
+  .download-brand {
+    font-size: clamp(2rem, 9vw, 2.75rem);
+  }
+
+  .download-headline {
+    font-size: clamp(1.2rem, 4.8vw, 1.55rem);
+  }
+
+  .download-apk-btn {
+    min-height: 44px;
+    width: min(100%, 320px);
+    justify-content: center;
+  }
+
+  .download-steps {
+    padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .download-step-body {
+    max-width: none;
+  }
+}
+
 @media (max-width: 480px) {
   .download-device-frame {
     width: min(200px, 62vw);
   }
+
+  .download-hero {
+    padding-top: calc(4.25rem + env(safe-area-inset-top, 0px));
+  }
 }
 
-/* ── Dark mode: lighter app-page copy ── */
+/* ── Dark mode: layered navy surfaces ── */
 [data-theme="dark"] .download-page-root {
-  --dl-ink: #f5f8fc;
-  --dl-ink-soft: #dbe4f0;
-  --dl-surface: #1a2438;
+  --dl-ink: #ffffff;
+  --dl-ink-soft: rgba(255, 255, 255, 0.7);
+  --dl-surface: var(--color-panel);
   --dl-line: rgba(255, 255, 255, 0.14);
 }
 
@@ -338,27 +377,29 @@
 [data-theme="dark"] .download-meta,
 [data-theme="dark"] .download-steps-lede,
 [data-theme="dark"] .download-step-body {
-  color: #c8d4e4 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 
 [data-theme="dark"] .download-brand,
 [data-theme="dark"] .download-headline,
 [data-theme="dark"] .download-steps-title,
 [data-theme="dark"] .download-step-title {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .download-apk-btn {
-  background: #f0f4f8;
-  color: #0a0e17;
+  background: var(--color-panel);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 [data-theme="dark"] .download-step-num {
-  color: #f8fafc;
-  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  background: var(--color-inset);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
-/* Phone screen: pure white in site dark mode */
+/* Phone screen: keep white mockup screen in site dark mode */
 [data-theme="dark"] .download-device-screen {
   background: #ffffff;
 }
@@ -368,6 +409,6 @@
 }
 
 [data-theme="dark"] .download-device-tag {
-  color: #64748b;
+  color: #334155;
 }
 

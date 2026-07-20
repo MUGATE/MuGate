@@ -4,24 +4,19 @@ import "./BottomNavbar.css";
 
 /**
  * Bottom Navigation Bar — Compact fixed navbar at bottom of viewport.
- *
-  *   - Hidden on Page 1 (video hero) and Page 9 (footer)
-  *   - Visible on Pages 2–8 with typewriter text transitions
- *   - Slides up/down with 0.6s ease animation
- *   - Button uses cinematic glassy gradient style
+ * Hidden on the hero (page 1) and footer (page 10); visible on pages 2–9.
+ * Slides away at the footer and returns when scrolling back up into content.
  */
 
 const PAGE_BUTTON_TEXT = {
-    1: null,        // Hidden
     2: "Generate",
     3: "Upload",
     4: "Explore",
     5: "Create",
     6: "Find",
     7: "Discover",
-    8: "Plan",      // RoadMap
+    8: "Plan",
     9: "About",
-    10: null,       // Hidden
 };
 
 const PAGE_ROUTES = {
@@ -30,13 +25,13 @@ const PAGE_ROUTES = {
     4: "/internships",
     5: "/chatbot",
     6: "/capstone",
-    7: "/events",     // Events page
-    8: "/roadmap",    // RoadMap page
+    7: "/events",
+    8: "/roadmap",
     9: "/about",
 };
 
-const TYPEWRITER_SPEED = 35; // ms per letter
-const PAGE_DEBOUNCE_MS = 150; // debounce rapid page flips during scroll
+const TYPEWRITER_SPEED = 35;
+const PAGE_DEBOUNCE_MS = 150;
 
 const BottomNavbar = () => {
     const navigate = useNavigate();
@@ -47,24 +42,25 @@ const BottomNavbar = () => {
 
     const previousPageRef = useRef(1);
     const typewriterCancelRef = useRef(null);
-    const displayedTextRef = useRef(""); // tracks actual text on screen
+    const displayedTextRef = useRef("");
     const debounceTimerRef = useRef(null);
-    const ratioMapRef = useRef({}); // accumulated ratios across callbacks
+    const ratioMapRef = useRef({});
+    const observerRef = useRef(null);
 
-    // Keep displayedTextRef in sync
     const setTextAndTrack = useCallback((text) => {
         displayedTextRef.current = text;
         setButtonText(text);
     }, []);
 
-    // ── Scroll-based page detection via IntersectionObserver ──
-    useEffect(() => {
+    const observeSections = useCallback(() => {
+        const root = document.querySelector(".home-scroll");
         const sections = document.querySelectorAll("[data-page]");
-        if (sections.length === 0) return;
+        if (!root || sections.length === 0) return;
+
+        observerRef.current?.disconnect();
 
         const observer = new IntersectionObserver(
             (entries) => {
-                // Accumulate ratios so we always compare all sections
                 entries.forEach((entry) => {
                     const page = parseInt(entry.target.getAttribute("data-page"), 10);
                     if (!isNaN(page)) {
@@ -72,7 +68,6 @@ const BottomNavbar = () => {
                     }
                 });
 
-                // Pick the section with the highest ratio
                 let bestPage = null;
                 let bestRatio = 0;
                 for (const [page, ratio] of Object.entries(ratioMapRef.current)) {
@@ -83,7 +78,6 @@ const BottomNavbar = () => {
                 }
 
                 if (bestPage && bestRatio > 0.15) {
-                    // Debounce: wait for scroll to settle before committing
                     clearTimeout(debounceTimerRef.current);
                     debounceTimerRef.current = setTimeout(() => {
                         setStablePage(bestPage);
@@ -91,18 +85,50 @@ const BottomNavbar = () => {
                 }
             },
             {
+                root,
                 threshold: [0, 0.2, 0.4, 0.6, 0.8, 1.0],
             }
         );
 
         sections.forEach((section) => observer.observe(section));
-        return () => {
-            observer.disconnect();
-            clearTimeout(debounceTimerRef.current);
-        };
+        observerRef.current = observer;
     }, []);
 
-    // ── Cancel helper ──
+    useEffect(() => {
+        observeSections();
+
+        const root = document.querySelector(".home-scroll");
+        if (!root) {
+            return () => {
+                observerRef.current?.disconnect();
+                clearTimeout(debounceTimerRef.current);
+            };
+        }
+
+        // Near the top → hero (page 1) → button stays hidden
+        const onScroll = () => {
+            if (root.scrollTop < 48) {
+                clearTimeout(debounceTimerRef.current);
+                setStablePage(1);
+            }
+        };
+        root.addEventListener("scroll", onScroll, { passive: true });
+        onScroll();
+
+        let mo;
+        if (typeof MutationObserver !== "undefined") {
+            mo = new MutationObserver(() => observeSections());
+            mo.observe(root, { childList: true, subtree: true });
+        }
+
+        return () => {
+            root.removeEventListener("scroll", onScroll);
+            mo?.disconnect();
+            observerRef.current?.disconnect();
+            clearTimeout(debounceTimerRef.current);
+        };
+    }, [observeSections]);
+
     const cancelTypewriter = useCallback(() => {
         if (typewriterCancelRef.current) {
             typewriterCancelRef.current.cancelled = true;
@@ -110,17 +136,11 @@ const BottomNavbar = () => {
         setIsAnimatingText(false);
     }, []);
 
-    // ── Typewriter animation helper ──
     const typewriterTransition = useCallback((newText) => {
-        // Cancel any in-progress animation
         cancelTypewriter();
 
         const currentDisplayed = displayedTextRef.current;
-
-        // If already showing the target text, nothing to do
-        if (currentDisplayed === newText) {
-            return;
-        }
+        if (currentDisplayed === newText) return;
 
         const token = { cancelled: false };
         typewriterCancelRef.current = token;
@@ -132,7 +152,6 @@ const BottomNavbar = () => {
             });
 
         (async () => {
-            // Phase 1: Delete current displayed text
             if (currentDisplayed) {
                 for (let i = currentDisplayed.length; i >= 0; i--) {
                     if (token.cancelled) return;
@@ -141,7 +160,6 @@ const BottomNavbar = () => {
                 }
             }
 
-            // Phase 2: Type new text
             if (newText) {
                 for (let i = 0; i <= newText.length; i++) {
                     if (token.cancelled) return;
@@ -156,30 +174,26 @@ const BottomNavbar = () => {
         })();
     }, [cancelTypewriter, setTextAndTrack]);
 
-    // ── React to page changes ──
     useEffect(() => {
         const prevPage = previousPageRef.current;
-
         if (stablePage === prevPage) return;
 
-                const shouldShow = stablePage >= 2 && stablePage <= 9;
-                const wasShown = prevPage >= 2 && prevPage <= 9;
+        const shouldShow = stablePage >= 2 && stablePage <= 9;
+        const wasShown = prevPage >= 2 && prevPage <= 9;
 
         if (shouldShow) {
             const newText = PAGE_BUTTON_TEXT[stablePage] || "";
-
             if (!wasShown) {
-                // Navbar appearing: set text instantly, no typewriter
+                // Appearing from hero or footer: set label instantly
                 cancelTypewriter();
                 setTextAndTrack(newText);
                 setIsVisible(true);
             } else {
-                // Navbar already visible: typewriter transition
                 setIsVisible(true);
                 typewriterTransition(newText);
             }
         } else {
-            // Hide navbar (page 1 or 7)
+            // Hero (1) or footer (10): slide away
             setIsVisible(false);
             cancelTypewriter();
         }

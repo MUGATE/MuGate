@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import NotchedHeroNav from "../../components/layout/NotchedHeroNav";
 import logo from "../Home/assets/Images/mugate-logo-3d.png";
 import "../Home/Home.css";
 import "./Download.css";
 
-const APK_PATH = "/downloads/mugate.apk";
+const APK_PATH = (import.meta.env.VITE_APK_URL || "").trim();
 const APK_FILENAME = "MuGate-1.0.0.apk";
 const APP_VERSION = "1.0.0";
 
@@ -30,10 +29,14 @@ const INSTALL_STEPS = [
 ];
 
 const Download = () => {
-  const navigate = useNavigate();
   const [apkReady, setApkReady] = useState(null); // null = checking, true/false
 
   useEffect(() => {
+    if (!APK_PATH) {
+      setApkReady(false);
+      return undefined;
+    }
+
     let cancelled = false;
     fetch(APK_PATH, { method: "HEAD" })
       .then((res) => {
@@ -49,40 +52,7 @@ const Download = () => {
 
   return (
     <div className="download-page-root">
-      <NotchedHeroNav
-        maskFrame={false}
-        rightSlot={
-          <button
-            type="button"
-            className="nav-demo-btn-solidroad"
-            onClick={() => navigate("/")}
-          >
-            Back{" "}
-            <span
-              className="circle-arrow-icon"
-              style={{
-                display: "inline-flex",
-                marginLeft: "8px",
-                background: "rgba(255, 255, 255, 0.3)",
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="19" y1="12" x2="5" y2="12" />
-                <polyline points="12 19 5 12 12 5" />
-              </svg>
-            </span>
-          </button>
-        }
-      />
+      <NotchedHeroNav maskFrame={false} />
 
       <main className="download-hero">
         <div className="download-hero-copy">

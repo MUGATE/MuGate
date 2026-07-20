@@ -27,6 +27,7 @@ import {
 } from '../../api/capstoneApi';
 import { Button } from '../../components/Button';
 import { Screen } from '../../components/Screen';
+import { SignInGate } from '../../components/SignInGate';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { RootStackParamList } from '../../navigation/types';
@@ -246,6 +247,7 @@ export function CapstoneScreen() {
   };
 
   const loadPartners = async () => {
+    if (!isAuthenticated) return;
     setLoading(true);
     try {
       setPartners((await getPartners(search)) as CapstonePartner[]);
@@ -255,6 +257,10 @@ export function CapstoneScreen() {
   };
 
   const askAI = async () => {
+    if (!isAuthenticated) {
+      rootNav.navigate('Login');
+      return;
+    }
     const text = aiMessage.trim();
     if (!text || aiLoading) return;
 
@@ -371,7 +377,7 @@ export function CapstoneScreen() {
             onPress={() => {
               setTab(t);
               if (t === 'ideas') loadIdeas();
-              if (t === 'partners') loadPartners();
+              if (t === 'partners' && isAuthenticated) loadPartners();
             }}
           >
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
@@ -381,7 +387,17 @@ export function CapstoneScreen() {
         ))}
       </View>
 
-      {tab !== 'ai' ? (
+      {tab === 'partners' && !isAuthenticated ? (
+        <SignInGate
+          message="Sign in to browse and list capstone partners."
+          wrapScreen={false}
+        />
+      ) : tab === 'ai' && !isAuthenticated ? (
+        <SignInGate
+          message="Sign in to use the capstone AI advisor."
+          wrapScreen={false}
+        />
+      ) : tab !== 'ai' ? (
         <>
           {tab === 'partners' ? (
             <Button

@@ -9,10 +9,33 @@
 
 export const CREDIT_CAP = 17;
 
+export const REMEDIAL_CATEGORY = 'Remedial';
+
+/** Live sum of credits for courses tagged as Remedial (extra, not in the degree plan). */
+export function sumRemedialCredits(
+  courses: { category?: string; credits?: number }[]
+): number {
+  if (!Array.isArray(courses)) return 0;
+  return courses.reduce((sum, c) => {
+    if (c.category !== REMEDIAL_CATEGORY) return sum;
+    return sum + (Number(c.credits) || 0);
+  }, 0);
+}
+
 const SEMESTER_ORDER: Record<string, number> = { Fall: 0, Spring: 1, Summer: 2 };
+
+export function normalizeCode(code: string): string {
+  return String(code || '').trim().toUpperCase();
+}
 
 /** Course code -> list of course codes that must come in an earlier semester. */
 export const PREREQS: Record<string, string[]> = {
+  // Remedial English placement sequence (lvl0 → lvl1 → lvl2)
+  'ENG 051': ['ENG 000'],
+  'ENG 100': ['ENG 051'],
+  // Remedial math / Arabic (only enforced when those remediials are on the plan)
+  'MAT 213': ['MAT 102'],
+  'ARB 201': ['ABR 200'],
   'ENG 202': ['ENG 201'],
   'ENG 204': ['ENG 202'],
   'CST 201': ['CST 200'],
@@ -78,19 +101,23 @@ export function checkPlacement(
   }
 
   // 2) Prerequisites already in the plan must sit in an earlier semester.
-  for (const prereq of PREREQS[target.courseCode] ?? []) {
-    const planned = courses.find((c) => c.courseCode === prereq && c._key !== excludeKey);
+  const targetCode = normalizeCode(target.courseCode);
+  for (const prereq of PREREQS[targetCode] ?? []) {
+    const planned = courses.find(
+      (c) => normalizeCode(c.courseCode) === prereq && c._key !== excludeKey
+    );
     if (planned && slotOrder(planned.year, planned.semester) >= order) {
-      return `${target.courseCode} requires ${prereq} to be taken in an earlier semester.`;
+      return `${targetCode} requires ${prereq} to be taken in an earlier semester.`;
     }
   }
 
   // 3) Courses that depend on this one must stay in a later semester.
   for (const dependent of courses) {
     if (dependent._key === excludeKey) continue;
-    const deps = PREREQS[dependent.courseCode] ?? [];
-    if (deps.includes(target.courseCode) && slotOrder(dependent.year, dependent.semester) <= order) {
-      return `${dependent.courseCode} depends on ${target.courseCode}; keep it in an earlier semester.`;
+    const depCode = normalizeCode(dependent.courseCode);
+    const deps = PREREQS[depCode] ?? [];
+    if (deps.includes(targetCode) && slotOrder(dependent.year, dependent.semester) <= order) {
+      return `${depCode} depends on ${targetCode}; keep ${targetCode} in an earlier semester.`;
     }
   }
 

@@ -188,23 +188,62 @@
 .re-editor-doc-paper {
   width: 100%;
   max-width: 760px;
-  background: var(--color-surface);
-  color: var(--color-text);
+  /* CV paper always stays light-theme regardless of app theme */
+  background: #ffffff !important;
+  color: #0f172a !important;
   border-radius: 6px;
   box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
   border: 1px solid rgba(120, 140, 170, 0.18);
   padding: 48px 54px;
 }
 
+.re-editor-doc-paper .re-doc-name,
+.re-editor-doc-paper .re-doc-section-title,
+.re-editor-doc-paper .re-doc-org,
+.re-editor-doc-paper .re-doc-line,
+.re-editor-doc-paper .re-doc-body,
+.re-editor-doc-paper .re-doc-bullet,
+.re-editor-doc-paper .re-doc-role,
+.re-editor-doc-paper .re-doc-skill-label {
+  color: #0f172a !important;
+}
+
+.re-editor-doc-paper .re-doc-contact,
+.re-editor-doc-paper .re-doc-meta {
+  color: #374151 !important;
+}
+
+.re-editor-doc-paper .re-edit-input {
+  background: rgba(74, 144, 217, 0.06) !important;
+  color: #0f172a !important;
+  border: 1px solid transparent !important;
+}
+
+.re-editor-doc-paper .re-edit-input:hover {
+  background: rgba(74, 144, 217, 0.12) !important;
+}
+
+.re-editor-doc-paper .re-edit-input:focus {
+  outline: none;
+  border-color: #4a90d9 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  color: #0f172a !important;
+}
+
+.re-editor-doc-paper .re-edit-input::placeholder {
+  color: rgba(15, 23, 42, 0.4) !important;
+}
+
 /* Document typography (resembles the generated PDF) */
 .re-doc { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.45; }
 .re-doc-head { text-align: center; margin-bottom: 10px; }
-.re-doc-name { font-size: 26px; font-weight: 700; margin: 0; color: var(--color-text); }
+.re-doc-name { font-size: 26px; font-weight: 700; margin: 0; color: #0f172a; }
 .re-doc-name-lg { font-size: 30px; }
 .re-doc-contact { font-size: 12px; color: #374151; margin-top: 4px; }
 .re-doc-contact-edit { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 6px; }
 .re-doc-section { margin-top: 14px; }
-.re-doc-section-title { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; margin: 0; color: var(--color-text); }
+.re-doc-section-title { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; margin: 0; color: #0f172a; }
 .re-doc-hr { height: 1px; background: #111827; margin: 3px 0 7px; }
 .re-doc-entry { position: relative; margin-bottom: 10px; }
 .re-doc-entry-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
@@ -229,7 +268,7 @@
   box-sizing: border-box;
 }
 .re-edit-input:hover { background: rgba(74, 144, 217, 0.12); }
-.re-edit-input:focus { outline: none; border-color: #4a90d9; background: var(--color-surface); }
+.re-edit-input:focus { outline: none; border-color: #4a90d9; background: #ffffff; }
 .re-edit-textarea { resize: none; overflow: hidden; display: block; }
 .re-doc-contact-edit .re-edit-input { width: auto; min-width: 120px; text-align: center; font-size: 12px; }
 .re-doc-meta .re-edit-input { width: auto; min-width: 70px; text-align: right; }

@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import NotchedHeroNav from "../../components/layout/NotchedHeroNav";
 import { UserPlus, Trash2, Shield, Activity, RefreshCw, Database, Globe, Zap } from "lucide-react";
 import * as adminApi from "../../services/adminApi";
@@ -16,6 +16,8 @@ const broadcast = () => {
   } catch { /* BroadcastChannel unsupported — cross-tab sync skipped */ }
 };
 
+const POLL_MS = 20000;
+
 const AdminControl = () => {
   const navigate = useNavigate();
   const [admins, setAdmins] = useState([]);
@@ -29,6 +31,8 @@ const AdminControl = () => {
   const [scraperRuns, setScraperRuns] = useState([]);
   const [kbLoading, setKbLoading] = useState(false);
   const [kbMessage, setKbMessage] = useState("");
+  const [kbError, setKbError] = useState("");
+  const kbInitialLoad = useRef(true);
 
   // Live admin status — starts null (checking), then true/false
   const [isAdmin, setIsAdmin] = useState(null);
@@ -41,7 +45,6 @@ const AdminControl = () => {
   })();
   const currentUniversityId = jwtPayload ? String(jwtPayload.universityId || "") : "";
 
-  // Sort admins to put current logged in user (You) first
   const sortedAdmins = useMemo(() => {
     return [...admins].sort((a, b) => {
       const aSelf = String(a.universityId) === String(currentUniversityId);
@@ -52,69 +55,94 @@ const AdminControl = () => {
     });
   }, [admins, currentUniversityId]);
 
-  // ── Data loader ──────────────────────────────────────────────────────────────
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const loadData = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const adminList = await adminApi.getAdmins();
       setAdmins(adminList);
+      if (silent) setError("");
     } catch (err) {
       setError(err.message || "Failed to load admin management data.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
-  const loadKbData = useCallback(async () => {
-    setKbLoading(true);
+  const loadKbData = useCallback(async ({ silent = false } = {}) => {
+    const showSpinner = !silent && kbInitialLoad.current;
+    if (showSpinner) setKbLoading(true);
     try {
-      const [stats, status, runs] = await Promise.all([
+      const results = await Promise.allSettled([
         scraperApi.getKbStats(),
         scraperApi.getScraperStatus(),
         scraperApi.getScraperRuns(5),
       ]);
-      setKbStats(stats);
-      setScraperRunning(status.running);
-      setScraperRuns(runs || []);
+
+      const [statsResult, statusResult, runsResult] = results;
+      let anyOk = false;
+
+      if (statsResult.status === "fulfilled") {
+        setKbStats(statsResult.value);
+        anyOk = true;
+      }
+      if (statusResult.status === "fulfilled") {
+        setScraperRunning(Boolean(statusResult.value?.running));
+        anyOk = true;
+      }
+      if (runsResult.status === "fulfilled") {
+        setScraperRuns(runsResult.value || []);
+        anyOk = true;
+      }
+
+      const failures = results.filter((r) => r.status === "rejected");
+      if (failures.length === results.length) {
+        setKbError(failures[0].reason?.message || "Failed to load knowledge base stats.");
+      } else if (anyOk) {
+        setKbError("");
+      } else if (failures.length > 0) {
+        setKbError(failures[0].reason?.message || "Some knowledge base stats failed to load.");
+      }
     } catch (err) {
-      setKbMessage(err.message || "Failed to load knowledge base stats.");
+      setKbError(err.message || "Failed to load knowledge base stats.");
     } finally {
-      setKbLoading(false);
+      if (showSpinner) setKbLoading(false);
+      kbInitialLoad.current = false;
     }
   }, []);
 
-  // ── Effect 1: Verify admin status via live DB call on mount ──────────────────
   useEffect(() => {
-    if (!token) { navigate("/"); return; }
+    if (!token) { navigate("/?auth=login"); return; }
 
     adminApi.checkMyAdminStatus()
       .then(status => {
-        if (!status) { navigate("/"); return; }
+        if (!status) { navigate("/?auth=admin"); return; }
         setIsAdmin(true);
       })
-      .catch(() => navigate("/"));
+      .catch(() => navigate("/?auth=admin"));
   }, [token, navigate]);
 
-  // ── Effect 2: Load data + poll every 5 s once admin is confirmed ─────────────
   useEffect(() => {
     if (!isAdmin) return;
-    loadData();
-    loadKbData();
-    const interval = setInterval(() => { loadData(); loadKbData(); }, 5000);
+    loadData({ silent: false });
+    loadKbData({ silent: false });
+    const interval = setInterval(() => {
+      loadData({ silent: true });
+      loadKbData({ silent: true });
+    }, POLL_MS);
     return () => clearInterval(interval);
   }, [isAdmin, loadData, loadKbData]);
 
-  // ── Effect 3: BroadcastChannel — receive admin changes from other tabs ────────
   useEffect(() => {
     try {
       const channel = new BroadcastChannel("mugate_admin_updates");
-      channel.onmessage = () => loadData();
+      channel.onmessage = () => loadData({ silent: true });
       return () => channel.close();
     } catch { /* BroadcastChannel unsupported — cross-tab sync skipped */ }
   }, [loadData]);
 
-  // ── Handlers ─────────────────────────────────────────────────────────────────
   const handleAddAdmin = async () => {
     const trimmedId = newAdminId.trim();
     if (!trimmedId) {
@@ -127,7 +155,7 @@ const AdminControl = () => {
       await adminApi.addAdmin(trimmedId);
       setSuccess("Administrator privilege granted successfully.");
       setNewAdminId("");
-      await loadData();
+      await loadData({ silent: false });
       broadcast();
     } catch (err) {
       setError(err.message || "Failed to add administrator.");
@@ -151,7 +179,7 @@ const AdminControl = () => {
     try {
       await adminApi.removeAdmin(universityId);
       setSuccess("Administrator privilege revoked successfully.");
-      await loadData();
+      await loadData({ silent: false });
       broadcast();
     } catch (err) {
       setError(err.message || "Failed to revoke administrator privilege.");
@@ -160,6 +188,7 @@ const AdminControl = () => {
 
   const handleKbAction = async (action) => {
     setKbMessage("");
+    setKbError("");
     setError("");
     try {
       if (action === "crawl") await scraperApi.startFullCrawl();
@@ -171,13 +200,26 @@ const AdminControl = () => {
       else if (action === "reindex") await scraperApi.reindexVectors();
       else if (action === "sitemap") await scraperApi.refreshSitemap();
       setKbMessage(`Action "${action}" started successfully.`);
-      await loadKbData();
+      await loadKbData({ silent: true });
     } catch (err) {
-      setKbMessage(err.message || `Failed to run ${action}.`);
+      setKbError(err.message || `Failed to run ${action}.`);
     }
   };
 
-  // ── Gate: show spinner while verifying access ────────────────────────────────
+  const handleManualRefresh = () => {
+    loadData({ silent: false });
+    loadKbData({ silent: false });
+  };
+
+  const formatLastScraped = (value) => {
+    if (!value) return "—";
+    try {
+      return new Date(value).toLocaleString();
+    } catch {
+      return "—";
+    }
+  };
+
   if (isAdmin === null) {
     return (
       <div className="admin-ctrl-container admin-ctrl-gate">
@@ -189,10 +231,8 @@ const AdminControl = () => {
     );
   }
 
-  // ── Main render ──────────────────────────────────────────────────────────────
   return (
     <div className="admin-ctrl-container">
-      {/* NAVBAR */}
       <div className="admin-ctrl-nav-wrap">
         <NotchedHeroNav
           maskFrame={false}
@@ -216,13 +256,12 @@ const AdminControl = () => {
       <div className="admin-ctrl-glow-right" />
 
       <div className="admin-ctrl-card">
-        {/* Header */}
         <div className="admin-ctrl-header">
           <div className="admin-ctrl-title-group">
             <Shield className="admin-ctrl-shield-icon" size={28} />
             <h1 className="admin-ctrl-title">Control Panel</h1>
           </div>
-          <button onClick={loadData} className="admin-ctrl-refresh-btn" title="Refresh Activity">
+          <button onClick={handleManualRefresh} className="admin-ctrl-refresh-btn" title="Refresh Activity">
             <RefreshCw size={18} className={loading ? "spin" : ""} />
           </button>
         </div>
@@ -230,7 +269,6 @@ const AdminControl = () => {
         {error && <div className="admin-ctrl-alert error">{error}</div>}
         {success && <div className="admin-ctrl-alert success">{success}</div>}
 
-        {/* Add Admin */}
         <div className="admin-ctrl-section add-admin-section">
           <h2 className="admin-ctrl-subtitle">
             <UserPlus size={18} style={{ marginRight: 8, verticalAlign: "middle" }} />
@@ -253,22 +291,26 @@ const AdminControl = () => {
           </div>
         </div>
 
-        {/* Knowledge Base */}
         <div className="admin-ctrl-section">
           <h2 className="admin-ctrl-subtitle">
             <Database size={18} style={{ marginRight: 8, verticalAlign: "middle" }} />
             MuChat Knowledge Base
             {scraperRunning && <span className="badge-self" style={{ marginLeft: 8 }}>Crawling...</span>}
           </h2>
+          {kbError && <div className="admin-ctrl-alert error">{kbError}</div>}
           {kbMessage && <div className="admin-ctrl-alert success">{kbMessage}</div>}
           {kbLoading && !kbStats ? (
             <div className="admin-ctrl-loading"><div className="spinner" /><p>Loading KB stats...</p></div>
-          ) : kbStats && (
+          ) : (
             <div className="admin-kb-stats">
-              <div className="admin-kb-stat"><strong>{kbStats.activePages}</strong><span>Active Pages</span></div>
-              <div className="admin-kb-stat"><strong>{kbStats.totalChunks}</strong><span>SQL Chunks</span></div>
-              <div className="admin-kb-stat"><strong>{kbStats.chromaChunks ?? 0}</strong><span>Vector Chunks</span></div>
-              <div className="admin-kb-stat"><strong>{kbStats.unsyncedChunks ?? 0}</strong><span>Unsynced</span></div>
+              <div className="admin-kb-stat">
+                <strong>{kbStats?.chromaChunks ?? 0}</strong>
+                <span>Vector Chunks</span>
+              </div>
+              <div className="admin-kb-stat">
+                <strong style={{ fontSize: "0.85rem" }}>{formatLastScraped(kbStats?.lastScrapedAt)}</strong>
+                <span>Last Scraped</span>
+              </div>
             </div>
           )}
           <div className="admin-kb-actions">
@@ -281,7 +323,7 @@ const AdminControl = () => {
             <button onClick={() => handleKbAction("reindex")} className="admin-ctrl-submit-btn">
               <Zap size={14} /> Reindex Vectors
             </button>
-            <button onClick={() => handleKbAction("sitemap")} className="admin-ctrl-submit-btn">
+            <button onClick={() => handleKbAction("sitemap")} disabled={scraperRunning} className="admin-ctrl-submit-btn">
               Sitemap Refresh
             </button>
             <button onClick={() => handleKbAction("rescrape")} disabled={scraperRunning} className="admin-demote-btn" style={{ padding: "8px 16px" }}>
@@ -314,7 +356,6 @@ const AdminControl = () => {
           )}
         </div>
 
-        {/* Admin List */}
         <div className="admin-ctrl-section admin-list-section">
           <h2 className="admin-ctrl-subtitle">
             <Activity size={18} style={{ marginRight: 8, verticalAlign: "middle" }} />

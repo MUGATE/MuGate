@@ -1,9 +1,15 @@
 .profile-page {
+  --profile-panel-bg: var(--color-panel);
+  --profile-inset-bg: var(--color-inset);
   min-height: 100vh;
-  padding: 12px 0 30px;
+  min-height: 100dvh;
+  padding: 0 0 30px;
   font-family: Inter, -apple-system, "SF Pro Display", sans-serif;
-  background: var(--color-bg);
+  background: var(--color-page);
   color: var(--color-text);
+  position: relative;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .profile-hero-frame {
@@ -14,12 +20,16 @@
   width: min(560px, calc(100% - 2 * var(--page-gutter)));
   margin-inline: auto;
   padding-inline: var(--page-gutter);
-  background: var(--color-surface);
+  background: var(--color-glass-solid);
   border: 1px solid var(--color-border);
-  border-radius: 18px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 24px;
   padding: 28px 24px;
-  box-shadow: 0 14px 36px var(--color-shadow);
+  box-shadow: 0 20px 40px -15px var(--color-shadow), 0 0 0 1px var(--color-border);
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
 
 .profile-main-card {
@@ -27,9 +37,9 @@
 }
 
 .profile-user-card {
-  background: var(--color-surface-muted);
+  background: var(--profile-panel-bg);
   border: 1px solid var(--color-border-strong);
-  border-radius: 14px;
+  border-radius: 18px;
   padding: 22px 18px;
   margin-bottom: 18px;
   text-align: center;
@@ -78,9 +88,9 @@
   align-items: center;
   gap: 16px;
   border: 1px solid var(--color-border-strong);
-  border-radius: 12px;
+  border-radius: 18px;
   padding: 14px;
-  background: var(--color-surface-muted);
+  background: var(--profile-panel-bg);
 }
 
 .profile-theme-title {
@@ -118,7 +128,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--color-surface);
+  background: var(--profile-inset-bg);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
   transition: transform 0.2s ease;
 }
@@ -136,16 +146,19 @@
   color: var(--color-primary-dark);
   font-weight: 700;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   background: rgba(29, 78, 216, 0.08);
+  border: 1px solid transparent;
 }
 
 [data-theme="dark"] .profile-admin-entry {
-  background: rgba(59, 130, 246, 0.15);
+  background: var(--profile-inset-bg);
+  border-color: var(--color-border-strong);
   color: var(--color-accent);
 }
 
-.profile-logout-btn {
+.profile-logout-btn,
+.profile-login-btn {
   margin-top: 22px;
   width: 100%;
   border: none;
@@ -154,12 +167,67 @@
   font-size: 15px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-logout-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25);
 }
 
-.profile-logout-btn:hover {
+.profile-login-btn {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong, var(--color-accent)));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+.profile-logout-btn:hover,
+.profile-login-btn:hover {
   transform: translateY(-1px);
+}
+
+/* Collapsed nav (~60px) + Back rightSlot — tighter top offset & card padding */
+@media (max-width: 768px) {
+  .profile-page {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .profile-hero-frame {
+    margin-bottom: 12px;
+  }
+
+  .profile-main-card {
+    margin-top: 72px;
+  }
+
+  .profile-card {
+    width: min(560px, calc(100% - 2 * var(--page-gutter, 16px)));
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+
+  .profile-user-card {
+    padding: 18px 14px;
+    margin-bottom: 14px;
+  }
+
+  .profile-card h1 {
+    font-size: 22px;
+    word-break: break-word;
+  }
+
+  .profile-theme-row {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  /* Keep Back rightSlot usable beside brand on narrow bars */
+  .profile-page .nav-demo-btn-solidroad {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
 }

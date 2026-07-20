@@ -1,6 +1,5 @@
 import { apiFetch } from './client';
 import {
-  getAnonSessionIds,
   getToken,
   removeAnonSessionId,
   storeAnonSessionId,
@@ -39,15 +38,8 @@ export async function createSession(
 
 export async function getSessions(): Promise<ChatSession[]> {
   const token = await getToken();
-  if (token) {
-    const data = await apiFetch<{ sessions: ChatSession[] }>('/chatbot/sessions');
-    return data.sessions ?? [];
-  }
-  const anonIds = await getAnonSessionIds();
-  if (anonIds.length === 0) return [];
-  const data = await apiFetch<{ sessions: ChatSession[] }>(
-    `/chatbot/sessions?ids=${anonIds.join(',')}`
-  );
+  if (!token) return [];
+  const data = await apiFetch<{ sessions: ChatSession[] }>('/chatbot/sessions');
   return data.sessions ?? [];
 }
 

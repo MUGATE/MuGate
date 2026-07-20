@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./ResumeAnalyzer.css";
-import resumeImg from "../assets/Images/Cv/Abed Resume.png";
+import resumeImg from "../assets/Images/Cv/Abed Resume.webp";
+import resumeAvif from "../assets/Images/Cv/Abed Resume.avif";
+import Picture from "./Picture";
 
 /**
  * Animated counter hook — counts from 0 to target over duration ms.
@@ -55,8 +57,9 @@ const ResumeAnalyzer = (props) => {
                 {/* LEFT: Glassy CV Container */}
                 <div className="resume-cv-container">
                     <div className="resume-cv-glass">
-                        <img
-                            src={resumeImg}
+                        <Picture
+                            webp={resumeImg}
+                            avif={resumeAvif}
                             alt="Sample resume preview"
                             className="resume-cv-image"
                             loading="lazy"

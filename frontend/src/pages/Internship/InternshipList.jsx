@@ -1,13 +1,22 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { lazy, Suspense, useState, useCallback, useEffect } from 'react';
 import { Mail, Phone, Globe, X, LayoutGrid, Star, LogIn, Plus } from 'lucide-react';
 import { companyData } from '../../data/companies';
 import * as internshipApi from '../../services/internshipApi';
-import SceneEffect from './components/SceneEffect';
 import GlassButton from './components/GlassButton';
 import CompanyModal from './components/CompanyModal';
 import ExploreAllModal from './components/ExploreAllModal';
+import NotchedHeroNav from '../../components/layout/NotchedHeroNav';
+import '../Home/Home.css';
 import './hero.css';
+
+const SceneEffect = lazy(() => import('./components/SceneEffect'));
+
+const ScenePlaceholder = () => (
+  <div className="scene-canvas-wrapper scene-canvas-placeholder" aria-hidden="true">
+    <div className="scene-placeholder-glow" />
+    <div className="scene-placeholder-hint">Loading 3D scene…</div>
+  </div>
+);
 
 import TouchLogo from './Logos/touch.png';
 import YoubeeLogo from './Logos/Youbee ai.png';
@@ -131,7 +140,7 @@ const InternshipList = () => {
   const token = localStorage.getItem('mugate_token');
   const isLoggedIn = !!token;
 
-  // Decode JWT to get current userId + name (for ownership check + avatar)
+  // Decode JWT to get current userId (for ownership check)
   const jwtPayload = (() => {
     if (!token) return null;
     try {
@@ -139,7 +148,6 @@ const InternshipList = () => {
     } catch { return null; }
   })();
   const currentUserId = jwtPayload ? String(jwtPayload.userId || '') : null;
-  const currentUserName = jwtPayload?.name || jwtPayload?.email?.split('@')[0] || '';
 
   const isAdmin = (() => {
     if (jwtPayload && jwtPayload.isAdmin === true) return true;
@@ -153,7 +161,7 @@ const InternshipList = () => {
     return false;
   })();
 
-  const [sceneReady, setSceneReady] = useState(false);
+  const handleSceneReady = useCallback(() => {}, []);
 
   const fetchCompanies = async () => {
     try {
@@ -289,15 +297,6 @@ const InternshipList = () => {
       .catch((err) => console.error('Failed to load company stats:', err));
   }, []);
 
-  // Soft re-sync after the 3D scene mounts (avoids racing the first paint).
-  useEffect(() => {
-    if (!sceneReady) return undefined;
-    const timer = window.setTimeout(() => {
-      fetchCompanies();
-    }, 600);
-    return () => window.clearTimeout(timer);
-  }, [sceneReady]);
-
   // ── Load reviews when a company is selected (by API company id) ──
   useEffect(() => {
     if (!selectedExploreCompany?.id) return undefined;
@@ -417,37 +416,20 @@ const InternshipList = () => {
 
   return (
     <div className="hero-container">
-      {/* ── 3D SCENE ── */}
-      <SceneEffect
-        activeIndex={activeIndex}
-        onLogoClick={handleLogoClick}
-        companies={companies}
-        onReady={() => setSceneReady(true)}
-      />
+      {/* ── 3D SCENE (lazy: Three.js loads after page shell) ── */}
+      <Suspense fallback={<ScenePlaceholder />}>
+        <SceneEffect
+          activeIndex={activeIndex}
+          onLogoClick={handleLogoClick}
+          companies={companies}
+          onReady={handleSceneReady}
+        />
+      </Suspense>
 
       {/* ── NAVBAR ── */}
-      <header className="hero-header">
-        <nav className="hero-nav" aria-label="Main navigation">
-          <div className="hero-nav-inner">
-            <RouterLink to="/" className="hero-nav-link">Home</RouterLink>
-            <RouterLink to="/internships" className="hero-nav-link active">Internships</RouterLink>
-            <RouterLink to="/resume-enhancer" className="hero-nav-link">Resume</RouterLink>
-            <RouterLink to="/chatbot" className="hero-nav-link">Chatbot</RouterLink>
-            <RouterLink to="/schedule" className="hero-nav-link">Scheduler</RouterLink>
-            <RouterLink to="/capstone" className="hero-nav-link">Capstone</RouterLink>
-            <RouterLink to="/events" className="hero-nav-link">Events</RouterLink>
-            <RouterLink to="/roadmap" className="hero-nav-link">RoadMap</RouterLink>
-            <RouterLink to="/download" className="hero-nav-link">App</RouterLink>
-            <RouterLink to="/about" className="hero-nav-link">About</RouterLink>
-          </div>
-        </nav>
-        <RouterLink to="/profile" className="hero-avatar" aria-label="Open profile page">
-          <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(isLoggedIn && currentUserName ? currentUserName.charAt(0) : 'G')}&background=e0e8f0&color=6080a0&font-size=0.5&bold=true&size=64`}
-            alt="Profile"
-          />
-        </RouterLink>
-      </header>
+      <div className="hero-nav-wrap">
+        <NotchedHeroNav maskFrame={false} />
+      </div>
 
       <button
         type="button"
@@ -468,7 +450,7 @@ const InternshipList = () => {
           className="hero-explore-all-btn hero-add-company-btn"
           onClick={() => handleOpenCompanyModal(null)}
         >
-          <Plus size={16} style={{ color: '#000000', strokeWidth: 3, marginRight: 4 }} />
+          <Plus size={16} style={{ strokeWidth: 3, marginRight: 4 }} />
           Add Company
         </button>
       )}

@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Dimensions,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -26,6 +28,24 @@ export function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return undefined;
+    const baselineHeight = Dimensions.get('window').height;
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      const kb = e.endCoordinates?.height ?? 0;
+      const shrunk = Math.max(0, baselineHeight - Dimensions.get('window').height);
+      setAndroidKeyboardHeight(shrunk < kb * 0.5 ? Math.max(0, kb - shrunk) : 0);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setAndroidKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const handleLogin = async () => {
     setError('');
@@ -48,7 +68,7 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <Screen header>
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={[styles.flex, androidKeyboardHeight > 0 && { paddingBottom: androidKeyboardHeight }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">

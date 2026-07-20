@@ -259,7 +259,7 @@ export class KnowledgeRepository {
             const pagesResult = await pool.request().query(`
                 SELECT 
                     COUNT(*) as totalPages,
-                    SUM(CAST(isActive AS INT)) as activePages
+                    COALESCE(SUM(CAST(isActive AS INT)), 0) as activePages
                 FROM KnowledgePages
             `);
 
@@ -280,11 +280,11 @@ export class KnowledgeRepository {
             );
 
             return {
-                totalPages: pagesResult.recordset[0].totalPages,
-                activePages: pagesResult.recordset[0].activePages,
-                totalChunks: chunksResult.recordset[0].totalChunks,
-                categoryBreakdown: categoryResult.recordset,
-                lastScrapedAt: lastScraped.recordset[0].lastScrapedAt,
+                totalPages: Number(pagesResult.recordset[0].totalPages) || 0,
+                activePages: Number(pagesResult.recordset[0].activePages) || 0,
+                totalChunks: Number(chunksResult.recordset[0].totalChunks) || 0,
+                categoryBreakdown: categoryResult.recordset || [],
+                lastScrapedAt: lastScraped.recordset[0].lastScrapedAt || null,
             };
         } catch (error: any) {
             logger.error(`Failed to get KB stats: ${error.message}`);
@@ -331,7 +331,7 @@ export class KnowledgeRepository {
     /**
      * Create a new scraper run log entry
      */
-    static async createScraperRun(runType: "full" | "incremental" | "full_rescrape", baseUrl: string): Promise<string> {
+    static async createScraperRun(runType: "full" | "incremental" | "full_rescrape" | "sitemap", baseUrl: string): Promise<string> {
         const result = await pool.request()
             .input("runType", runType)
             .input("status", "running")

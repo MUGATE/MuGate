@@ -114,7 +114,17 @@ export function InternshipsScreen() {
         const [list, statList] = await Promise.all([getCompanies(), getCompanyStats()]);
         const map: Record<number, { avgRating: number; reviewCount: number }> = {};
         statList.forEach((s) => {
-          map[s.companyId] = { avgRating: s.avgRating, reviewCount: s.reviewCount };
+          const raw = s as {
+            companyId: number;
+            avgRating?: number;
+            avgrating?: number;
+            reviewCount?: number;
+            reviewcount?: number;
+          };
+          const avgRating = Number(raw.avgRating ?? raw.avgrating);
+          const reviewCount = Number(raw.reviewCount ?? raw.reviewcount);
+          if (!Number.isFinite(avgRating) || !Number.isFinite(reviewCount)) return;
+          map[raw.companyId] = { avgRating, reviewCount };
         });
         setCompanies(list);
         setStats(map);
@@ -246,7 +256,7 @@ export function InternshipsScreen() {
                 )}
                 <View style={styles.headerText}>
                   <Text style={styles.name}>{item.name}</Text>
-                  {stat ? (
+                  {stat && typeof stat.avgRating === 'number' ? (
                     <Text style={styles.rating}>
                       ★ {stat.avgRating.toFixed(1)} ({stat.reviewCount} reviews)
                     </Text>

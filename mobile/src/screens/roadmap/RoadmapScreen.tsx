@@ -23,7 +23,12 @@ import { Button } from '../../components/Button';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { CREDIT_CAP, checkPlacement } from '../../data/curriculumRules';
+import {
+  CREDIT_CAP,
+  REMEDIAL_CATEGORY,
+  checkPlacement,
+  sumRemedialCredits,
+} from '../../data/curriculumRules';
 import { RootStackParamList } from '../../navigation/types';
 import { radii, shadow, ThemeColors } from '../../theme/colors';
 
@@ -31,12 +36,22 @@ type PlanCourse = RoadmapCourse & { _key: string };
 
 const SEMESTERS = ['Fall', 'Spring', 'Summer'];
 
+const CATEGORIES = [
+  'General Requirements',
+  'Free Liberal Arts',
+  'Mathematics & Sciences',
+  'Major Requirements',
+  'Technical Electives',
+  'Remedial',
+] as const;
+
 const CATEGORY_COLORS: Record<string, string> = {
   'Major Requirements': '#3b82f6',
   'Mathematics & Sciences': '#8b5cf6',
   'General Requirements': '#10b981',
   'Free Liberal Arts': '#f59e0b',
   'Technical Electives': '#ec4899',
+  Remedial: '#64748b',
 };
 
 function categoryColor(category: string): string {
@@ -96,10 +111,17 @@ export function RoadmapScreen() {
     return present.length > 0 ? present : [1, 2, 3, 4];
   }, [courses]);
 
-  const totalCredits = useMemo(
-    () => courses.reduce((sum, c) => sum + (Number(c.credits) || 0), 0),
+  const planCredits = useMemo(
+    () =>
+      courses.reduce((sum, c) => {
+        if (c.category === REMEDIAL_CATEGORY) return sum;
+        return sum + (Number(c.credits) || 0);
+      }, 0),
     [courses]
   );
+
+  const remedialCredits = useMemo(() => sumRemedialCredits(courses), [courses]);
+  const totalCredits = planCredits + remedialCredits;
 
   const moveCourse = (course: PlanCourse, year: number, semester: string) => {
     const error = checkPlacement(courses, course, year, semester, course._key);
@@ -168,9 +190,19 @@ export function RoadmapScreen() {
   return (
     <Screen padded={false} header>
       <View style={styles.topBar}>
-        <View style={styles.creditPill}>
-          <Ionicons name="school-outline" size={15} color={colors.primary} />
-          <Text style={styles.creditText}>{totalCredits} credits</Text>
+        <View style={styles.creditPills}>
+          <View style={styles.creditPill}>
+            <Ionicons name="school-outline" size={15} color={colors.primary} />
+            <Text style={styles.creditText}>Plan {planCredits}</Text>
+          </View>
+          <View style={[styles.creditPill, styles.remedialPill]}>
+            <Text style={[styles.creditText, styles.remedialCreditText]}>
+              + Remedial {remedialCredits}
+            </Text>
+          </View>
+          <View style={styles.creditPill}>
+            <Text style={styles.creditText}>Total {totalCredits}</Text>
+          </View>
         </View>
         <View style={styles.topActions}>
           {saving !== 'idle' ? (
@@ -389,6 +421,7 @@ function AddCourseSheet({
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [credits, setCredits] = useState('3');
+  const [category, setCategory] = useState<string>('Technical Electives');
   const [year, setYear] = useState(years[0] ?? 1);
   const [semester, setSemester] = useState('Fall');
 
@@ -397,6 +430,7 @@ function AddCourseSheet({
       setCode('');
       setName('');
       setCredits('3');
+      setCategory('Technical Electives');
       setYear(years[0] ?? 1);
       setSemester('Fall');
     }
@@ -411,7 +445,7 @@ function AddCourseSheet({
       courseCode: code.trim(),
       courseName: name.trim(),
       credits: Number(credits) || 0,
-      category: 'Technical Electives',
+      category,
       year,
       semester,
     });
@@ -444,6 +478,20 @@ function AddCourseSheet({
             placeholderTextColor={colors.textMuted}
             keyboardType="number-pad"
           />
+          <Text style={styles.sheetYearLabel}>Category</Text>
+          <View style={styles.sheetTargets}>
+            {CATEGORIES.map((cat) => (
+              <Pressable
+                key={cat}
+                style={[styles.targetBtn, category === cat && styles.targetBtnActive]}
+                onPress={() => setCategory(cat)}
+              >
+                <Text style={[styles.targetText, category === cat && styles.targetTextActive]}>
+                  {cat === 'Remedial' ? 'Remedial' : cat.replace(' Requirements', '')}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
           <Text style={styles.sheetYearLabel}>Year</Text>
           <View style={styles.sheetTargets}>
             {years.map((y) => (
@@ -489,16 +537,28 @@ const makeStyles = (c: ThemeColors, scheme: 'light' | 'dark') =>
       paddingTop: 12,
       paddingBottom: 8,
     },
+    creditPills: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: 6,
+      flex: 1,
+      marginRight: 8,
+    },
     creditPill: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
       backgroundColor: c.primary + '22',
-      paddingHorizontal: 12,
+      paddingHorizontal: 10,
       paddingVertical: 6,
       borderRadius: radii.pill,
     },
-    creditText: { color: c.primary, fontWeight: '700', fontSize: 13 },
+    remedialPill: {
+      backgroundColor: '#64748b22',
+    },
+    creditText: { color: c.primary, fontWeight: '700', fontSize: 12 },
+    remedialCreditText: { color: '#64748b' },
     topActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     savingText: { color: c.textMuted, fontSize: 12 },
     iconAction: { padding: 2 },

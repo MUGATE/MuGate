@@ -95,10 +95,10 @@ export class EventRepository {
         await poolConnect;
         const { search, category, location, limit = 50, offset = 0 } = filters;
 
-        let whereClause = `WHERE isActive = 1 AND (
-            startDate >= GETDATE()
-            OR (endDate IS NOT NULL AND endDate >= GETDATE())
-        )`;
+        // Calendar-day comparison (with a 1-day lookback) so date-only events stay
+        // visible all day, and legacy local-midnight rows shifted into the prior UTC
+        // day still appear for admins in UTC+ timezones.
+        let whereClause = `WHERE isActive = 1 AND CAST(COALESCE(endDate, startDate) AS DATE) >= CAST(DATEADD(DAY, -1, GETDATE()) AS DATE)`;
         const request = pool.request();
 
         if (search && search.trim().length > 0) {
@@ -156,10 +156,7 @@ export class EventRepository {
         const result = await pool.request().query(`
             SELECT DISTINCT category
             FROM Events
-            WHERE isActive = 1 AND (
-                startDate >= GETDATE()
-                OR (endDate IS NOT NULL AND endDate >= GETDATE())
-            )
+            WHERE isActive = 1 AND CAST(COALESCE(endDate, startDate) AS DATE) >= CAST(DATEADD(DAY, -1, GETDATE()) AS DATE)
             ORDER BY category
         `);
         return result.recordset.map((r: any) => r.category);
@@ -175,10 +172,7 @@ export class EventRepository {
     }> {
         await poolConnect;
 
-        const upcomingWhere = `isActive = 1 AND (
-            startDate >= GETDATE()
-            OR (endDate IS NOT NULL AND endDate >= GETDATE())
-        )`;
+        const upcomingWhere = `isActive = 1 AND CAST(COALESCE(endDate, startDate) AS DATE) >= CAST(DATEADD(DAY, -1, GETDATE()) AS DATE)`;
 
         const totalResult = await pool.request().query(`
             SELECT COUNT(*) AS cnt FROM Events WHERE ${upcomingWhere}
@@ -316,10 +310,7 @@ export class EventRepository {
         await poolConnect;
         const result = await pool.request().query(`
             SELECT COUNT(*) AS cnt FROM Events
-            WHERE isActive = 1 AND (
-                startDate >= GETDATE()
-                OR (endDate IS NOT NULL AND endDate >= GETDATE())
-            )
+            WHERE isActive = 1 AND CAST(COALESCE(endDate, startDate) AS DATE) >= CAST(DATEADD(DAY, -1, GETDATE()) AS DATE)
         `);
         return result.recordset[0].cnt;
     }

@@ -15,7 +15,7 @@
   --color-text-muted: #64748b;
   --color-nav-bg: #ffffff;
   --color-nav-text: #0f172a;
-  --color-nav-link: #000000;
+  --color-nav-link: #0f172a;
   --color-brand: #0e220e;
   --color-primary: #2563eb;
   --color-primary-dark: #1d4ed8;
@@ -32,6 +32,9 @@
   --color-glass-card: rgba(255, 255, 255, 0.7);
   --color-glass-solid: #fafcfe;
   --glow-base: #e8ecf4;
+  /* Elevation aliases (panel = muted, inset = light) */
+  --color-panel: var(--color-surface-muted);
+  --color-inset: var(--color-surface-light);
 
   color-scheme: light;
   color: var(--color-text);
@@ -39,20 +42,21 @@
 }
 
 [data-theme="dark"] {
-  --color-bg: #0a0e17;
-  --color-page: #0a0e17;
+  /* 4-level navy stack: page → shell → panel → inset */
+  --color-bg: #0b1220;
+  --color-page: #0b1220;
   --color-surface: #121a2b;
   --color-surface-muted: #1a2438;
-  --color-surface-light: #1a2438;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-strong: rgba(255, 255, 255, 0.12);
-  --color-text: #f0f4f8;
-  --color-text-secondary: #cbd5e1;
-  --color-text-muted: #94a3b8;
-  --color-nav-bg: #0a0e17;
-  --color-nav-text: #f0f4f8;
-  --color-nav-link: #e2e8f0;
-  --color-brand: #e8f0e8;
+  --color-surface-light: #222d44;
+  --color-border: rgba(255, 255, 255, 0.14);
+  --color-border-strong: rgba(255, 255, 255, 0.22);
+  --color-text: #ffffff;
+  --color-text-secondary: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.7);
+  --color-nav-bg: #121a2b;
+  --color-nav-text: #ffffff;
+  --color-nav-link: #ffffff;
+  --color-brand: #ffffff;
   --color-primary: #3b82f6;
   --color-primary-dark: #2563eb;
   --color-accent: #60a5fa;
@@ -60,14 +64,16 @@
   --color-error: #ef4444;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
-  --color-card: #141d30;
+  --color-card: #121a2b;
   --color-overlay: rgba(0, 0, 0, 0.6);
   --color-shadow: rgba(0, 0, 0, 0.35);
-  --color-input-bg: #1a2438;
-  --color-glass: rgba(18, 26, 43, 0.75);
-  --color-glass-card: rgba(18, 26, 43, 0.72);
+  --color-input-bg: #222d44;
+  --color-glass: rgba(18, 26, 43, 0.92);
+  --color-glass-card: rgba(18, 26, 43, 0.92);
   --color-glass-solid: #121a2b;
-  --glow-base: #0a0c10;
+  --glow-base: #0b1220;
+  --color-panel: var(--color-surface-muted);
+  --color-inset: var(--color-surface-light);
 
   color-scheme: dark;
   color: var(--color-text);
@@ -87,6 +93,11 @@
   --page-max-width: 1300px;
   --page-max-width-wide: 1500px;
   --page-gutter: clamp(16px, 4vw, 32px);
+  /* White frame around the home hero — keep thin and independent of content gutters */
+  --hero-frame-gutter: 16px;
+  /* Prefer dvh so mobile browser chrome doesn’t clip framed heroes / full-height shells */
+  --framed-vh: calc(100vh - 2 * var(--hero-frame-gutter));
+  --framed-vh: calc(100dvh - 2 * var(--hero-frame-gutter));
   --nav-max-width: 1500px;
   --nav-profile-reserve: 72px;
   --bp-tablet: 1100px;
@@ -127,12 +138,16 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--glow-base);
+  /* Last-resort safety; prefer containing overflow in page shells via max-width / box-sizing */
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .route-fallback {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--color-page);
 }
 
@@ -161,6 +176,17 @@ body {
   filter: blur(150px);
   opacity: 0.4;
   animation: float-blobs 25s infinite alternate ease-in-out;
+}
+
+/* Mobile / reduced-motion: cheaper static wash, no fog animation */
+.global-glow--lite .glow-blob {
+  filter: blur(60px);
+  opacity: 0.28;
+  animation: none;
+}
+
+.global-glow--lite .glow-overlay {
+  opacity: 0.5;
 }
 
 .blob-1 {
@@ -271,4 +297,203 @@ button,
 button:hover {
   box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
+}
+
+/* ── SHARED FORM CONTROLS ── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+textarea,
+select {
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"])::placeholder,
+textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):not([type="color"]):not([type="submit"]):not([type="button"]):not([type="reset"]):focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+select {
+  cursor: pointer;
+}
+
+select option {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+label {
+  color: var(--color-text-secondary);
+}
+
+/* Utility classes for modals / ad-hoc forms */
+.mg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mg-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.mg-input,
+.mg-textarea,
+.mg-select {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
+  font: inherit;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.mg-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.mg-input:focus,
+.mg-textarea:focus,
+.mg-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.mg-input::placeholder,
+.mg-textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.mg-input:disabled,
+.mg-select:disabled {
+  background-color: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.mg-btn-cancel {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.mg-btn-primary {
+  padding: 10px 22px;
+  border-radius: 8px;
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.mg-btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.mg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.mg-modal {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 30px var(--color-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mg-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.mg-modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.mg-modal-close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  box-shadow: none;
+}
+
+.mg-modal-close:hover {
+  color: var(--color-text);
+  box-shadow: none;
+  transform: none;
+}
+
+.mg-modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.mg-dropzone {
+  border: 2px dashed var(--color-border-strong);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  background: var(--color-surface-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  color: var(--color-text-muted);
+}
+
+.mg-dropzone--active {
+  border-color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.08);
 }

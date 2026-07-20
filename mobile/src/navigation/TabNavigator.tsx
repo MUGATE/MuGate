@@ -1,7 +1,7 @@
 import React from 'react';
-import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatStack } from './ChatStack';
 import { ExploreStack } from './ExploreStack';
 import { HomeStack } from './HomeStack';
@@ -11,6 +11,8 @@ import { RootTabParamList } from './types';
 import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
+
+const TAB_BAR_CONTENT_HEIGHT = 56;
 
 const ICONS: Record<keyof RootTabParamList, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
   Home: { active: 'home', inactive: 'home-outline' },
@@ -22,6 +24,7 @@ const ICONS: Record<keyof RootTabParamList, { active: keyof typeof Ionicons.glyp
 
 export function TabNavigator() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -40,8 +43,8 @@ export function TabNavigator() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: Platform.OS === 'ios' ? 88 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
+          paddingBottom: insets.bottom,
           paddingTop: 8,
         },
         tabBarLabelStyle: {

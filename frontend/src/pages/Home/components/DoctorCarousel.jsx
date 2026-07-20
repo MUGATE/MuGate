@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import "./DoctorCarousel.css";
 import instructors from "../doctorData";
+import Picture from "./Picture";
 
 /**
  * 3D Glass Card Carousel — Instructors Section
@@ -81,9 +82,10 @@ const computeAnimatedCards = (oldActive, newActive, clickedRight) => {
 const CardFront = ({ instructor }) => (
     <>
         {instructor.image ? (
-            <img
+            <Picture
                 className="card-front-image"
-                src={instructor.image}
+                webp={instructor.image}
+                avif={instructor.imageAvif}
                 alt={instructor.name}
                 loading="lazy"
             />
@@ -104,6 +106,9 @@ const InstructorCarousel = (props) => {
     const [activeIndex, setActiveIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
     const isAnimating = useRef(false);
+    const touchStartX = useRef(null);
+    const touchStartY = useRef(null);
+    const swipeConsumed = useRef(false);
 
     const [animInfo, setAnimInfo] = useState({
         enteringIds: [],     // IDs that get entry animation (genuine + wrapping)
@@ -123,18 +128,15 @@ const InstructorCarousel = (props) => {
         });
     }, [activeIndex]);
 
-    const handleCardClick = useCallback(
-        (visualPos) => {
-            if (visualPos === 0) {
-                setIsFlipped((prev) => !prev);
-                return;
-            }
-            if (isAnimating.current) return;
+    /** Step carousel by ±N (shared by side-card click, swipe, and mobile controls) */
+    const advanceBy = useCallback(
+        (step) => {
+            if (!step || isAnimating.current) return;
             isAnimating.current = true;
 
-            const clickedRight = visualPos > 0;
+            const clickedRight = step > 0;
             const direction = clickedRight ? "right" : "left";
-            const newActive = mod(activeIndex + visualPos);
+            const newActive = mod(activeIndex + step);
 
             const { enteringIds, genuineExitCards, wrappingCards } =
                 computeAnimatedCards(activeIndex, newActive, clickedRight);
@@ -160,7 +162,6 @@ const InstructorCarousel = (props) => {
             setIsFlipped(false);
             setActiveIndex(newActive);
 
-            // Clear animations after completion
             setTimeout(() => {
                 setAnimInfo({
                     enteringIds: [],
@@ -169,9 +170,48 @@ const InstructorCarousel = (props) => {
                 });
                 setGhosts([]);
                 isAnimating.current = false;
+                swipeConsumed.current = false;
             }, 820);
         },
         [activeIndex]
+    );
+
+    const handleCardClick = useCallback(
+        (visualPos) => {
+            if (swipeConsumed.current) {
+                swipeConsumed.current = false;
+                return;
+            }
+            if (visualPos === 0) {
+                setIsFlipped((prev) => !prev);
+                return;
+            }
+            advanceBy(visualPos);
+        },
+        [advanceBy]
+    );
+
+    /** Mobile single-card: swipe left/right to advance (side cards are hidden ≤768) */
+    const onTrackTouchStart = useCallback((e) => {
+        const t = e.changedTouches[0];
+        touchStartX.current = t.clientX;
+        touchStartY.current = t.clientY;
+    }, []);
+
+    const onTrackTouchEnd = useCallback(
+        (e) => {
+            if (touchStartX.current == null || isAnimating.current) return;
+            const t = e.changedTouches[0];
+            const dx = t.clientX - touchStartX.current;
+            const dy = t.clientY - touchStartY.current;
+            touchStartX.current = null;
+            touchStartY.current = null;
+
+            if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
+            swipeConsumed.current = true;
+            advanceBy(dx < 0 ? 1 : -1);
+        },
+        [advanceBy]
     );
 
     const allCards = getAllCards();
@@ -183,7 +223,23 @@ const InstructorCarousel = (props) => {
                 <p>Our intelligent scheduling system generates an optimized timetable tailored to your selected courses and preferences.</p>
             </div>
 
-            <div className="carousel-track">
+            <div className="carousel-stage">
+                <button
+                    type="button"
+                    className="carousel-nav-btn carousel-nav-prev"
+                    aria-label="Previous instructor"
+                    onClick={() => advanceBy(-1)}
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </button>
+
+                <div
+                    className="carousel-track"
+                    onTouchStart={onTrackTouchStart}
+                    onTouchEnd={onTrackTouchEnd}
+                >
                 {/* ── REAL CARDS (fixed order, never reordered) ── */}
                 {allCards.map(({ instructor, visualPos }) => {
                     const isCenter = visualPos === 0;
@@ -307,6 +363,18 @@ const InstructorCarousel = (props) => {
                         </div>
                     </div>
                 ))}
+            </div>
+
+                <button
+                    type="button"
+                    className="carousel-nav-btn carousel-nav-next"
+                    aria-label="Next instructor"
+                    onClick={() => advanceBy(1)}
+                >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </button>
             </div>
 
         </section>

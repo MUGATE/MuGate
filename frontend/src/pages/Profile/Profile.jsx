@@ -68,6 +68,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { scheme, toggleTheme } = useTheme();
   const user = useMemo(() => getUserData(), []);
+  const isLoggedIn = Boolean(localStorage.getItem("mugate_token"));
   const isDark = scheme === "dark";
 
   const avatarInitial = useMemo(() => {
@@ -78,6 +79,10 @@ const Profile = () => {
     localStorage.removeItem("mugate_token");
     localStorage.removeItem("mugate_user");
     navigate("/", { replace: true });
+  };
+
+  const handleLogin = () => {
+    navigate("/?focus=login", { replace: true });
   };
 
   const handleBack = () => {
@@ -139,9 +144,15 @@ const Profile = () => {
           </Link>
         ) : null}
 
-        <button type="button" className="profile-logout-btn" onClick={handleLogout}>
-          Logout
-        </button>
+        {isLoggedIn ? (
+          <button type="button" className="profile-logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
+        ) : (
+          <button type="button" className="profile-login-btn" onClick={handleLogin}>
+            Login
+          </button>
+        )}
       </main>
     </div>
   );

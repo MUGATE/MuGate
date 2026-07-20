@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import WelcomeModal from '../components/WelcomeModal';
 import CVTypeModal from '../components/CVTypeModal';
+import '../styles/welcome.css';
 
 const WelcomeView = ({ onChoose }) => {
   const [showCVType, setShowCVType] = useState(false);

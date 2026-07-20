@@ -78,7 +78,7 @@ Copy templates:
 1. New Project → Import the same GitHub repo.
 2. Set **Root Directory** to `MuGate/frontend` (or `frontend`).
 3. Framework preset: Vite. Build command: `npm run build`. Output: `dist`.
-4. Add environment variable (Production):
+4. Add environment variables (Production):
 
    ```
    VITE_API_BASE_URL=https://YOUR-RAILWAY-URL/api
@@ -86,9 +86,15 @@ Copy templates:
 
    Include the `/api` suffix. Rebuild after changing this value (Vite inlines it at build time).
 
+   Optional — Android APK download (hosted outside Vercel; the APK is excluded from the deploy via `.vercelignore`):
+
+   ```
+   VITE_APK_URL=https://YOUR-HOST/MuGate.apk
+   ```
+
 5. Deploy. Open the site and sign in with an MU account.
 
-Without `VITE_API_BASE_URL`, production would incorrectly call `hostname:5000`.
+Without `VITE_API_BASE_URL`, production API calls fail loudly (they will not invent `hostname:5000`).
 
 ---
 
@@ -137,6 +143,8 @@ docker run --rm -p 5000:5000 --env-file .env -e PORT=5000 mugate-backend
 
 ## Notes
 
-- Free-tier hosts that **sleep** when idle will make login look randomly broken; keep the Railway service awake for demos.
+- Free-tier hosts that **sleep** when idle will make login look randomly broken; keep the Railway service awake for demos (paid plan / no-sleep, or an external uptime ping to `GET /api/health` every few minutes). The web app also fires a short wake ping on first load.
+- RAG bootstrap runs after the HTTP server is listening so `/api/health` answers during warm-up.
 - Do not commit `.env` files. Use platform secret dashboards only.
 - SQL Server / `msnodesqlv8` is local-only. Production must set `DATABASE_URL` so the backend uses Supabase Postgres.
+- Hashed frontend assets under `/assets/*` are long-cached on Vercel (`immutable`). The APK is not shipped with the Vercel deploy — set `VITE_APK_URL` instead.
