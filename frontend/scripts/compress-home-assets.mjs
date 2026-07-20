@@ -20,8 +20,9 @@ const frontendRoot = path.resolve(__dirname, "..");
 const homeAssets = path.join(frontendRoot, "src/pages/Home/assets");
 const publicDir = path.join(frontendRoot, "public");
 
-/** Display cards ~300×420 @2x → 800 long-edge is enough */
-const INSTRUCTOR_MAX = 800;
+/** Display cards ~300×420 @2x → cover-crop to exact card ratio */
+const INSTRUCTOR_WIDTH = 600;
+const INSTRUCTOR_HEIGHT = 840;
 const RESUME_MAX = 1200;
 const PEOPLE_MAX = 800;
 const LOGO_MAX = 512;
@@ -51,6 +52,30 @@ async function buildResizedPipeline(src, maxEdge) {
 
 async function toWebpAndAvif(src, destWebp, { maxEdge, quality = 78, avifQuality = 50 } = {}) {
   const pipeline = await buildResizedPipeline(src, maxEdge);
+  const destAvif = destWebp.replace(/\.webp$/i, ".avif");
+
+  await pipeline.clone().webp({ quality, effort: 6 }).toFile(destWebp);
+  await pipeline.clone().avif({ quality: avifQuality, effort: 4 }).toFile(destAvif);
+
+  const before = fs.statSync(src).size;
+  const afterWebp = fs.statSync(destWebp).size;
+  const afterAvif = fs.statSync(destAvif).size;
+  const outMeta = await sharp(destWebp).metadata();
+  console.log(
+    `  ${path.basename(src)} → ${path.basename(destWebp)}/${path.basename(destAvif)}: ${(before / 1e6).toFixed(2)} MB → webp ${(afterWebp / 1e6).toFixed(2)} MB, avif ${(afterAvif / 1e6).toFixed(2)} MB (${outMeta.width}×${outMeta.height})`
+  );
+}
+
+/** Cover-crop to portrait card box so landscape instructor shots fill 300×420. */
+async function toInstructorWebpAndAvif(src, destWebp, { quality = 78, avifQuality = 50 } = {}) {
+  const pipeline = sharp(src)
+    .rotate()
+    .resize({
+      width: INSTRUCTOR_WIDTH,
+      height: INSTRUCTOR_HEIGHT,
+      fit: "cover",
+      position: "centre",
+    });
   const destAvif = destWebp.replace(/\.webp$/i, ".avif");
 
   await pipeline.clone().webp({ quality, effort: 6 }).toFile(destWebp);
@@ -110,12 +135,12 @@ async function convertImages() {
   const peopleDir = path.join(homeAssets, "Images/People");
   const imagesDir = path.join(homeAssets, "Images");
 
-  console.log("Converting instructor PNGs → resized WebP + AVIF…");
+  console.log("Converting instructor PNGs → 600×840 cover-crop WebP + AVIF…");
   for (const name of fs.readdirSync(instructorDir)) {
     if (!name.toLowerCase().endsWith(".png")) continue;
     const src = path.join(instructorDir, name);
     const dest = path.join(instructorDir, name.replace(/\.png$/i, ".webp"));
-    await toWebpAndAvif(src, dest, { maxEdge: INSTRUCTOR_MAX, quality: 78 });
+    await toInstructorWebpAndAvif(src, dest, { quality: 78 });
   }
 
   console.log("Converting resume PNG…");
@@ -176,9 +201,11 @@ async function compressInternshipLogos() {
 }
 
 async function makeFavicon() {
+  // Prefer the blue/yellow 3D mark (not the flat dark "Logo2 colored" silhouette).
   const srcCandidates = [
-    path.join(homeAssets, "Images/Logo2 colored.png"),
+    path.join(homeAssets, "Images/Logo2.png"),
     path.join(frontendRoot, "public/Logo2.png"),
+    path.join(homeAssets, "Images/mugate-logo-3d.png"),
   ];
   const src = srcCandidates.find((p) => fs.existsSync(p));
   if (!src) {
@@ -190,7 +217,7 @@ async function makeFavicon() {
     .resize(48, 48, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png({ compressionLevel: 9 })
     .toFile(dest);
-  console.log(`  favicon → public/favicon-48.png (${(fs.statSync(dest).size / 1024).toFixed(1)} KB)`);
+  console.log(`  favicon ← ${path.basename(src)} → public/favicon-48.png (${(fs.statSync(dest).size / 1024).toFixed(1)} KB)`);
 }
 
 async function convertFontsToWoff2() {
@@ -243,6 +270,15 @@ function publishLcpAssets() {
   if (fs.existsSync(posterAvifSrc)) {
     fs.copyFileSync(posterAvifSrc, path.join(publicDir, "home-hero-poster.avif"));
     console.log("  home-hero-poster.avif");
+  }
+
+  const videoSrc = path.join(homeAssets, "Videos/MU VIDEO LANDING PAGE.compressed.mp4");
+  const videoPublic = path.join(publicDir, "home-hero.mp4");
+  if (fs.existsSync(videoSrc)) {
+    fs.copyFileSync(videoSrc, videoPublic);
+    console.log("  home-hero.mp4");
+  } else {
+    console.warn("Compressed hero video not found — run video compress first");
   }
 }
 

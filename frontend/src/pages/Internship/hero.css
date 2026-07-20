@@ -1243,20 +1243,43 @@
     padding-top: env(safe-area-inset-top, 0px);
   }
 
+  /*
+   * Narrow stack (bottom → top):
+   * Explore All / Add Company → Explore More CTA → company title/detail
+   * Keep company copy clear of the bottom action buttons.
+   */
+  .hero-explore-all-floating,
+  .hero-add-company-btn {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    padding: 7px 14px;
+    font-size: 13px;
+    gap: 6px;
+  }
+
+  .hero-cta {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
   .hero-text-block {
-    bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(148px + env(safe-area-inset-bottom, 0px));
     width: min(92%, 720px);
     max-width: calc(100% - 2rem);
     padding-inline: max(16px, var(--page-gutter));
   }
 
-  .hero-subtitle {
-    font-size: 15px;
-    line-height: 22px;
+  .hero-title {
+    font-size: clamp(22px, 5.5vw, 36px);
   }
 
-  .hero-cta {
-    bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  .hero-subtitle {
+    font-size: 14px;
+    line-height: 20px;
+    max-width: 360px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 }
 
@@ -1265,12 +1288,40 @@
     min-height: 600px;
   }
 
-  .hero-text-block {
-    bottom: calc(108px + env(safe-area-inset-bottom, 0px));
+  .hero-explore-all-floating,
+  .hero-add-company-btn {
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 6px 12px;
+    font-size: 12px;
   }
 
   .hero-cta {
-    bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hero-text-block {
+    bottom: calc(136px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Short + narrow: keep title/CTA above bottom actions */
+@media (max-width: 768px) and (max-height: 700px) {
+  .hero-explore-all-floating,
+  .hero-add-company-btn {
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hero-cta {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hero-text-block {
+    bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hero-subtitle {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 }
 

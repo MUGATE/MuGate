@@ -5,9 +5,10 @@ import NotchedHeroNav from "../../components/layout/NotchedHeroNav";
 import AuthNoticeModal from "../../components/AuthNoticeModal";
 import DeferredSection from "./components/DeferredSection";
 import "./Home.css";
-import heroVideo from "./assets/Videos/MU VIDEO LANDING PAGE.compressed.mp4";
 import { shouldDeferHeroVideo } from "../../utils/deviceCapability";
 
+/** Compressed ~4MB H.264 (published by scripts/compress-home-assets.mjs). */
+const HERO_VIDEO = "/home-hero.mp4";
 const HERO_POSTER = "/home-hero-poster.webp";
 const SECTION_MIN = "var(--framed-vh, 100dvh)";
 
@@ -41,7 +42,6 @@ const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(readLoggedIn);
   const [authNotice, setAuthNotice] = useState(null);
   const [videoSrc, setVideoSrc] = useState(null);
-  const heroVideoRef = useRef(null);
   const videoElRef = useRef(null);
 
   useEffect(() => {
@@ -68,42 +68,10 @@ const Home = () => {
     }
   }, [searchParams, setSearchParams]);
 
-  // Desktop: load MP4 when hero is visible. Phones / Save-Data / 2G / reduced-motion: poster only.
+  // Play compressed hero MP4 immediately. Reduced-motion: poster only.
   useEffect(() => {
-    const el = heroVideoRef.current;
-    if (!el) return undefined;
-
-    let cancelled = false;
-    let observer = null;
-
-    const startVideo = () => {
-      if (cancelled || shouldDeferHeroVideo()) return;
-      setVideoSrc(heroVideo);
-    };
-
-    if (typeof IntersectionObserver === "undefined") {
-      startVideo();
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          startVideo();
-          observer?.disconnect();
-          observer = null;
-        }
-      },
-      { rootMargin: "0px", threshold: 0.15 }
-    );
-    observer.observe(el);
-
-    return () => {
-      cancelled = true;
-      observer?.disconnect();
-    };
+    if (shouldDeferHeroVideo()) return;
+    setVideoSrc(HERO_VIDEO);
   }, []);
 
   useEffect(() => {
@@ -113,7 +81,8 @@ const Home = () => {
       video.play().catch(() => {});
     };
     if (video.readyState >= 2) play();
-    else video.addEventListener("loadeddata", play, { once: true });
+    else video.addEventListener("canplay", play, { once: true });
+    return () => video.removeEventListener("canplay", play);
   }, [videoSrc]);
 
   const dismissAuthNotice = () => {
@@ -176,20 +145,19 @@ const Home = () => {
       <div className="home-scroll">
         <NotchedHeroNav />
 
-        <section className="video-hero" data-page="1" ref={heroVideoRef}>
+        <section className="video-hero" data-page="1">
           <div className="hero-video-container">
             <video
               ref={videoElRef}
+              src={videoSrc || undefined}
               muted
               loop
               playsInline
-              preload="none"
+              autoPlay
+              preload={videoSrc ? "auto" : "none"}
               poster={HERO_POSTER}
               className="hero-video-bg"
-            >
-              {videoSrc ? <source src={videoSrc} type="video/mp4" /> : null}
-              Your browser does not support the video tag.
-            </video>
+            />
 
             <div className="hero-dark-overlay" />
 

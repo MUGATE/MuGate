@@ -4,16 +4,33 @@
    Blue / light purple accent
    ══════════════════════════════════════════════════ */
 
+/* Lock document scroll so nav + tabs stay pinned; content scrolls in .ev-page-body */
+html:has(.events-page),
+body:has(.events-page),
+html:has(.events-page) #root {
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-page);
+}
+
 .events-page {
   position: relative;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   background: var(--color-page);
-  padding: 0 0 80px;
-  overflow-x: hidden;
-  overflow-x: clip;
   color: var(--color-text);
   isolation: isolate;
+  overflow: hidden;
+}
+
+.ev-page-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: clip;
+  overflow-y: auto;
+  padding-bottom: 80px;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Keep decorative layers behind content — no blur meshes at the bottom */
@@ -25,6 +42,7 @@
 
 /* Navbar — shared NotchedHeroNav; wrap reserves space (frame is height:0) */
 .ev-nav-wrap {
+  flex-shrink: 0;
   height: 80px;
   position: relative;
   z-index: 1001;
@@ -51,15 +69,16 @@
 }
 
 .ev-page-tabs {
-  position: sticky;
-  top: 80px;
+  flex-shrink: 0;
+  position: relative;
   z-index: 50;
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  width: 100%;
   max-width: var(--page-max-width);
-  margin: 20px auto 0;
+  margin: 12px auto 0;
   padding: 10px var(--page-gutter);
   box-sizing: border-box;
   background: var(--color-glass-solid);
@@ -1206,16 +1225,18 @@
   }
 }
 
-@media (max-width: 768px) {
-  /* Match collapsed NotchedHeroNav (~60px) + flat-page top offset (~24px) */
+/* Collapsed nav: 60px bar + 12px flat-page padding */
+@media (max-width: 900px) {
   .ev-nav-wrap {
-    height: 84px;
+    height: 72px;
   }
+}
 
+@media (max-width: 768px) {
   .ev-page-tabs {
-    top: 84px;
     gap: 8px;
     padding: 10px 12px;
+    margin-top: 8px;
   }
 
   .ev-page-tab {

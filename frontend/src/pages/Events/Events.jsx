@@ -242,6 +242,7 @@ const Events = () => {
         </button>
       </div>
 
+      <div className="ev-page-body">
       {boardTab === "community" ? (
         <div className="ev-section ev-section--community">
           <div className="ev-section-header">
@@ -489,6 +490,7 @@ const Events = () => {
           )}
         </div>
       )}
+      </div>
 
       <Lightbox imageUrl={lightboxImage} onClose={() => setLightboxImage(null)} />
 

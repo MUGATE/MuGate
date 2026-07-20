@@ -7,14 +7,23 @@ function getConnection() {
   return navigator.connection || navigator.mozConnection || navigator.webkitConnection || null;
 }
 
-export function prefersReducedMotion(matchMediaFn = typeof window !== "undefined" ? window.matchMedia.bind(window) : null) {
-  if (!matchMediaFn) return true;
-  return matchMediaFn("(prefers-reduced-motion: reduce)").matches;
+function resolveMatchMedia(matchMediaFn) {
+  return (
+    matchMediaFn ??
+    (typeof window !== "undefined" ? window.matchMedia.bind(window) : null)
+  );
 }
 
-export function isCoarsePointer(matchMediaFn = typeof window !== "undefined" ? window.matchMedia.bind(window) : null) {
-  if (!matchMediaFn) return false;
-  return matchMediaFn("(pointer: coarse)").matches;
+export function prefersReducedMotion(matchMediaFn) {
+  const mm = resolveMatchMedia(matchMediaFn);
+  if (!mm) return true;
+  return mm("(prefers-reduced-motion: reduce)").matches;
+}
+
+export function isCoarsePointer(matchMediaFn) {
+  const mm = resolveMatchMedia(matchMediaFn);
+  if (!mm) return false;
+  return mm("(pointer: coarse)").matches;
 }
 
 export function isSaveDataEnabled() {
@@ -30,15 +39,10 @@ export function isSlowNetwork() {
 
 /**
  * True when hero MP4 should not auto-download.
- * Phones (coarse pointer) stay poster-only; also Save-Data / 2G / reduced-motion.
+ * Only reduced-motion: compressed ~4MB video plays on other devices.
  */
 export function shouldDeferHeroVideo(matchMediaFn) {
-  return (
-    prefersReducedMotion(matchMediaFn) ||
-    isCoarsePointer(matchMediaFn) ||
-    isSaveDataEnabled() ||
-    isSlowNetwork()
-  );
+  return prefersReducedMotion(matchMediaFn);
 }
 
 /** True when idle route prefetching is safe (won't fight LCP on constrained links). */
@@ -52,20 +56,22 @@ export function shouldPrefetchRoutes(matchMediaFn) {
  * WebGL / Three.js scene — skip on reduced motion, Save-Data, slow net,
  * or typical touch phones (coarse pointer + no hover).
  */
-export function shouldUseWebGLScene(matchMediaFn = typeof window !== "undefined" ? window.matchMedia.bind(window) : null) {
-  if (!matchMediaFn) return false;
-  if (prefersReducedMotion(matchMediaFn)) return false;
+export function shouldUseWebGLScene(matchMediaFn) {
+  const mm = resolveMatchMedia(matchMediaFn);
+  if (!mm) return false;
+  if (prefersReducedMotion(mm)) return false;
   if (isSaveDataEnabled() || isSlowNetwork()) return false;
-  if (matchMediaFn("(hover: none)").matches && matchMediaFn("(pointer: coarse)").matches) {
+  if (mm("(hover: none)").matches && mm("(pointer: coarse)").matches) {
     return false;
   }
   return true;
 }
 
 /** Full animated glow is expensive on mobile Safari compositors. */
-export function shouldUseFullGlow(matchMediaFn = typeof window !== "undefined" ? window.matchMedia.bind(window) : null) {
-  if (!matchMediaFn) return false;
-  if (prefersReducedMotion(matchMediaFn)) return false;
-  if (isCoarsePointer(matchMediaFn)) return false;
+export function shouldUseFullGlow(matchMediaFn) {
+  const mm = resolveMatchMedia(matchMediaFn);
+  if (!mm) return false;
+  if (prefersReducedMotion(mm)) return false;
+  if (isCoarsePointer(mm)) return false;
   return true;
 }

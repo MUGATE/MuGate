@@ -20,14 +20,22 @@ describe('deviceCapability', () => {
     expect(shouldDeferHeroVideo(mm)).toBe(true);
   });
 
-  it('defers hero video on coarse pointer (phones stay poster-only)', () => {
+  it('allows hero video on coarse pointer (phones play compressed MP4)', () => {
     const mm = (q) => ({ matches: q.includes('pointer: coarse') });
-    expect(shouldDeferHeroVideo(mm)).toBe(true);
+    expect(shouldDeferHeroVideo(mm)).toBe(false);
   });
 
-  it('allows hero video on fine pointer without reduced motion', () => {
+  it('allows hero video without reduced motion', () => {
     const mm = () => ({ matches: false });
     expect(shouldDeferHeroVideo(mm)).toBe(false);
+  });
+
+  it('allows hero video when called with no matchMedia arg (desktop Home path)', () => {
+    vi.stubGlobal('window', {
+      ...window,
+      matchMedia: (q) => ({ matches: q.includes('prefers-reduced-motion') ? false : false }),
+    });
+    expect(shouldDeferHeroVideo()).toBe(false);
   });
 
   it('skips prefetch on Save-Data', () => {
