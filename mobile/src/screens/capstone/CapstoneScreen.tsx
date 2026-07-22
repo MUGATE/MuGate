@@ -15,8 +15,6 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Markdown from 'react-native-markdown-display';
 import {
   addPartner,
@@ -30,7 +28,6 @@ import { Screen } from '../../components/Screen';
 import { SignInGate } from '../../components/SignInGate';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { RootStackParamList } from '../../navigation/types';
 import { radii, ThemeColors } from '../../theme/colors';
 
 type Tab = 'ideas' | 'partners' | 'ai';
@@ -213,7 +210,6 @@ function PartnerCard({
 export function CapstoneScreen() {
   const { colors } = useTheme();
   const { user, isAuthenticated } = useAuth();
-  const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const isAdmin = user?.isAdmin === true;
   const markdownStyles = useMemo(
@@ -247,7 +243,6 @@ export function CapstoneScreen() {
   };
 
   const loadPartners = async () => {
-    if (!isAuthenticated) return;
     setLoading(true);
     try {
       setPartners((await getPartners(search)) as CapstonePartner[]);
@@ -257,10 +252,6 @@ export function CapstoneScreen() {
   };
 
   const askAI = async () => {
-    if (!isAuthenticated) {
-      rootNav.navigate('Login');
-      return;
-    }
     const text = aiMessage.trim();
     if (!text || aiLoading) return;
 
@@ -293,10 +284,6 @@ export function CapstoneScreen() {
   };
 
   const openAddPartner = () => {
-    if (!isAuthenticated) {
-      rootNav.navigate('Login');
-      return;
-    }
     setPartnerForm({
       ...EMPTY_PARTNER_FORM,
       email: isAdmin ? '' : (user?.email || ''),
@@ -306,10 +293,6 @@ export function CapstoneScreen() {
   };
 
   const handleAddPartner = async () => {
-    if (!isAuthenticated) {
-      rootNav.navigate('Login');
-      return;
-    }
     setPartnerFormError('');
     setSubmittingPartner(true);
     try {
@@ -367,6 +350,10 @@ export function CapstoneScreen() {
   const canDeletePartner = (partner: CapstonePartner) =>
     isAdmin || (!!user?.userId && partner.userId === user.userId);
 
+  if (!isAuthenticated) {
+    return <SignInGate message="Sign in to use Capstone Hub." />;
+  }
+
   return (
     <Screen header>
       <View style={styles.tabs}>
@@ -377,7 +364,7 @@ export function CapstoneScreen() {
             onPress={() => {
               setTab(t);
               if (t === 'ideas') loadIdeas();
-              if (t === 'partners' && isAuthenticated) loadPartners();
+              if (t === 'partners') loadPartners();
             }}
           >
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
@@ -387,17 +374,7 @@ export function CapstoneScreen() {
         ))}
       </View>
 
-      {tab === 'partners' && !isAuthenticated ? (
-        <SignInGate
-          message="Sign in to browse and list capstone partners."
-          wrapScreen={false}
-        />
-      ) : tab === 'ai' && !isAuthenticated ? (
-        <SignInGate
-          message="Sign in to use the capstone AI advisor."
-          wrapScreen={false}
-        />
-      ) : tab !== 'ai' ? (
+      {tab !== 'ai' ? (
         <>
           {tab === 'partners' ? (
             <Button

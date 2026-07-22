@@ -26,13 +26,10 @@ import {
   sendMessage,
 } from '../../api/chatbotApi';
 import { Button } from '../../components/Button';
-import { SignInGate } from '../../components/SignInGate';
-import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { radii, ThemeColors } from '../../theme/colors';
 
 export function ChatScreen() {
-  const { isAuthenticated } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const markdownStyles = useMemo(
@@ -72,7 +69,6 @@ export function ChatScreen() {
   }, []);
 
   const loadSessions = useCallback(async () => {
-    if (!isAuthenticated) return;
     try {
       const list = await getSessions();
       setSessions(list);
@@ -82,7 +78,7 @@ export function ChatScreen() {
     } catch {
       setSessions([]);
     }
-  }, [activeSession, isAuthenticated]);
+  }, [activeSession]);
 
   const loadMessages = useCallback(async (sessionId: string) => {
     try {
@@ -94,23 +90,18 @@ export function ChatScreen() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
     setLoading(true);
     loadSessions().finally(() => setLoading(false));
-  }, [isAuthenticated, loadSessions]);
+  }, [loadSessions]);
 
   useEffect(() => {
-    if (!isAuthenticated || !activeSession) return;
+    if (!activeSession) return;
     loadMessages(activeSession.id);
-  }, [activeSession, isAuthenticated, loadMessages]);
+  }, [activeSession, loadMessages]);
 
   const scrollToEnd = useCallback(() => {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
   }, []);
-
-  if (!isAuthenticated) {
-    return <SignInGate message="Sign in to use MuChat." header={false} />;
-  }
 
   const handleNewChat = async () => {
     const session = await createSession('New Chat');

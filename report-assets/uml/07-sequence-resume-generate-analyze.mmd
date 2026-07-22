@@ -1,0 +1,33 @@
+%% MuGate — Sequence: Resume generate / analyze
+%% Source: resume.controller.ts · pdf/docx generators · analyzer.service · ai-editor.service
+sequenceDiagram
+    autonumber
+    participant Client
+    participant ResumeController
+    participant PdfDocx as Pdf/Docx Generator
+    participant Analyzer as analyzeResume
+    participant AiEdit as aiEditResume
+    participant AiProvider
+
+    alt Build CV
+        Client->>ResumeController: POST /api/resume/generate { format, formData, fileType }
+        ResumeController->>PdfDocx: generateResumePdf|Docx(local|global)
+        PdfDocx-->>ResumeController: Buffer
+        ResumeController-->>Client: PDF/DOCX binary or base64 JSON
+    else Analyze resume
+        Client->>ResumeController: POST /api/resume/analyze { resumeText, jobDescription? }
+        ResumeController->>Analyzer: analyzeResume(text, jd?)
+        Analyzer->>AiProvider: structured scoring prompt
+        alt AI unavailable
+            Analyzer->>Analyzer: heuristicAnalysis fallback
+        end
+        Analyzer-->>ResumeController: ResumeAnalysis
+        ResumeController-->>Client: 200 { analysis }
+    else AI edit structured resume
+        Client->>ResumeController: POST /api/resume/ai-edit { resume, instruction }
+        ResumeController->>AiEdit: aiEditResume(resume, instruction)
+        AiEdit->>AiProvider: generateResponse
+        AiProvider-->>AiEdit: patched ResumeData
+        AiEdit-->>ResumeController: { resume, changedSections }
+        ResumeController-->>Client: 200
+    end

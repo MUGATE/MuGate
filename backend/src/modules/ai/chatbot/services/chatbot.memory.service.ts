@@ -69,14 +69,11 @@ export class ChatbotMemoryService {
     }
 
     /**
-     * Gets the chat history parameters for a specific session
+     * Gets the chat history for a specific session.
+     * Authenticated users may only access their own sessions.
+     * Anonymous callers may only access public (userId IS NULL) sessions.
      */
     static async getSessionHistory(sessionId: string, userId: string | null): Promise<ChatMessage[]> {
-        if (!userId) {
-            throw new Error("Unauthorized to access this session.");
-        }
-
-        // Validate ownership first
         const sessionResult = await pool.request()
             .input("sessionId", sessionId)
             .query("SELECT userId FROM ChatSessions WHERE id = @sessionId AND isActive = 1");
@@ -86,7 +83,13 @@ export class ChatbotMemoryService {
         }
 
         const session = sessionResult.recordset[0];
-        if (!session.userId || session.userId !== userId) {
+
+        if (userId) {
+            if (!session.userId || session.userId !== userId) {
+                throw new Error("Unauthorized to access this session.");
+            }
+        } else if (session.userId) {
+            // Public caller cannot access an authenticated user's session
             throw new Error("Unauthorized to access this session.");
         }
 
@@ -134,19 +137,30 @@ export class ChatbotMemoryService {
     }
 
     /**
-     * Gets sessions by a list of IDs for the authenticated user only (no anonymous IDOR).
+     * Gets sessions by a list of IDs.
+     * When userId is set, only that user's sessions are returned.
+     * When userId is null, only public (anonymous) sessions are returned.
      */
-    static async getSessionsByIds(sessionIds: string[], userId: string): Promise<ChatSession[]> {
-        if (!userId || !sessionIds || sessionIds.length === 0) return [];
+    static async getSessionsByIds(sessionIds: string[], userId: string | null): Promise<ChatSession[]> {
+        if (!sessionIds || sessionIds.length === 0) return [];
         const params: string[] = [];
-        const request = pool.request().input("userId", userId);
+        const request = pool.request();
         sessionIds.forEach((id, i) => {
             const paramName = `id${i}`;
             request.input(paramName, id);
             params.push(`@${paramName}`);
         });
+
+        const ownerClause = userId
+            ? "AND userId = @userId"
+            : "AND userId IS NULL";
+
+        if (userId) {
+            request.input("userId", userId);
+        }
+
         const result = await request.query(
-            `SELECT * FROM ChatSessions WHERE id IN (${params.join(",")}) AND userId = @userId AND isActive = 1 AND source = 'chat' ORDER BY isPinned DESC, updatedAt DESC`
+            `SELECT * FROM ChatSessions WHERE id IN (${params.join(",")}) ${ownerClause} AND isActive = 1 AND source = 'chat' ORDER BY isPinned DESC, updatedAt DESC`
         );
         return result.recordset;
     }

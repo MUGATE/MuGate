@@ -1,0 +1,52 @@
+%% MuGate — Full-Project Use Cases · Page 4 · MuChat and Resume
+%% Source: /api/chatbot/* (auth), /api/resume/* (auth + aiRateLimiter), RAG pipeline
+flowchart LR
+    Student((Student))
+    Admin((Admin))
+    AI((AI Providers))
+
+    subgraph MuGate["MuGate · MuChat and Resume"]
+        subgraph MuChat["MuChat"]
+            UC_CreateSess[Create chat session]
+            UC_ListSess[List / delete sessions]
+            UC_Chat[Send MuChat message]
+            UC_Upload[Upload chat file]
+            UC_Enhance[Enhance prompt]
+            UC_RAG[Retrieve RAG knowledge]
+            UC_Analytics[View chatbot analytics]
+        end
+
+        subgraph Resume["Resume Enhancer"]
+            UC_Generate[Generate / download CV]
+            UC_Analyze[Analyze resume score]
+            UC_AiEdit[AI-edit resume]
+            UC_Parse[Parse resume text]
+            UC_Convert[Convert uploaded resume]
+            UC_EditFile[Edit uploaded resume file]
+        end
+    end
+
+    Student --> UC_CreateSess
+    Student --> UC_ListSess
+    Student --> UC_Chat
+    Student --> UC_Upload
+    Student --> UC_Enhance
+    Student --> UC_Generate
+    Student --> UC_Analyze
+    Student --> UC_AiEdit
+    Student --> UC_Parse
+    Student --> UC_Convert
+    Student --> UC_EditFile
+
+    Admin --> UC_Analytics
+
+    UC_Chat -.->|«include»| UC_RAG
+    UC_Chat -.-> AI
+    UC_Upload -.-> AI
+    UC_Enhance -.-> AI
+    UC_Generate -.-> AI
+    UC_Analyze -.-> AI
+    UC_AiEdit -.-> AI
+    UC_Parse -.-> AI
+    UC_Convert -.-> AI
+    UC_EditFile -.-> AI

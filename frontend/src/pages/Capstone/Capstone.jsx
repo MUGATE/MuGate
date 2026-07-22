@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import CapstoneSidebar from './components/CapstoneSidebar';
 import FindPartner from './components/FindPartner';
 import IdeasDatabase from './components/IdeasDatabase/IdeasDatabase';
@@ -9,6 +9,17 @@ import './capstone.css';
 
 const Capstone = () => {
   const [activeFeature, setActiveFeature] = useState('partners');
+  const [isAuthed, setIsAuthed] = useState(() => !!localStorage.getItem('mugate_token'));
+
+  // Require login — same gate as Schedule
+  useEffect(() => {
+    const token = localStorage.getItem('mugate_token');
+    if (!token) {
+      window.location.href = '/?auth=login';
+      return;
+    }
+    setIsAuthed(true);
+  }, []);
 
   // ─── Auth ───────────────────────────────────────────────
   const token = localStorage.getItem('mugate_token');
@@ -21,6 +32,9 @@ const Capstone = () => {
       currentUserEmail = payload.email || '';
     } catch { /* ignore */ }
   }
+
+  if (!isAuthed) return null;
+
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="capstone-page-wrapper">

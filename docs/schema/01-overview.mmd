@@ -1,0 +1,123 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "14px"}} }%%
+erDiagram
+    Users ||--o| PortalCredentials : has
+    Users ||--o{ Sessions : has
+    Users ||--o{ AcademicHistory : has
+    Users ||--o{ Schedules : has
+    Users ||--o{ ChatSessions : has
+
+    Courses ||--o{ CourseSections : has
+    Schedules ||--o{ ScheduleSections : contains
+    CourseSections ||--o{ ScheduleSections : included_in
+
+    ChatSessions ||--o{ ChatMessages : has
+
+    KnowledgePages ||--o{ KnowledgeChunks : has
+
+    Companies ||--o{ InternshipReviews : has
+
+    Users {
+        uuid id PK
+        text email UK
+        text universityId UK
+    }
+
+    PortalCredentials {
+        uuid id PK
+        uuid userId FK
+    }
+
+    Sessions {
+        uuid id PK
+        uuid userId FK
+    }
+
+    Admins {
+        text universityId PK
+    }
+
+    Courses {
+        uuid id PK
+        text courseCode UK
+    }
+
+    CourseSections {
+        uuid id PK
+        uuid courseId FK
+    }
+
+    AcademicHistory {
+        uuid id PK
+        uuid userId FK
+    }
+
+    Schedules {
+        uuid id PK
+        uuid userId FK
+    }
+
+    ScheduleSections {
+        uuid scheduleId PK
+        uuid sectionId FK
+    }
+
+    ChatSessions {
+        uuid id PK
+        uuid userId FK
+    }
+
+    ChatMessages {
+        uuid id PK
+        uuid sessionId FK
+    }
+
+    ChatAnalytics {
+        uuid id PK
+    }
+
+    KnowledgePages {
+        uuid id PK
+        text url UK
+    }
+
+    KnowledgeChunks {
+        uuid id PK
+        uuid pageId FK
+    }
+
+    ScraperRuns {
+        uuid id PK
+    }
+
+    ScrapeQueue {
+        uuid id PK
+        uuid runId "no FK"
+    }
+
+    CapstonePartners {
+        int id PK
+        text userId UK
+    }
+
+    CapstoneIdeas {
+        int id PK
+    }
+
+    Companies {
+        int id PK
+    }
+
+    InternshipReviews {
+        int id PK
+        int companyId FK
+        text userId "no FK"
+    }
+
+    Events {
+        int id PK
+    }
+
+    UserRoadmap {
+        int id PK
+        text userId "no FK"
+    }

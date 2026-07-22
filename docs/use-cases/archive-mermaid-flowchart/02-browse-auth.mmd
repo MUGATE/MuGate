@@ -1,0 +1,44 @@
+%% MuGate — Full-Project Use Cases · Page 2 · Public Browse & Auth
+%% Source: App.jsx routes; GET /api/events; GET /api/internships/*; GET /api/capstone/ideas; GET /api/roadmap (optionalAuth); POST /api/auth/login
+flowchart LR
+    Guest((Guest))
+    Student((Student))
+    MUPortal((MU Portal))
+
+    subgraph MuGate["MuGate"]
+        subgraph Browse["Public Browse"]
+            UC_Landing[Browse landing / About / Download]
+            UC_Events[View events catalog]
+            UC_Intern[Browse companies and reviews]
+            UC_Ideas[Browse capstone ideas]
+            UC_RoadmapView[View degree roadmap]
+        end
+
+        subgraph Auth["Auth and Profile"]
+            UC_Login[Login with MU credentials]
+            UC_Verify[Verify against MU Portal]
+            UC_Profile[View profile and GPA]
+            UC_IsAdmin[Check admin status]
+            UC_SyncOnLogin[Sync history if GPA stale]
+        end
+    end
+
+    Guest --> UC_Landing
+    Guest --> UC_Events
+    Guest --> UC_Intern
+    Guest --> UC_Ideas
+    Guest --> UC_RoadmapView
+
+    Student --> UC_Login
+    Student --> UC_Profile
+    Student --> UC_IsAdmin
+    Student --> UC_Landing
+    Student --> UC_Events
+    Student --> UC_Intern
+    Student --> UC_Ideas
+    Student --> UC_RoadmapView
+
+    UC_Login -.->|«include»| UC_Verify
+    UC_Login -.->|«extend» when GPA older than 24h| UC_SyncOnLogin
+    UC_Verify -.-> MUPortal
+    UC_SyncOnLogin -.->|extractHistory| MUPortal

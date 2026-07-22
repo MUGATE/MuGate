@@ -1,0 +1,40 @@
+%% MuGate — Full-Project Use Cases · Page 3 · Academic
+%% Source: /api/history, /api/courses, /api/generate, /api/schedules, /api/roadmap + generator.service auto-sync
+flowchart LR
+    Student((Student))
+    System((System CRON))
+    MUPortal((MU Portal))
+
+    subgraph MuGate["MuGate · Academic"]
+        UC_GetHist[Get academic history / summary]
+        UC_SyncHist[Sync academic history from portal]
+        UC_ListCourses[List course offerings]
+        UC_SyncCourses[Sync course offerings]
+        UC_GenSched[Generate schedule options]
+        UC_SaveSched[Save schedule]
+        UC_ListSched[List saved schedules]
+        UC_DelSched[Delete saved schedule]
+        UC_SaveRoad[Save degree roadmap]
+        UC_ResetRoad[Reset degree roadmap]
+        UC_CronCourses[CRON course sync every 3h]
+    end
+
+    Student --> UC_GetHist
+    Student --> UC_SyncHist
+    Student --> UC_ListCourses
+    Student --> UC_SyncCourses
+    Student --> UC_GenSched
+    Student --> UC_SaveSched
+    Student --> UC_ListSched
+    Student --> UC_DelSched
+    Student --> UC_SaveRoad
+    Student --> UC_ResetRoad
+
+    System --> UC_CronCourses
+
+    UC_GenSched -.->|«extend» if history empty| UC_SyncHist
+    UC_GenSched -.->|«extend» if offerings missing| UC_SyncCourses
+
+    UC_SyncHist -.->|Playwright extractHistory| MUPortal
+    UC_SyncCourses -.->|Playwright extractCourses| MUPortal
+    UC_CronCourses -.->|scraper-credentials.json| MUPortal

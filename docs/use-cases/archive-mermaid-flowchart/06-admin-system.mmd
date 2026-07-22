@@ -1,0 +1,58 @@
+%% MuGate — Full-Project Use Cases · Page 6 · Admin Control and Background System
+%% Source: /api/auth admins+users, /api/scraper/university/*, /api/events admin, internship/capstone admin CRUD, sync.cron
+flowchart LR
+    Admin((Admin))
+    System((System CRON))
+    UniWeb((University Website))
+    MUPortal((MU Portal))
+
+    subgraph MuGate["MuGate · Admin and Background"]
+        subgraph AdminCtl["Admin Control"]
+            UC_ListUsers[List users]
+            UC_ManageAdmins[Add / remove admins]
+            UC_CrawlKB[Crawl university website KB]
+            UC_SyncKB[Incremental KB sync]
+            UC_Reindex[Reindex / rescrape / sitemap refresh]
+            UC_KBStats[View KB stats and runs]
+            UC_EvtCRUD[CRUD manual events]
+            UC_EvtScrape[Trigger events scrape]
+            UC_CoCRUD[CRUD internship companies]
+            UC_IdeaCRUD[CRUD / restore capstone ideas]
+            UC_Analytics[View chatbot analytics]
+            UC_ScrapePortal[Scrape portal data]
+        end
+
+        subgraph Bg["Background System CRON"]
+            UC_CronCourses[Course sync every 3 hours]
+            UC_CronKB[KB sync daily 3AM]
+            UC_CronVec[Vector sync daily 4AM]
+            UC_CronSite[Sitemap refresh Sun 2AM]
+        end
+    end
+
+    Admin --> UC_ListUsers
+    Admin --> UC_ManageAdmins
+    Admin --> UC_CrawlKB
+    Admin --> UC_SyncKB
+    Admin --> UC_Reindex
+    Admin --> UC_KBStats
+    Admin --> UC_EvtCRUD
+    Admin --> UC_EvtScrape
+    Admin --> UC_CoCRUD
+    Admin --> UC_IdeaCRUD
+    Admin --> UC_Analytics
+    Admin --> UC_ScrapePortal
+
+    System --> UC_CronCourses
+    System --> UC_CronKB
+    System --> UC_CronVec
+    System --> UC_CronSite
+
+    UC_CrawlKB -.-> UniWeb
+    UC_SyncKB -.-> UniWeb
+    UC_Reindex -.-> UniWeb
+    UC_EvtScrape -.-> UniWeb
+    UC_CronKB -.-> UniWeb
+    UC_CronSite -.-> UniWeb
+    UC_ScrapePortal -.-> MUPortal
+    UC_CronCourses -.-> MUPortal

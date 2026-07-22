@@ -1,0 +1,73 @@
+﻿@startuml 04-muchat-resume
+!include _skin.puml
+title MuGate â€” Full-Project Use Cases Â· Page 4 Â· MuChat & Resume Enhancer\nSource: /api/chatbot/* (auth) Â· /api/resume/* (auth + aiRateLimiter) Â· RAG pipeline Â· AiProvider cascade
+
+actor Student as Student
+actor Admin as Admin
+actor "AI Providers" as AI <<external>>
+actor "University\nWebsite" as UniWeb <<external>>
+
+rectangle "MuGate Â· MuChat & Resume" {
+  package "MuChat" {
+    usecase "Create chat session" as UC_CreateSess
+    usecase "List chat sessions" as UC_ListSess
+    usecase "Delete chat session" as UC_DelSess
+    usecase "Get session messages" as UC_GetMsgs
+    usecase "Send MuChat message" as UC_Chat
+    usecase "Retrieve RAG knowledge\n(hybrid vector+keyword)" as UC_RAG
+    usecase "Live-search university\nsite (low confidence)" as UC_Live
+    usecase "Upload chat file\n(text / vision)" as UC_Upload
+    usecase "Enhance prompt" as UC_Enhance
+    usecase "View chatbot analytics" as UC_Analytics
+  }
+
+  package "Resume Enhancer" {
+    usecase "Generate CV\n(PDF / DOCX)" as UC_Generate
+    usecase "Analyze resume score" as UC_Analyze
+    usecase "AI-edit resume\nsection" as UC_AiEdit
+    usecase "Parse resume text\nto structured JSON" as UC_Parse
+    usecase "Convert uploaded\nresume file" as UC_Convert
+    usecase "Edit uploaded\nresume file" as UC_EditFile
+  }
+}
+
+Student -- UC_CreateSess
+Student -- UC_ListSess
+Student -- UC_DelSess
+Student -- UC_GetMsgs
+Student -- UC_Chat
+Student -- UC_Upload
+Student -- UC_Enhance
+Student -- UC_Generate
+Student -- UC_Analyze
+Student -- UC_AiEdit
+Student -- UC_Parse
+Student -- UC_Convert
+Student -- UC_EditFile
+
+Admin -- UC_Analytics
+
+UC_Chat ..> UC_RAG : <<include>>
+UC_Live ..> UC_RAG : <<extend>>\n(confidence below threshold)
+
+UC_Chat -- AI
+UC_Upload -- AI
+UC_Enhance -- AI
+UC_Analyze -- AI
+UC_AiEdit -- AI
+UC_Parse -- AI
+UC_RAG -- UniWeb
+UC_Live -- UniWeb
+
+note right of AI
+  Cascade: DeepSeek â†’
+  Gemini â†’ OpenRouter
+  (ai.provider.ts)
+end note
+
+note bottom of UC_Generate
+  Local PDF/DOCX generators â€”
+  no AI provider call
+end note
+
+@enduml

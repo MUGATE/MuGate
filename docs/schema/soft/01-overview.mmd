@@ -1,0 +1,135 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "13px"}} }%%
+erDiagram
+    %% Solid (--) = declared PostgreSQL FK
+    %% Dashed (..) = soft / application key (no DB FK)
+
+    Users ||--o| PortalCredentials : "FK userId"
+    Users ||--o{ Sessions : "FK userId"
+    Users ||--o{ AcademicHistory : "FK userId"
+    Users ||--o{ Schedules : "FK userId"
+    Users ||--o{ ChatSessions : "FK userId"
+
+    Users ||..o{ CapstonePartners : "soft userId to id"
+    Users ||..o{ InternshipReviews : "soft userId to id"
+    Users ||..o{ UserRoadmap : "soft userId to id"
+    Users ||..o{ Events : "soft createdBy to name"
+    Users ||..o| Admins : "soft universityId"
+
+    Courses ||--o{ CourseSections : "FK courseId"
+    Schedules ||--o{ ScheduleSections : "FK scheduleId"
+    CourseSections ||--o{ ScheduleSections : "FK sectionId"
+
+    ChatSessions ||--o{ ChatMessages : "FK sessionId"
+
+    KnowledgePages ||--o{ KnowledgeChunks : "FK pageId"
+    ScraperRuns ||..o{ ScrapeQueue : "soft runId to id"
+
+    Companies ||--o{ InternshipReviews : "FK companyId"
+
+    Users {
+        uuid id PK
+        text email UK
+        text universityId UK
+        text name
+    }
+
+    PortalCredentials {
+        uuid id PK
+        uuid userId FK
+    }
+
+    Sessions {
+        uuid id PK
+        uuid userId FK
+    }
+
+    Admins {
+        text universityId "PK soft"
+    }
+
+    Courses {
+        uuid id PK
+        text courseCode UK
+    }
+
+    CourseSections {
+        uuid id PK
+        uuid courseId FK
+    }
+
+    AcademicHistory {
+        uuid id PK
+        uuid userId FK
+    }
+
+    Schedules {
+        uuid id PK
+        uuid userId FK
+    }
+
+    ScheduleSections {
+        uuid scheduleId "PK FK"
+        uuid sectionId "PK FK"
+    }
+
+    ChatSessions {
+        uuid id PK
+        uuid userId FK
+    }
+
+    ChatMessages {
+        uuid id PK
+        uuid sessionId FK
+    }
+
+    ChatAnalytics {
+        uuid id PK
+    }
+
+    KnowledgePages {
+        uuid id PK
+        text url UK
+    }
+
+    KnowledgeChunks {
+        uuid id PK
+        uuid pageId FK
+    }
+
+    ScraperRuns {
+        uuid id PK
+    }
+
+    ScrapeQueue {
+        uuid id PK
+        uuid runId "soft"
+    }
+
+    CapstonePartners {
+        int id PK
+        text userId "soft UK"
+    }
+
+    CapstoneIdeas {
+        int id PK
+    }
+
+    Companies {
+        int id PK
+    }
+
+    InternshipReviews {
+        int id PK
+        int companyId FK
+        text userId "soft"
+    }
+
+    Events {
+        int id PK
+        text createdBy "soft"
+    }
+
+    UserRoadmap {
+        int id PK
+        text userId "soft"
+    }

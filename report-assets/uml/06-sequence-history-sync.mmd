@@ -1,0 +1,20 @@
+%% MuGate — Sequence: Academic history sync
+%% Source: HistoryController · HistoryService · PortalScraper.extractHistory
+sequenceDiagram
+    autonumber
+    participant Client
+    participant HistoryController
+    participant HistoryService
+    participant PortalScraper
+    participant DB as Database
+
+    Client->>HistoryController: POST /api/history/sync
+    Note over HistoryController: authMiddleware · also triggered after login when stale
+    HistoryController->>HistoryService: syncStudentHistoryFromPortal(userId)
+    HistoryService->>DB: load + decrypt PortalCredentials
+    HistoryService->>PortalScraper: extractHistory(credentials)
+    PortalScraper->>PortalScraper: Playwright scrape MU portal
+    PortalScraper-->>HistoryService: AcademicRecord[]
+    HistoryService->>DB: txn upsert AcademicHistory and update GPA
+    HistoryService-->>HistoryController: summary
+    HistoryController-->>Client: 200

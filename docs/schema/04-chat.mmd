@@ -1,0 +1,36 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "13px"}} }%%
+erDiagram
+    Users ||--o{ ChatSessions : has
+    ChatSessions ||--o{ ChatMessages : has
+
+    Users {
+        uuid id PK
+    }
+
+    ChatSessions {
+        uuid id PK
+        uuid userId FK
+        text title
+        text source
+        boolean isPinned
+        boolean isActive
+        timestamptz createdAt
+        timestamptz updatedAt
+    }
+
+    ChatMessages {
+        uuid id PK
+        uuid sessionId FK
+        text role
+        text content
+        int tokensUsed
+        timestamptz createdAt
+    }
+
+    ChatAnalytics {
+        uuid id PK
+        text questionCategory
+        boolean isFailed
+        int responseTimeMs
+        timestamptz createdAt
+    }

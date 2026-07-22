@@ -12,11 +12,8 @@ export class ChatbotController {
         try {
             // @ts-ignore
             const user = req.user;
-            if (!user?.userId) {
-                return res.status(401).json({ success: false, message: "Authentication required." });
-            }
-            const userId = user.userId;
-            const userName = user.name;
+            const userId = user?.userId ?? null;
+            const userName = user?.name;
 
             const dto: CreateSessionDto = req.body;
             const source = dto.source === "resume" ? "resume" : "chat";
@@ -33,11 +30,20 @@ export class ChatbotController {
         try {
             // @ts-ignore
             const user = req.user;
-            if (!user?.userId) {
-                return res.status(401).json({ success: false, message: "Authentication required." });
+
+            if (user?.userId) {
+                const sessions = await ChatbotMemoryService.getSessions(user.userId);
+                return res.status(200).json({ success: true, sessions });
             }
 
-            const sessions = await ChatbotMemoryService.getSessions(user.userId);
+            // Anonymous — recover sessions by IDs stored client-side
+            const idsParam = typeof req.query.ids === "string" ? req.query.ids : "";
+            const sessionIds = idsParam
+                .split(",")
+                .map((id) => id.trim())
+                .filter(Boolean);
+
+            const sessions = await ChatbotMemoryService.getSessionsByIds(sessionIds, null);
             res.status(200).json({ success: true, sessions });
         } catch (error: any) {
             res.status(400).json({ success: false, message: error.message });

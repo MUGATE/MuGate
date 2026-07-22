@@ -1,0 +1,64 @@
+﻿@startuml 02-browse-auth
+!include _skin.puml
+title MuGate â€” Full-Project Use Cases Â· Page 2 Â· Public Browse & Auth\nSource: App.jsx routes Â· POST /api/auth/login Â· GET /api/events Â· /internships Â· /capstone/ideas Â· /roadmap (optionalAuth)
+
+actor Guest as Guest
+actor Student as Student
+actor "MU Portal" as MUPortal <<external>>
+
+rectangle "MuGate" {
+  package "Public Browse" {
+    usecase "Browse landing\n(Home)" as UC_Home
+    usecase "View About page" as UC_About
+    usecase "Download Android app" as UC_Download
+    usecase "View events catalog" as UC_Events
+    usecase "Browse companies\n& review stats" as UC_Intern
+    usecase "Browse capstone ideas\n(search / faculty)" as UC_Ideas
+    usecase "View degree roadmap\n(optional auth)" as UC_Roadmap
+  }
+
+  package "Auth & Profile" {
+    usecase "Login with MU\ncredentials" as UC_Login
+    usecase "Verify credentials\nagainst MU Portal" as UC_Verify
+    usecase "Auto-register user\n& store portal creds" as UC_Register
+    usecase "Issue MuGate JWT" as UC_JWT
+    usecase "View profile &\ncached GPA" as UC_Profile
+    usecase "Check admin status\n(GET /auth/me/is-admin)" as UC_IsAdmin
+    usecase "Sync history on login\nif GPA stale (>24h)" as UC_SyncLogin
+  }
+}
+
+Guest -- UC_Home
+Guest -- UC_About
+Guest -- UC_Download
+Guest -- UC_Events
+Guest -- UC_Intern
+Guest -- UC_Ideas
+Guest -- UC_Roadmap
+
+Student -- UC_Home
+Student -- UC_About
+Student -- UC_Download
+Student -- UC_Events
+Student -- UC_Intern
+Student -- UC_Ideas
+Student -- UC_Roadmap
+Student -- UC_Login
+Student -- UC_Profile
+Student -- UC_IsAdmin
+
+UC_Login ..> UC_Verify : <<include>>
+UC_Login ..> UC_Register : <<include>>
+UC_Login ..> UC_JWT : <<include>>
+UC_SyncLogin ..> UC_Login : <<extend>>\n(GPA age > 24h)
+
+UC_Verify -- MUPortal
+UC_SyncLogin -- MUPortal
+
+note right of UC_Verify
+  AuthService.login â†’
+  PortalScraper.verifyCredentials
+  (ums.mu.edu.lb)
+end note
+
+@enduml

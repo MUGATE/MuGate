@@ -1,0 +1,26 @@
+%% MuGate — Sequence: Schedule generation
+%% Source: GeneratorController · GeneratorService · CombinationEngine · ScoringEngine
+sequenceDiagram
+    autonumber
+    participant Client
+    participant GeneratorController
+    participant GeneratorService
+    participant History as HistoryService / Curriculum
+    participant Courses as CoursesService / CourseSections
+    participant Scoring as ScoringEngine
+
+    Client->>GeneratorController: POST /api/generate { semesterId?, preferences }
+    Note over GeneratorController: authMiddleware
+    GeneratorController->>GeneratorService: generateSchedules(userId, …)
+    GeneratorService->>History: load AcademicHistory + CS_CURRICULUM
+    History-->>GeneratorService: getEligibleCourses()
+    GeneratorService->>Courses: load sections (sync/cache if needed)
+    Courses-->>GeneratorService: CourseSection[]
+    GeneratorService->>GeneratorService: build conflict-free combinations
+    GeneratorService->>Scoring: score(SchedulePreferences)
+    Scoring-->>GeneratorService: ScoredSchedule[] ranked
+    GeneratorService-->>GeneratorController: ranked options
+    GeneratorController-->>Client: 200 schedules
+    opt user saves a choice
+        Client->>Client: POST /api/schedules/save
+    end

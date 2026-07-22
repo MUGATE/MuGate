@@ -25,8 +25,6 @@ import {
 } from '../../api/resumeApi';
 import { Button } from '../../components/Button';
 import { Screen } from '../../components/Screen';
-import { SignInGate } from '../../components/SignInGate';
-import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { radii, ThemeColors } from '../../theme/colors';
 
@@ -106,14 +104,9 @@ function scoreColor(score: number, c: ThemeColors): string {
 }
 
 export function ResumeScreen() {
-  const { isAuthenticated } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [tab, setTab] = useState<Tab>('analyze');
-
-  if (!isAuthenticated) {
-    return <SignInGate message="Sign in to analyze and build resumes." />;
-  }
 
   return (
     <Screen padded={false} header>

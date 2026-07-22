@@ -37,18 +37,18 @@ const CompanyModal = ({
 
   return (
     <div className="hero-modal-overlay" onClick={onClose}>
-      <div className="explore-all-modal-glass" style={{ maxWidth: 550, maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
-        <button className="hero-modal-close" onClick={onClose} aria-label="Close" style={{ color: 'var(--color-text)' }}>
+      <div className="explore-all-modal-glass company-modal-panel" style={{ maxWidth: 550, maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+        <button className="hero-modal-close" onClick={onClose} aria-label="Close">
           <X size={20} />
         </button>
-        <h2 className="modal-brand" style={{ color: 'var(--color-text)', fontWeight: 800 }}>
+        <h2 className="modal-brand" style={{ fontWeight: 800 }}>
           {editingCompany ? "Edit Company" : "Add New Company"}
         </h2>
-        <p className="modal-desc" style={{ marginBottom: 20, color: 'var(--color-text-secondary)' }}>
+        <p className="modal-desc" style={{ marginBottom: 20 }}>
           {editingCompany ? "Modify company details and 3D settings." : "Create a new company listing for internships."}
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', textAlign: 'left' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', textAlign: 'left', minWidth: 0, boxSizing: 'border-box' }}>
           <div className="mg-field">
             <label className="mg-label" style={{ fontSize: '0.85rem' }}>Company Name *</label>
             <input
@@ -71,7 +71,7 @@ const CompanyModal = ({
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="company-modal-grid-2">
             <div className="mg-field">
               <label className="mg-label" style={{ fontSize: '0.85rem' }}>Email</label>
               <input
@@ -156,8 +156,8 @@ const CompanyModal = ({
                       border: '1px solid var(--color-border)'
                     }} 
                   />
-                  <div style={{ flex: 1, textAlign: 'left' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', display: 'block' }}>Logo Image Loaded</span>
+                  <div style={{ flex: 1, textAlign: 'left', minWidth: 0 }}>
+                    <span style={{ fontSize: '0.8rem', color: '#3a3937', display: 'block' }}>Logo Image Loaded</span>
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setCompSvgString(''); }}
@@ -180,16 +180,16 @@ const CompanyModal = ({
               ) : (
                 <>
                   <Plus size={20} color="var(--color-primary)" style={{ marginBottom: 6 }} />
-                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text)', fontWeight: 500 }}>
+                  <span style={{ fontSize: '0.85rem', color: '#000000', fontWeight: 500 }}>
                     Drag & drop logo here, or <span style={{ color: 'var(--color-accent)', textDecoration: 'underline' }}>browse</span>
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>Supports SVG, PNG, JPG</span>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>Supports SVG, PNG, JPG</span>
                 </>
               )}
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="company-modal-grid-2">
             <div className="mg-field">
               <label className="mg-label" style={{ fontSize: '0.85rem' }}>Scale (for 3D mesh)</label>
               <input
@@ -213,7 +213,7 @@ const CompanyModal = ({
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 20px', margin: '6px 0' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--color-text)', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: '#000000', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={compForceWhite}
@@ -226,7 +226,7 @@ const CompanyModal = ({
               Force White Background (3D)
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--color-text)', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: '#000000', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={compForceBlack}
@@ -239,7 +239,7 @@ const CompanyModal = ({
               Force Black Background (3D)
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--color-text)', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: '#000000', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={compIsMetallic}

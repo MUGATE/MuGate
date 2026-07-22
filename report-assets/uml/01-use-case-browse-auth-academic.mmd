@@ -1,0 +1,51 @@
+%% MuGate — Use Case Diagram (Figure 1)
+%% Source: frontend App.jsx routes + /api/auth, /api/history, /api/generate, /api/schedules, /api/roadmap, /api/courses
+flowchart LR
+    Guest((Guest))
+    Student((Student))
+    MUPortal((MU Portal))
+
+    subgraph MuGate["MuGate"]
+        subgraph Browse["Browse public"]
+            UC_Landing[Browse landing]
+            UC_Events[View events]
+            UC_Intern[Browse internships]
+            UC_Ideas[Browse capstone ideas]
+            UC_RoadmapView[View roadmap]
+        end
+
+        subgraph AuthProf["Auth and profile"]
+            UC_Login[Login with MU credentials]
+            UC_Profile[View profile / GPA]
+        end
+
+        subgraph Academic["Academic"]
+            UC_SyncHist[Sync academic history]
+            UC_GenSched[Generate schedule options]
+            UC_SaveSched[Save schedules]
+            UC_SaveRoad[Save roadmap]
+            UC_SyncCourses[Sync course offerings]
+        end
+    end
+
+    Guest --> UC_Landing
+    Guest --> UC_Events
+    Guest --> UC_Intern
+    Guest --> UC_Ideas
+    Guest --> UC_RoadmapView
+
+    Student --> UC_Login
+    Student --> UC_Profile
+    Student --> UC_SyncHist
+    Student --> UC_GenSched
+    Student --> UC_SaveSched
+    Student --> UC_SaveRoad
+    Student --> UC_SyncCourses
+    Student --> UC_Events
+    Student --> UC_Intern
+    Student --> UC_Ideas
+    Student --> UC_RoadmapView
+
+    UC_Login -.->|verifyCredentials Playwright| MUPortal
+    UC_SyncHist -.->|extractHistory| MUPortal
+    UC_SyncCourses -.->|extractCourses| MUPortal

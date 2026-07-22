@@ -1,0 +1,29 @@
+' Shared classic UML use-case skin for MuGate diagrams
+skinparam shadowing false
+skinparam handwritten false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam dpi 140
+skinparam PackageBorderColor #222222
+skinparam PackageBackgroundColor #FFFFFF
+skinparam PackageTitleFontStyle bold
+skinparam RectangleBorderColor #222222
+skinparam RectangleBackgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #FEFEFE
+  BorderColor #1a1a1a
+  FontSize 11
+}
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #1a1a1a
+  FontSize 12
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #BDB76B
+  FontSize 9
+}
+skinparam ArrowColor #222222
+skinparam ArrowThickness 1.1
+left to right direction

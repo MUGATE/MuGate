@@ -1,0 +1,29 @@
+%% MuGate — Sequence: Portal SSO login
+%% Source: auth.controller.ts · auth.service.ts · PortalScraper · HistoryService
+sequenceDiagram
+    autonumber
+    participant Client
+    participant AuthController
+    participant AuthService
+    participant PortalScraper
+    participant HistoryService
+    participant DB as Database
+
+    Client->>AuthController: POST /api/auth/login { universityId, password }
+    AuthController->>AuthService: login(universityId, password)
+    AuthService->>PortalScraper: verifyCredentials()
+    PortalScraper->>PortalScraper: Playwright → ums.mu.edu.lb
+    PortalScraper-->>AuthService: valid + studentName
+    AuthService->>DB: SELECT Users WHERE universityId
+    alt user missing
+        AuthService->>DB: INSERT Users (auto-register)
+    end
+    AuthService->>DB: upsert PortalCredentials (encrypt)
+    AuthService->>HistoryService: getAcademicSummary(userId)
+    HistoryService-->>AuthService: gpa / gpaUpdatedAt
+    opt history stale (TTL 24h)
+        AuthService->>HistoryService: syncStudentHistoryFromPortal() (background)
+    end
+    AuthService->>AuthService: generateToken(TokenPayload) + isAdminUser()
+    AuthService-->>AuthController: { token, user, isAdmin, gpa }
+    AuthController-->>Client: 200 AuthResponse → store mugate_token

@@ -1,0 +1,86 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "11px"}} }%%
+erDiagram
+    %% Solid = declared FK · Dashed = soft / application key
+
+    Users ||..o{ CapstonePartners : "soft userId to id"
+    Users ||..o{ InternshipReviews : "soft userId to id"
+    Users ||..o{ Events : "soft createdBy to name"
+    Companies ||--o{ InternshipReviews : "FK companyId to id"
+
+    Users {
+        uuid id PK
+        text name
+        text email UK
+        text universityId UK
+    }
+
+    CapstonePartners {
+        int id PK
+        text userId "soft UK"
+        text userName
+        text email
+        text phone
+        text major
+        text skills
+        text description
+        text lookingFor
+        timestamptz createdAt
+    }
+
+    CapstoneIdeas {
+        int id PK
+        text title
+        text description
+        text faculty
+        int year
+        text tags
+        boolean isActive
+        timestamptz createdAt
+    }
+
+    Companies {
+        int id PK
+        text name
+        text description
+        text colors
+        float scale
+        text svgString
+        text email
+        text phone
+        text website
+        boolean forceWhiteBack
+        boolean forceBlackBack
+        boolean isMetallic
+    }
+
+    InternshipReviews {
+        int id PK
+        int companyId FK
+        text userId "soft"
+        text userName
+        int rating
+        text feedback
+        timestamptz createdAt
+    }
+
+    Events {
+        int id PK
+        text title
+        text description
+        text location
+        timestamptz startDate
+        timestamptz endDate
+        text category
+        text tags
+        text imageUrl
+        text externalUrl
+        text source
+        text sourceId
+        text scraperSource
+        text organizer
+        boolean isFree
+        boolean isActive
+        text createdBy "soft"
+        timestamptz createdAt
+        timestamptz updatedAt
+    }

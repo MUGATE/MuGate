@@ -1,0 +1,75 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "12px"}} }%%
+erDiagram
+    Users ||--o{ AcademicHistory : has
+    Users ||--o{ Schedules : has
+    Courses ||--o{ CourseSections : has
+    Schedules ||--o{ ScheduleSections : contains
+    CourseSections ||--o{ ScheduleSections : included_in
+
+    Users {
+        uuid id PK
+    }
+
+    Courses {
+        uuid id PK
+        text courseCode
+        text courseName
+        int credits
+        text department
+        text semester
+        timestamptz createdAt
+    }
+
+    CourseSections {
+        uuid id PK
+        uuid courseId FK
+        text sectionNumber
+        text instructor
+        text day
+        time startTime
+        time endTime
+        text type
+        int capacity
+        int enrolled
+        text room
+    }
+
+    AcademicHistory {
+        uuid id PK
+        uuid userId FK
+        text courseCode
+        text courseName
+        text grade
+        int credits
+        text semester
+        text status
+        text category
+        boolean isElective
+        timestamptz updatedAt
+    }
+
+    Schedules {
+        uuid id PK
+        uuid userId FK
+        text name
+        float score
+        int totalCredits
+        timestamptz createdAt
+    }
+
+    ScheduleSections {
+        uuid scheduleId PK
+        uuid sectionId FK
+    }
+
+    UserRoadmap {
+        int id PK
+        text userId "no FK"
+        text courseCode
+        text courseName
+        int credits
+        text category
+        int year
+        text semester
+        timestamptz createdAt
+    }

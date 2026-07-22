@@ -1,0 +1,84 @@
+﻿@startuml 01-overview
+!include _skin.puml
+title MuGate â€” Full-Project Use Cases Â· Page 1 Â· Actors & Domain Packages\nSource: backend/src/app.ts mounts Â· frontend App.jsx Â· mobile navigation Â· sync.cron
+
+actor Guest as Guest
+actor Student as Student
+actor Admin as Admin
+actor "System\n(CRON)" as System
+actor "MU Portal" as MUPortal <<external>>
+actor "University\nWebsite" as UniWeb <<external>>
+actor "AI Providers" as AI <<external>>
+
+rectangle "MuGate" {
+  package "Public Browse" as PBrowse {
+    usecase "Browse public pages\n(Home / About / Download)" as UC_Browse
+  }
+  package "Auth & Profile" as PAuth {
+    usecase "Login with MU\ncredentials (JWT)" as UC_Login
+  }
+  package "Academic" as PAcademic {
+    usecase "History Â· Courses Â·\nSchedule Â· Roadmap" as UC_Academic
+  }
+  package "MuChat" as PChat {
+    usecase "RAG chatbot sessions\n& messages" as UC_Chat
+  }
+  package "Resume" as PResume {
+    usecase "Generate Â· Analyze Â·\nEdit resume" as UC_Resume
+  }
+  package "Capstone" as PCap {
+    usecase "Partners Â· Ideas Â·\nAI advisor" as UC_Cap
+  }
+  package "Internships" as PIntern {
+    usecase "Companies &\nreviews" as UC_Intern
+  }
+  package "Events" as PEvents {
+    usecase "Discover &\nmanage events" as UC_Events
+  }
+  package "Admin Control" as PAdmin {
+    usecase "KB Â· Users Â·\nCRUD Â· Analytics" as UC_Admin
+  }
+  package "Background Sync" as PBg {
+    usecase "CRON course / KB /\nvector / sitemap jobs" as UC_Bg
+  }
+}
+
+Guest -- UC_Browse
+Guest -- UC_Events
+Guest -- UC_Intern
+Guest -- UC_Cap
+
+Student -- UC_Login
+Student -- UC_Browse
+Student -- UC_Academic
+Student -- UC_Chat
+Student -- UC_Resume
+Student -- UC_Cap
+Student -- UC_Intern
+Student -- UC_Events
+
+Admin -- UC_Admin
+Admin -- UC_Events
+Admin -- UC_Intern
+Admin -- UC_Cap
+Admin -- UC_Chat
+
+System -- UC_Bg
+System -- UC_Academic
+
+UC_Login ..> MUPortal : Playwright SSO
+UC_Academic ..> MUPortal : history / offerings
+UC_Admin ..> UniWeb : KB crawl
+UC_Admin ..> MUPortal : portal scrape
+UC_Bg ..> MUPortal
+UC_Bg ..> UniWeb
+UC_Chat ..> AI : DeepSeek / Gemini /\nOpenRouter
+UC_Resume ..> AI
+UC_Cap ..> AI
+
+note bottom of Guest
+  Web + Android mobile share these use cases
+  via the same /api/* backend.
+end note
+
+@enduml

@@ -108,7 +108,7 @@ const GlassStage = () => {
       <group position={[0, -58, -151.5]} rotation={[0, -7.069, 0]}>
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[1500, 64]} />
-          <meshBasicMaterial map={shadowMap} transparent opacity={0.4} blending={THREE.MultiplyBlending} depthWrite={false} />
+          <meshBasicMaterial map={shadowMap} transparent opacity={0.4} blending={THREE.MultiplyBlending} premultipliedAlpha depthWrite={false} />
         </mesh>
       </group>
 

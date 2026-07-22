@@ -1,0 +1,98 @@
+%% MuGate — Class Diagram: Service layer (Controller → Service → deps)
+%% Source: backend/src/modules/** — static service classes, dependency arrows
+classDiagram
+    direction LR
+
+    class AuthController {
+        +login()
+    }
+    class AuthService {
+        +login(universityId, password)
+    }
+    class PortalScraper {
+        +verifyCredentials()
+        +extractHistory()
+        +extractCourses()
+    }
+    class HistoryService {
+        +syncStudentHistoryFromPortal()
+        +getAcademicSummary()
+    }
+
+    class GeneratorController {
+        +generate()
+    }
+    class GeneratorService {
+        +generateSchedules()
+        +getEligibleCourses()
+    }
+    class CombinationEngine {
+        +buildCombinations()
+    }
+    class ScoringEngine {
+        +score(prefs)
+    }
+
+    class ChatbotController {
+        +createSession()
+        +sendMessage()
+        +uploadFile()
+        +enhancePrompt()
+    }
+    class ChatbotService {
+        +handleMessage()
+        +createSession()
+    }
+    class ClassifierService {
+        +classify() QuestionType
+    }
+    class KnowledgeService {
+        +retrieveContext()
+    }
+    class AiProvider {
+        +generateResponse()
+    }
+
+    class ResumeController {
+        +generateResume()
+        +analyzeResumeController()
+        +aiEditResumeController()
+    }
+    class CapstoneService {
+        +chat()
+        +seedIdeasIfEmpty()
+    }
+    class CapstoneRepository {
+        +getAllPartners()
+        +addIdea()
+    }
+    class ScraperService {
+        +scrapeUniversityWebsite()
+        +incrementalSync()
+        +refreshSitemap()
+    }
+    class EventService {
+        +getUpcoming()
+        +triggerScrape()
+    }
+    class RoadMapController {
+        +getRoadmap()
+        +saveRoadmap()
+    }
+
+    AuthController --> AuthService
+    AuthService --> PortalScraper
+    AuthService --> HistoryService
+    GeneratorController --> GeneratorService
+    GeneratorService --> CombinationEngine
+    GeneratorService --> ScoringEngine
+    GeneratorService --> HistoryService
+    ChatbotController --> ChatbotService
+    ChatbotService --> ClassifierService
+    ChatbotService --> KnowledgeService
+    ChatbotService --> AiProvider
+    CapstoneService --> AiProvider
+    CapstoneService --> CapstoneRepository
+    ResumeController ..> AiProvider : analyze / ai-edit
+    ScraperService --> KnowledgeService : feeds RAG corpus
+    EventService --> ScraperService : event scrapers

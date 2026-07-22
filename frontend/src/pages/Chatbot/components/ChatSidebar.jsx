@@ -100,7 +100,7 @@ const ChatSidebar = forwardRef(function ChatSidebar({
         </Link>
         <Link to="/download" className="nav-item">
           <Download size={18} />
-          <span>Android App</span>
+          <span>App</span>
         </Link>
         <Link to="/about" className="nav-item">
           <Info size={18} />

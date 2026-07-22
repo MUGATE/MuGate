@@ -1,0 +1,37 @@
+%% MuGate — Sequence: MuChat RAG message
+%% Source: chatbot.controller.ts · chatbot.service.ts · ClassifierService · KnowledgeService · AiProvider
+sequenceDiagram
+    autonumber
+    participant Client
+    participant ChatbotController
+    participant ChatbotService
+    participant Classifier as ClassifierService
+    participant Knowledge as KnowledgeService
+    participant AiProvider
+    participant DB as Database
+
+    Client->>ChatbotController: POST /api/chatbot/message { sessionId, content }
+    Note over ChatbotController: authMiddleware + aiRateLimiter
+    ChatbotController->>ChatbotService: handleMessage()
+    ChatbotService->>ChatbotService: isQuerySafe(content)
+    alt unsafe / restricted
+        ChatbotService->>DB: save refusal ChatMessages
+        ChatbotService-->>Client: refusal text
+    else resume session source=resume
+        ChatbotService->>AiProvider: generateResponse(resume prompt)
+        AiProvider-->>ChatbotService: assistant text
+        ChatbotService->>DB: persist messages + analytics
+    else university academic path
+        ChatbotService->>Classifier: classify() → QuestionType
+        Classifier-->>ChatbotService: UNIVERSITY_ACADEMIC | OFF_TOPIC | …
+        opt academic
+            ChatbotService->>Knowledge: retrieveContext()
+            Knowledge-->>ChatbotService: chunks + optional live search
+        end
+        ChatbotService->>AiProvider: generateSystemPrompt → generateResponse()
+        AiProvider->>AiProvider: DeepSeek → Gemini → OpenRouter cascade
+        AiProvider-->>ChatbotService: assistant text
+        ChatbotService->>DB: persist ChatMessages + ChatAnalytics
+        ChatbotService-->>ChatbotController: assistant message
+        ChatbotController-->>Client: 200 JSON response
+    end

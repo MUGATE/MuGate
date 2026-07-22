@@ -1,0 +1,102 @@
+%% MuGate — Class Diagram: Domain model (chat, RAG, capstone, internships, events)
+%% Source: supabase schema · Capstone/Events/Internship repositories
+classDiagram
+    class Users {
+        +UUID id
+        +string universityId
+    }
+
+    class ChatSessions {
+        +UUID id
+        +UUID userId
+        +string title
+        +string source
+        +bool isPinned
+        +bool isActive
+    }
+
+    class ChatMessages {
+        +UUID id
+        +UUID sessionId
+        +string role
+        +string content
+        +int tokensUsed
+    }
+
+    class ChatAnalytics {
+        +UUID id
+        +string questionCategory
+        +bool isFailed
+        +int responseTimeMs
+    }
+
+    class KnowledgePages {
+        +UUID id
+        +string url
+        +string title
+        +string content
+        +string contentHash
+        +string category
+    }
+
+    class KnowledgeChunks {
+        +UUID id
+        +UUID pageId
+        +int chunkIndex
+        +string content
+        +Date chromaSyncedAt
+    }
+
+    class ScraperRuns {
+        +UUID id
+        +string runType
+        +string status
+        +int pagesScraped
+    }
+
+    class CapstonePartners {
+        +int id
+        +string userId
+        +string skills
+        +string lookingFor
+    }
+
+    class CapstoneIdeas {
+        +int id
+        +string title
+        +string faculty
+        +bool isActive
+    }
+
+    class Companies {
+        +int id
+        +string name
+        +string website
+    }
+
+    class InternshipReviews {
+        +int id
+        +int companyId
+        +string userId
+        +int rating
+        +string feedback
+    }
+
+    class Events {
+        +int id
+        +string title
+        +string category
+        +Date startDate
+        +string source
+        +bool isActive
+    }
+
+    Users "1" --> "*" ChatSessions
+    ChatSessions "1" --> "*" ChatMessages
+    KnowledgePages "1" --> "*" KnowledgeChunks : CASCADE
+    Companies "1" --> "*" InternshipReviews
+    Users "1" --> "*" CapstonePartners
+    Users "1" --> "*" InternshipReviews
+    Note for ChatSessions : source in { chat, resume }
+    Note for ChatAnalytics : append-only query metrics
+    Note for ScraperRuns : admin / CRON crawl audit

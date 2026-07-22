@@ -1,0 +1,75 @@
+﻿@startuml 05-capstone-intern-events
+!include _skin.puml
+title MuGate â€” Full-Project Use Cases Â· Page 5 Â· Capstone, Internships & Events\nSource: /api/capstone Â· /api/internships Â· /api/events (public reads + auth writes)
+
+actor Guest as Guest
+actor Student as Student
+actor Admin as Admin
+actor "AI Providers" as AI <<external>>
+
+rectangle "MuGate Â· Capstone Â· Internships Â· Events" {
+  package "Capstone" {
+    usecase "Browse capstone ideas" as UC_BrowseIdeas
+    usecase "List idea faculties" as UC_Faculties
+    usecase "List partner listings" as UC_ListPartners
+    usecase "Add partner listing" as UC_AddPartner
+    usecase "Delete partner listing\n(own or admin)" as UC_DelPartner
+    usecase "Chat with Capstone\nAI advisor" as UC_Advisor
+  }
+
+  package "Internships" {
+    usecase "Browse companies" as UC_BrowseCo
+    usecase "View internship stats" as UC_InternStats
+    usecase "Read company reviews" as UC_ReadReviews
+    usecase "Submit internship review" as UC_AddReview
+    usecase "Update own review" as UC_UpdReview
+    usecase "Delete review\n(own or admin)" as UC_DelReview
+  }
+
+  package "Events" {
+    usecase "View upcoming events" as UC_ViewEvents
+    usecase "View event categories" as UC_Categories
+    usecase "View event stats" as UC_EvtStats
+    usecase "View event by id" as UC_EventDetail
+  }
+}
+
+Guest -- UC_BrowseIdeas
+Guest -- UC_Faculties
+Guest -- UC_BrowseCo
+Guest -- UC_InternStats
+Guest -- UC_ReadReviews
+Guest -- UC_ViewEvents
+Guest -- UC_Categories
+Guest -- UC_EvtStats
+Guest -- UC_EventDetail
+
+Student -- UC_BrowseIdeas
+Student -- UC_Faculties
+Student -- UC_ListPartners
+Student -- UC_AddPartner
+Student -- UC_DelPartner
+Student -- UC_Advisor
+Student -- UC_BrowseCo
+Student -- UC_InternStats
+Student -- UC_ReadReviews
+Student -- UC_AddReview
+Student -- UC_UpdReview
+Student -- UC_DelReview
+Student -- UC_ViewEvents
+Student -- UC_Categories
+Student -- UC_EvtStats
+Student -- UC_EventDetail
+
+Admin -- UC_DelPartner
+Admin -- UC_DelReview
+
+UC_Advisor -- AI
+
+note right of UC_Advisor
+  POST /api/capstone/ai/chat
+  uses idea catalog context
+  + AiProvider cascade
+end note
+
+@enduml

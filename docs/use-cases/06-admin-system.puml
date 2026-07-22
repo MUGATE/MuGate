@@ -1,0 +1,89 @@
+﻿@startuml 06-admin-system
+!include _skin.puml
+title MuGate â€” Full-Project Use Cases Â· Page 6 Â· Admin Control & Background System\nSource: /api/auth admins+users Â· /api/scraper/university/* Â· events/internships/capstone admin CRUD Â· sync.cron
+
+actor Admin as Admin
+actor "System\n(CRON)" as System
+actor "University\nWebsite" as UniWeb <<external>>
+actor "MU Portal" as MUPortal <<external>>
+actor "External Event\nSites" as EvtSites <<external>>
+
+rectangle "MuGate Â· Admin & Background" {
+  package "Admin Users" {
+    usecase "List users" as UC_ListUsers
+    usecase "List admins" as UC_ListAdmins
+    usecase "Add admin" as UC_AddAdmin
+    usecase "Remove admin" as UC_RemAdmin
+    usecase "View chatbot analytics" as UC_Analytics
+  }
+
+  package "Knowledge Base / Scraper" {
+    usecase "Crawl university website" as UC_Crawl
+    usecase "Incremental KB sync" as UC_SyncKB
+    usecase "Full rescrape KB" as UC_Rescrape
+    usecase "Reindex vectors" as UC_Reindex
+    usecase "Refresh sitemap" as UC_Sitemap
+    usecase "View KB stats / runs /\nscraper status" as UC_KBStats
+    usecase "Scrape portal data\n(POST /scraper/scrape)" as UC_ScrapePortal
+  }
+
+  package "Content Admin CRUD" {
+    usecase "CRUD manual events" as UC_EvtCRUD
+    usecase "Trigger events scrape" as UC_EvtScrape
+    usecase "CRUD internship companies" as UC_CoCRUD
+    usecase "CRUD / restore\ncapstone ideas" as UC_IdeaCRUD
+    usecase "List deleted ideas" as UC_DeletedIdeas
+  }
+
+  package "Background System (CRON)" {
+    usecase "Course sync every 3h" as UC_CronCourses
+    usecase "KB sync daily 03:00" as UC_CronKB
+    usecase "Vector sync daily 04:00" as UC_CronVec
+    usecase "Sitemap refresh Sun 02:00" as UC_CronSite
+  }
+}
+
+Admin -- UC_ListUsers
+Admin -- UC_ListAdmins
+Admin -- UC_AddAdmin
+Admin -- UC_RemAdmin
+Admin -- UC_Analytics
+Admin -- UC_Crawl
+Admin -- UC_SyncKB
+Admin -- UC_Rescrape
+Admin -- UC_Reindex
+Admin -- UC_Sitemap
+Admin -- UC_KBStats
+Admin -- UC_ScrapePortal
+Admin -- UC_EvtCRUD
+Admin -- UC_EvtScrape
+Admin -- UC_CoCRUD
+Admin -- UC_IdeaCRUD
+Admin -- UC_DeletedIdeas
+
+System -- UC_CronCourses
+System -- UC_CronKB
+System -- UC_CronVec
+System -- UC_CronSite
+
+UC_Crawl -- UniWeb
+UC_SyncKB -- UniWeb
+UC_Rescrape -- UniWeb
+UC_Sitemap -- UniWeb
+UC_CronKB -- UniWeb
+UC_CronSite -- UniWeb
+UC_ScrapePortal -- MUPortal
+UC_CronCourses -- MUPortal
+UC_EvtScrape -- EvtSites
+
+note bottom of EvtSites
+  Event scrapers: Eventbrite, AUB,
+  Berytech, Zaka, curated sources
+end note
+
+note bottom of UC_CronVec
+  RagSyncService.syncUnsyncedChunks
+  (safety net after scrape/index)
+end note
+
+@enduml

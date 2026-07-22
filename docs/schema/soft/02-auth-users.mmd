@@ -1,0 +1,42 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "12px"}} }%%
+erDiagram
+    %% Solid = declared FK · Dashed = soft / application key
+
+    Users ||--o| PortalCredentials : "FK userId to id"
+    Users ||--o{ Sessions : "FK userId to id"
+    Users ||..o| Admins : "soft universityId"
+
+    Users {
+        uuid id PK
+        text email UK
+        text passwordHash
+        text name
+        text universityId UK
+        numeric gpa
+        timestamptz gpaUpdatedAt
+        timestamptz lastActiveAt
+        timestamptz createdAt
+        timestamptz updatedAt
+    }
+
+    PortalCredentials {
+        uuid id PK
+        uuid userId FK
+        text encryptedUsername
+        text encryptedPassword
+        timestamptz createdAt
+        timestamptz updatedAt
+    }
+
+    Sessions {
+        uuid id PK
+        uuid userId FK
+        text cookies
+        timestamptz expiresAt
+        timestamptz createdAt
+    }
+
+    Admins {
+        text universityId "PK soft"
+        timestamptz createdAt
+    }

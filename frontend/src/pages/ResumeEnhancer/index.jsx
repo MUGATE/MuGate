@@ -54,17 +54,6 @@ const CHAT_FALLBACK_GLOBAL = [
 
 const ResumeEnhancerRouter = () => {
   const [mode, setMode] = useState('welcome');
-  const [isAuthed, setIsAuthed] = useState(() => !!localStorage.getItem('mugate_token'));
-
-  // Require login — redirect home with AuthNoticeModal (same as Schedule).
-  useEffect(() => {
-    const token = localStorage.getItem('mugate_token');
-    if (!token) {
-      window.location.href = '/?auth=login';
-      return;
-    }
-    setIsAuthed(true);
-  }, []);
 
   // Shared Download States
   const [downloadLoading, setDownloadLoading] = useState(false);
@@ -304,8 +293,6 @@ const ResumeEnhancerRouter = () => {
       setDownloadLoading(false);
     }
   }, [showDownloadModal, localForm, globalForm, localExtraEdu, localExtraExp, localExtraProjects, globalExtraExp, globalExtraLead, downloadFileType, downloadFileName]);
-
-  if (!isAuthed) return null;
 
   return (
     <div className="resume-page">

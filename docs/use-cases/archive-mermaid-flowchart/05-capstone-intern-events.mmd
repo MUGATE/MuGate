@@ -1,0 +1,54 @@
+%% MuGate — Full-Project Use Cases · Page 5 · Capstone, Internships, Events
+%% Source: /api/capstone, /api/internships, /api/events (public reads + auth writes)
+flowchart LR
+    Guest((Guest))
+    Student((Student))
+    Admin((Admin))
+    AI((AI Providers))
+
+    subgraph MuGate["MuGate · Capstone · Internships · Events"]
+        subgraph Capstone["Capstone"]
+            UC_BrowseIdeas[Browse capstone ideas]
+            UC_ListPartners[List partner listings]
+            UC_AddPartner[Add partner listing]
+            UC_DelPartner[Delete own partner listing]
+            UC_Advisor[Chat with Capstone AI advisor]
+        end
+
+        subgraph Intern["Internships"]
+            UC_BrowseCo[Browse companies and stats]
+            UC_ReadReviews[Read company reviews]
+            UC_AddReview[Submit internship review]
+            UC_UpdReview[Update own review]
+            UC_DelReview[Delete own review]
+        end
+
+        subgraph Events["Events"]
+            UC_ViewEvents[View upcoming events]
+            UC_EventDetail[View event detail / categories]
+        end
+    end
+
+    Guest --> UC_BrowseIdeas
+    Guest --> UC_BrowseCo
+    Guest --> UC_ReadReviews
+    Guest --> UC_ViewEvents
+    Guest --> UC_EventDetail
+
+    Student --> UC_BrowseIdeas
+    Student --> UC_ListPartners
+    Student --> UC_AddPartner
+    Student --> UC_DelPartner
+    Student --> UC_Advisor
+    Student --> UC_BrowseCo
+    Student --> UC_ReadReviews
+    Student --> UC_AddReview
+    Student --> UC_UpdReview
+    Student --> UC_DelReview
+    Student --> UC_ViewEvents
+    Student --> UC_EventDetail
+
+    Admin --> UC_DelPartner
+    Admin --> UC_DelReview
+
+    UC_Advisor -.-> AI

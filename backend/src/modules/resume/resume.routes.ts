@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { generateResume, editResume, analyzeResumeController, aiEditResumeController, parseResumeController, convertResumeController, convertResumeBase64Controller } from "./controllers/resume.controller";
-import { authMiddleware } from "../../core/middleware/auth.middleware";
+import { optionalAuthMiddleware } from "../../core/middleware/optionalAuth.middleware";
 import { aiRateLimiter } from "../../core/middleware/rateLimiter.middleware";
 import { APP_CONSTANTS } from "../../config/constants";
 
@@ -11,7 +11,8 @@ const upload = multer({
     limits: { fileSize: APP_CONSTANTS.RESUME_UPLOAD_MAX_BYTES },
 });
 
-router.use(authMiddleware);
+// Public resume tools — optional auth attaches user when logged in
+router.use(optionalAuthMiddleware);
 router.use(aiRateLimiter);
 
 // POST /api/resume/generate

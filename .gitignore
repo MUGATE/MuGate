@@ -16,5 +16,12 @@ backend/node_modules/.package-lock.json
 # Local runtime data (regenerated; never commit)
 backend/data/
 
+# PlantUML jar (downloaded by docs/use-cases/build_usecase_pdf.py)
+docs/use-cases/plantuml.jar
+docs/use-cases/rendered/
+docs/use-cases/_test*.puml
+docs/use-cases/_test*.png
+docs/use-cases/_test*.pdf
+
 
 

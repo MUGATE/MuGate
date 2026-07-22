@@ -1,0 +1,55 @@
+%% MuGate — Full-Project Use Cases · Page 1 · Actor & Package Overview
+%% Source: backend/src/app.ts mounts + auth/admin middleware + sync.cron + frontend App.jsx + mobile navigation
+flowchart TB
+    Guest((Guest))
+    Student((Student))
+    Admin((Admin))
+    System((System CRON))
+    MUPortal((MU Portal))
+    UniWeb((University Website))
+    AI((AI Providers))
+
+    subgraph MuGate["MuGate System"]
+        P_Browse["«package» Public Browse"]
+        P_Auth["«package» Auth & Profile"]
+        P_Academic["«package» Academic"]
+        P_MuChat["«package» MuChat"]
+        P_Resume["«package» Resume"]
+        P_Capstone["«package» Capstone"]
+        P_Intern["«package» Internships"]
+        P_Events["«package» Events"]
+        P_Admin["«package» Admin Control"]
+        P_Bg["«package» Background Sync"]
+    end
+
+    Guest --> P_Browse
+    Guest --> P_Events
+    Guest --> P_Intern
+    Guest --> P_Capstone
+
+    Student --> P_Auth
+    Student --> P_Academic
+    Student --> P_MuChat
+    Student --> P_Resume
+    Student --> P_Capstone
+    Student --> P_Intern
+    Student --> P_Events
+    Student --> P_Browse
+
+    Admin --> P_Admin
+    Admin --> P_Events
+    Admin --> P_Intern
+    Admin --> P_Capstone
+    Admin --> P_MuChat
+
+    System --> P_Bg
+    System --> P_Academic
+
+    P_Auth -.->|Playwright SSO| MUPortal
+    P_Academic -.->|history / offerings| MUPortal
+    P_Admin -.->|KB crawl / events scrape| UniWeb
+    P_Bg -.->|portal + website| MUPortal
+    P_Bg -.-> UniWeb
+    P_MuChat -.->|DeepSeek / Gemini / OpenRouter| AI
+    P_Resume -.-> AI
+    P_Capstone -.-> AI

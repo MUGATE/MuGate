@@ -1,0 +1,29 @@
+%% MuGate — Sequence: Admin university KB crawl
+%% Source: scraper.routes.ts · ScraperService · KnowledgeRepository · RagSyncService
+sequenceDiagram
+    autonumber
+    participant AdminClient as Admin Client
+    participant ScraperRoutes
+    participant ScraperService
+    participant UniScraper as UniversityScraper
+    participant KnowledgeRepo as KnowledgeRepository
+    participant RagSync as RagSyncService
+    participant DB as Database
+
+    AdminClient->>ScraperRoutes: POST /api/scraper/university/crawl { baseUrl, maxPages? }
+    Note over ScraperRoutes: authMiddleware + adminMiddleware
+    ScraperRoutes->>ScraperRoutes: resolveAllowedCrawlBaseUrl()
+    alt already running
+        ScraperRoutes-->>AdminClient: 409 conflict
+    else start background job
+        ScraperRoutes-->>AdminClient: 200 crawl started
+        ScraperRoutes->>ScraperService: scrapeUniversityWebsite(config) async
+        ScraperService->>UniScraper: crawl pages (depth / delay)
+        loop each page
+            UniScraper->>KnowledgeRepo: upsert KnowledgePages + chunk content
+            KnowledgeRepo->>DB: INSERT/UPDATE pages & KnowledgeChunks
+        end
+        ScraperService->>RagSync: syncUnsyncedChunks()
+        RagSync->>DB: mark chromaSyncedAt / embeddings
+        ScraperService->>DB: complete ScraperRuns row
+    end

@@ -1,0 +1,72 @@
+﻿@startuml 03-academic
+!include _skin.puml
+title MuGate â€” Full-Project Use Cases Â· Page 3 Â· Academic\nSource: /api/history Â· /api/courses Â· /api/generate Â· /api/schedules Â· /api/roadmap Â· generator.service auto-sync Â· sync.cron
+
+actor Student as Student
+actor "System\n(CRON)" as System
+actor "MU Portal" as MUPortal <<external>>
+
+rectangle "MuGate Â· Academic" {
+  package "History" {
+    usecase "Get academic history" as UC_GetHist
+    usecase "Get academic summary\n(GPA)" as UC_Summary
+    usecase "Sync academic history\nfrom portal" as UC_SyncHist
+  }
+
+  package "Courses" {
+    usecase "List course offerings" as UC_ListCourses
+    usecase "Get course by id" as UC_GetCourse
+    usecase "Sync course offerings\nfrom portal" as UC_SyncCourses
+  }
+
+  package "Smart Schedule" {
+    usecase "Generate schedule\noptions" as UC_GenSched
+    usecase "List saved schedules" as UC_ListSched
+    usecase "Save schedule" as UC_SaveSched
+    usecase "Delete saved schedule" as UC_DelSched
+  }
+
+  package "Degree Roadmap" {
+    usecase "Save degree roadmap" as UC_SaveRoad
+    usecase "Reset degree roadmap" as UC_ResetRoad
+  }
+
+  package "Background" {
+    usecase "CRON: sync courses\nevery 3 hours" as UC_CronCourses
+  }
+}
+
+Student -- UC_GetHist
+Student -- UC_Summary
+Student -- UC_SyncHist
+Student -- UC_ListCourses
+Student -- UC_GetCourse
+Student -- UC_SyncCourses
+Student -- UC_GenSched
+Student -- UC_ListSched
+Student -- UC_SaveSched
+Student -- UC_DelSched
+Student -- UC_SaveRoad
+Student -- UC_ResetRoad
+
+System -- UC_CronCourses
+
+UC_SyncHist ..> UC_GenSched : <<extend>>\n(history empty)
+UC_SyncCourses ..> UC_GenSched : <<extend>>\n(offerings missing)
+
+UC_SyncHist -- MUPortal
+UC_SyncCourses -- MUPortal
+UC_CronCourses -- MUPortal
+
+note bottom of UC_GenSched
+  POST /api/generate
+  may auto-sync history & offerings
+  via Playwright portal scraper
+end note
+
+note bottom of UC_CronCourses
+  Uses scraper-credentials.json
+  â†’ CoursesService.syncCoursesGlobal
+end note
+
+@enduml

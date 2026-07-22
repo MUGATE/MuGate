@@ -1,0 +1,80 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "11px"}} }%%
+erDiagram
+    %% Solid = declared FK · Dashed = soft / application key
+
+    Users ||--o{ AcademicHistory : "FK userId to id"
+    Users ||--o{ Schedules : "FK userId to id"
+    Users ||..o{ UserRoadmap : "soft userId to id"
+    Courses ||--o{ CourseSections : "FK courseId to id"
+    Schedules ||--o{ ScheduleSections : "FK scheduleId to id"
+    CourseSections ||--o{ ScheduleSections : "FK sectionId to id"
+
+    Users {
+        uuid id PK
+        text name
+        text universityId UK
+    }
+
+    Courses {
+        uuid id PK
+        text courseCode
+        text courseName
+        int credits
+        text department
+        text semester
+        timestamptz createdAt
+    }
+
+    CourseSections {
+        uuid id PK
+        uuid courseId FK
+        text sectionNumber
+        text instructor
+        text day
+        time startTime
+        time endTime
+        text type
+        int capacity
+        int enrolled
+        text room
+    }
+
+    AcademicHistory {
+        uuid id PK
+        uuid userId FK
+        text courseCode
+        text courseName
+        text grade
+        int credits
+        text semester
+        text status
+        text category
+        boolean isElective
+        timestamptz updatedAt
+    }
+
+    Schedules {
+        uuid id PK
+        uuid userId FK
+        text name
+        float score
+        int totalCredits
+        timestamptz createdAt
+    }
+
+    ScheduleSections {
+        uuid scheduleId "PK FK"
+        uuid sectionId "PK FK"
+    }
+
+    UserRoadmap {
+        int id PK
+        text userId "soft"
+        text courseCode
+        text courseName
+        int credits
+        text category
+        int year
+        text semester
+        timestamptz createdAt
+    }

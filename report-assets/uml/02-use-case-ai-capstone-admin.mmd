@@ -1,0 +1,68 @@
+%% MuGate — Use Case Diagram (Figure 2)
+%% Source: /api/chatbot, /api/resume, /api/capstone, /api/internships, /api/events, /api/scraper, sync.cron
+flowchart LR
+    Student((Student))
+    Admin((Admin))
+    System((System CRON))
+    AI((AI Providers))
+
+    subgraph MuGate["MuGate"]
+        subgraph MuChatResume["MuChat and Resume"]
+            UC_Chat[Chat with MuChat]
+            UC_Upload[Upload chat file]
+            UC_Enhance[Enhance prompt]
+            UC_BuildCV[Build and download CV]
+            UC_Analyze[Analyze resume]
+            UC_AiEdit[AI-edit resume]
+        end
+
+        subgraph CapIntern["Capstone and Internships"]
+            UC_Partners[Manage capstone partners]
+            UC_Advisor[Capstone AI advisor]
+            UC_Review[Review internship company]
+        end
+
+        subgraph AdminCtl["Admin control"]
+            UC_Admins[Manage admins / users]
+            UC_KB[Crawl / sync university KB]
+            UC_EvtAdmin[Manage events]
+            UC_CoCRUD[CRUD internship companies]
+            UC_IdeaCRUD[CRUD capstone ideas]
+            UC_Analytics[Chatbot analytics]
+        end
+
+        subgraph Bg["Background System"]
+            UC_CronCourses[CRON course sync every 3h]
+            UC_CronKB[CRON KB sync 3AM]
+            UC_CronVec[CRON vector sync 4AM]
+            UC_CronSite[CRON sitemap Sun 2AM]
+        end
+    end
+
+    Student --> UC_Chat
+    Student --> UC_Upload
+    Student --> UC_Enhance
+    Student --> UC_BuildCV
+    Student --> UC_Analyze
+    Student --> UC_AiEdit
+    Student --> UC_Partners
+    Student --> UC_Advisor
+    Student --> UC_Review
+
+    Admin --> UC_Admins
+    Admin --> UC_KB
+    Admin --> UC_EvtAdmin
+    Admin --> UC_CoCRUD
+    Admin --> UC_IdeaCRUD
+    Admin --> UC_Analytics
+
+    System --> UC_CronCourses
+    System --> UC_CronKB
+    System --> UC_CronVec
+    System --> UC_CronSite
+
+    UC_Chat -.->|DeepSeek Gemini OpenRouter| AI
+    UC_Analyze -.-> AI
+    UC_AiEdit -.-> AI
+    UC_Advisor -.-> AI
+    UC_Enhance -.-> AI

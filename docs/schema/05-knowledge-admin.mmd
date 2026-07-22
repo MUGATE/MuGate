@@ -1,0 +1,65 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "12px"}} }%%
+erDiagram
+    KnowledgePages ||--o{ KnowledgeChunks : has
+
+    KnowledgePages {
+        uuid id PK
+        text url UK
+        text title
+        text content
+        text contentHash
+        text category
+        text subcategory
+        text language
+        int wordCount
+        text sourceDomain
+        timestamptz lastScrapedAt
+        boolean isActive
+        timestamptz createdAt
+        timestamptz updatedAt
+    }
+
+    KnowledgeChunks {
+        uuid id PK
+        uuid pageId FK
+        int chunkIndex
+        text content
+        text keywords
+        text category
+        text title
+        text entityType
+        timestamptz chromaSyncedAt
+        text embeddingModel
+        timestamptz createdAt
+    }
+
+    ScraperRuns {
+        uuid id PK
+        text runType
+        text status
+        text baseUrl
+        int pagesScraped
+        int pagesUpdated
+        int pagesNew
+        int pagesUnchanged
+        int errorCount
+        text errorDetails
+        timestamptz startedAt
+        timestamptz completedAt
+    }
+
+    ScrapeQueue {
+        uuid id PK
+        text url
+        int priority
+        text status
+        uuid runId "no FK"
+        int depth
+        timestamptz createdAt
+        timestamptz updatedAt
+    }
+
+    Admins {
+        text universityId PK
+        timestamptz createdAt
+    }

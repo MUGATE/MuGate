@@ -1,0 +1,86 @@
+%% MuGate — Class Diagram: Domain model (core academic + auth)
+%% Source: supabase/migrations/20260714120000_mugate_schema.sql
+classDiagram
+    class Users {
+        +UUID id
+        +string email
+        +string passwordHash
+        +string name
+        +string universityId
+        +number gpa
+        +Date gpaUpdatedAt
+    }
+
+    class PortalCredentials {
+        +UUID id
+        +UUID userId
+        +string encryptedUsername
+        +string encryptedPassword
+    }
+
+    class Admins {
+        +string universityId PK
+        +Date createdAt
+    }
+
+    class AcademicHistory {
+        +UUID id
+        +UUID userId
+        +string courseCode
+        +string courseName
+        +string grade
+        +int credits
+        +string status
+        +string category
+    }
+
+    class Courses {
+        +UUID id
+        +string courseCode
+        +string courseName
+        +int credits
+        +string semester
+    }
+
+    class CourseSections {
+        +UUID id
+        +UUID courseId
+        +string sectionNumber
+        +string instructor
+        +string day
+        +time startTime
+        +time endTime
+        +string type
+    }
+
+    class Schedules {
+        +UUID id
+        +UUID userId
+        +string name
+        +number score
+        +int totalCredits
+    }
+
+    class ScheduleSections {
+        +UUID scheduleId
+        +UUID sectionId
+    }
+
+    class UserRoadmap {
+        +int id
+        +string userId
+        +string courseCode
+        +int year
+        +string semester
+        +string category
+    }
+
+    Users "1" --> "0..1" PortalCredentials : stores SSO secrets
+    Users "1" --> "*" AcademicHistory
+    Users "1" --> "*" Schedules
+    Users "1" --> "*" UserRoadmap
+    Users ..> Admins : role lookup by universityId
+    Schedules "*" --> "*" CourseSections : via ScheduleSections
+    ScheduleSections --> Schedules
+    ScheduleSections --> CourseSections
+    Courses "1" --> "*" CourseSections

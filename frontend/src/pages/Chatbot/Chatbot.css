@@ -399,7 +399,7 @@
 .greeting-text {
     font-size: 2.5rem;
     font-weight: 700;
-    color: #fff;
+    color: #0f172a;
     margin: 0;
     letter-spacing: -0.5px;
     line-height: 1.1;
@@ -412,7 +412,7 @@
 .greeting-subtext {
     font-size: 2.5rem;
     font-weight: 500;
-    color: #fff;
+    color: #0f172a;
     margin: 0;
     letter-spacing: -0.5px;
     line-height: 1.1;
@@ -1780,6 +1780,11 @@
   color: #ffffff;
   background-color: var(--color-surface);
   background-image: none;
+}
+
+[data-theme="dark"] .greeting-text,
+[data-theme="dark"] .greeting-subtext {
+  color: #ffffff;
 }
 
 [data-theme="dark"] .chatbot-container {

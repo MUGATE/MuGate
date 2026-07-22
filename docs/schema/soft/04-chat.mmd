@@ -1,0 +1,40 @@
+%%{init: {"theme": "base", "themeVariables": {"fontSize": "12px"}} }%%
+erDiagram
+    %% Solid = declared FK · ChatAnalytics has no soft or hard links
+
+    Users ||--o{ ChatSessions : "FK userId to id"
+    ChatSessions ||--o{ ChatMessages : "FK sessionId to id"
+
+    Users {
+        uuid id PK
+        text name
+        text email UK
+    }
+
+    ChatSessions {
+        uuid id PK
+        uuid userId FK
+        text title
+        text source
+        boolean isPinned
+        boolean isActive
+        timestamptz createdAt
+        timestamptz updatedAt
+    }
+
+    ChatMessages {
+        uuid id PK
+        uuid sessionId FK
+        text role
+        text content
+        int tokensUsed
+        timestamptz createdAt
+    }
+
+    ChatAnalytics {
+        uuid id PK
+        text questionCategory
+        boolean isFailed
+        int responseTimeMs
+        timestamptz createdAt
+    }
