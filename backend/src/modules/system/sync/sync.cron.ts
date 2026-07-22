@@ -6,33 +6,68 @@ import { RagSyncService } from "../../ai/rag/rag-sync.service";
 import fs from "fs";
 import path from "path";
 
-// Function to handle the actual sync logic
+type ScraperCreds = {
+    email?: string;
+    password?: string;
+    semesterId?: number;
+};
+
+function loadCronCourseCredentials(): ScraperCreds | null {
+    const envId = (process.env.SCRAPER_UNIVERSITY_ID || process.env.SCRAPER_EMAIL || "").trim();
+    const envPassword = (process.env.SCRAPER_PASSWORD || "").trim();
+    if (envId && envPassword) {
+        const semesterRaw = process.env.SCRAPER_SEMESTER_ID || process.env.CURRENT_SEMESTER_ID;
+        return {
+            email: envId,
+            password: envPassword,
+            semesterId: semesterRaw != null && semesterRaw !== "" ? Number(semesterRaw) : undefined,
+        };
+    }
+
+    const credentialsPath = path.join(process.cwd(), "scraper-credentials.json");
+    if (!fs.existsSync(credentialsPath)) {
+        return null;
+    }
+
+    try {
+        const creds = JSON.parse(fs.readFileSync(credentialsPath, "utf-8")) as ScraperCreds;
+        if (!creds.email || !creds.password) {
+            logger.warn("CRON: Invalid credentials file. Missing email or password.");
+            return null;
+        }
+        logger.warn(
+            "CRON: Using scraper-credentials.json. Prefer SCRAPER_UNIVERSITY_ID / SCRAPER_PASSWORD env vars."
+        );
+        return creds;
+    } catch (err: any) {
+        logger.warn(`CRON: Failed to read scraper-credentials.json: ${err.message}`);
+        return null;
+    }
+}
+
 const runCourseSync = async () => {
     logger.info("CRON: Starting automated background course sync...");
     try {
-        const credentialsPath = path.join(process.cwd(), "scraper-credentials.json");
-
-        if (!fs.existsSync(credentialsPath)) {
-            logger.warn("CRON: No tracking credentials found at scraper-credentials.json. Skipping automated sync.");
-            return;
-        }
-
-        const creds = JSON.parse(fs.readFileSync(credentialsPath, "utf-8"));
-
-        if (!creds.email || !creds.password) {
-            logger.warn("CRON: Invalid credentials file. Missing email or password. Skipping sync.");
+        const creds = loadCronCourseCredentials();
+        if (!creds?.email || !creds?.password) {
+            logger.warn(
+                "CRON: No scraper credentials (set SCRAPER_UNIVERSITY_ID/SCRAPER_PASSWORD or scraper-credentials.json). Skipping."
+            );
             return;
         }
 
         const semesterId = creds.semesterId != null ? Number(creds.semesterId) : undefined;
-        const syncedSemester = await CoursesService.syncCoursesGlobal(creds.email, creds.password, semesterId);
+        const syncedSemester = await CoursesService.syncCoursesGlobal(
+            creds.email,
+            creds.password,
+            semesterId
+        );
         logger.info(`CRON: Automated course sync completed for semester ${syncedSemester}.`);
     } catch (error: any) {
         logger.error(`CRON: Automated course sync failed: ${error.message}`);
     }
 };
 
-// Function to handle knowledge base sync
 const runKnowledgeBaseSync = async () => {
     logger.info("CRON: Starting automated knowledge base sync...");
     try {
@@ -41,7 +76,7 @@ const runKnowledgeBaseSync = async () => {
             return;
         }
 
-        await ScraperService.incrementalSync(24); // Re-check pages older than 24 hours
+        await ScraperService.incrementalSync(24);
         logger.info("CRON: Knowledge base sync completed successfully.");
     } catch (error: any) {
         logger.error(`CRON: Knowledge base sync failed: ${error.message}`);

@@ -1,10 +1,27 @@
 import { pool } from "../../../core/database/connection";
-import { CS_CURRICULUM, CurriculumCourse } from "./curriculum";
+import { CurriculumCourse } from "./curriculum";
+import {
+    computeEligibleCourses,
+    corequisitesMetInSchedule,
+    normalizeCourseCode,
+    normalizeElectiveCategory,
+} from "./eligibility";
 import { logger } from "../../../core/logger/logger";
 import { HistoryService } from "../../history/history.service";
-import { CoursesService } from "../../academic/courses/courses.service";
+import { CoursesService, OFFERINGS_CACHE_TTL_MS } from "../../academic/courses/courses.service";
 import { env } from "../../../config/env";
-import { isCompletedStatus } from "../../../core/utils/academic-status.util";
+import {
+    isCompletedStatus,
+    normalizeAcademicStatus,
+} from "../../../core/utils/academic-status.util";
+import {
+    hasOpenSeats,
+    normalizeDayList,
+    sectionsHaveTimeConflict,
+    timeToMinutes,
+} from "../../../core/utils/schedule-parse.util";
+
+const MAX_GENERATED_COMBOS = 8000;
 
 export class GeneratorService {
 
@@ -33,120 +50,15 @@ export class GeneratorService {
 
     /**
      * Determine which courses from the curriculum a student is eligible to take.
-     * This considers passed history and prerequisite chains.
      */
     static async getEligibleCourses(userId: string): Promise<CurriculumCourse[]> {
         logger.info(`Calculating eligible courses for user ${userId}`);
 
-        // 1. Fetch academic history (filter completed in code for legacy portal strings)
         const historyResult = await pool.request()
             .input("userId", userId)
             .query("SELECT courseCode, status, category FROM AcademicHistory WHERE userId = @userId");
 
-        // Helper function to normalize course codes (removes all spaces and capitalizes)
-        const normalizeCode = (code: string) => code.replace(/\s+/g, '').toUpperCase();
-
-        const passedCourses = new Set<string>();
-        // Tracks electives of each category the user has already passed
-        const fulfilledElectivesByCategory: Record<string, string[]> = {};
-
-        historyResult.recordset
-            .filter((record: any) => isCompletedStatus(record.status))
-            .forEach((record: any) => {
-            passedCourses.add(normalizeCode(record.courseCode));
-
-            // If the course has an elective category, track it
-            if (record.category && record.category.includes("Elective")) {
-                // Safeguard: Check if this course is actually hardcoded in the curriculum as a mandatory GER/Major
-                const hardcodedMatch = CS_CURRICULUM.find(c => c.courseCode.replace(/\s+/g, '').toUpperCase() === normalizeCode(record.courseCode));
-                if (!hardcodedMatch || hardcodedMatch.type === 'Elective') {
-                    const catStr = record.category.trim();
-                    if (!fulfilledElectivesByCategory[catStr]) fulfilledElectivesByCategory[catStr] = [];
-                    fulfilledElectivesByCategory[catStr].push(normalizeCode(record.courseCode));
-                }
-            }
-        });
-
-        // 2. Determine eligibility based on curriculum
-        const eligibleCourses: CurriculumCourse[] = [];
-
-        // Tracks which specific passed electives have already been assigned to a placeholder
-        const consumedPassedElectives = new Set<string>();
-
-        for (const course of CS_CURRICULUM) {
-
-            // Handle generic elective slots
-            if (course.isElectivePlaceholder && course.category) {
-                const catStr = course.category;
-                const passedEquivalents = fulfilledElectivesByCategory[catStr] || [];
-
-                let matchedIndex = -1;
-                for (let i = 0; i < passedEquivalents.length; i++) {
-                    const passedCode = passedEquivalents[i];
-                    // Skip if already consumed by a previous placeholder
-                    if (consumedPassedElectives.has(passedCode + '_' + i)) continue;
-
-                    // If this placeholder has strict constraints, the passed course must match one of them
-                    if (course.allowedCodes) {
-                        const normalizedAllowed = course.allowedCodes.map(code => code.replace(/\s+/g, '').toUpperCase());
-                        if (normalizedAllowed.includes(passedCode)) {
-                            matchedIndex = i;
-                            break;
-                        }
-                    } else {
-                        // Any passed course in this category works
-                        matchedIndex = i;
-                        break;
-                    }
-                }
-
-                if (matchedIndex !== -1) {
-                    // They have already taken an actual course to fill this slot
-                    consumedPassedElectives.add(passedEquivalents[matchedIndex] + '_' + matchedIndex);
-                    continue;
-                } else {
-                    // They haven't filled this slot yet, so it is an eligible requirement
-                    eligibleCourses.push(course);
-                    continue;
-                }
-            }
-
-            // Normal fixed-code courses
-            const courseCodeNorm = normalizeCode(course.courseCode);
-
-            // If already passed, skip
-            if (passedCourses.has(courseCodeNorm)) continue;
-
-            // Check prerequisites (must be PASSED)
-            let prereqsMet = true;
-            for (const prereq of course.prerequisites) {
-                if (!passedCourses.has(normalizeCode(prereq))) {
-                    prereqsMet = false;
-                    break;
-                }
-            }
-
-            if (prereqsMet) {
-                eligibleCourses.push(course);
-            }
-        }
-
-        // Second pass: validate corequisites
-        // A corequisite is met if it is PASSED or is also in the eligible list (can be taken concurrently)
-        const eligibleCodes = new Set(eligibleCourses.map(c => normalizeCode(c.courseCode)));
-        const finalEligible = eligibleCourses.filter(course => {
-            if (!course.corequisites || course.corequisites.length === 0) return true;
-
-            for (const coreq of course.corequisites) {
-                const coreqNorm = normalizeCode(coreq);
-                if (!passedCourses.has(coreqNorm) && !eligibleCodes.has(coreqNorm)) {
-                    logger.info(`Excluding ${course.courseCode}: corequisite ${coreq} is neither passed nor eligible`);
-                    return false;
-                }
-            }
-            return true;
-        });
-
+        const finalEligible = computeEligibleCourses(historyResult.recordset);
         logger.info(`Found ${finalEligible.length} eligible courses for user ${userId}`);
         return finalEligible;
     }
@@ -184,15 +96,24 @@ export class GeneratorService {
             }
         }
 
-        // Step 0b: Sync offerings from portal unless we already have cached sections for this semester
+        // Step 0b: Sync offerings when missing or stale (TTL), unless FORCE_COURSE_SYNC
         const forceSync = process.env.FORCE_COURSE_SYNC === "true";
         let shouldSync = forceSync;
 
         if (!shouldSync) {
             const cachedSemester = activeSemesterId ?? await this.getLatestSemesterFromDb();
             if (cachedSemester && await this.hasCachedOfferings(cachedSemester)) {
-                activeSemesterId = cachedSemester;
-                logger.info(`Using cached course offerings for semester ${activeSemesterId} (skipping portal sync)`);
+                const fresh = await CoursesService.areOfferingsFresh(cachedSemester, OFFERINGS_CACHE_TTL_MS);
+                if (fresh) {
+                    activeSemesterId = cachedSemester;
+                    logger.info(
+                        `Using fresh cached offerings for semester ${activeSemesterId} (TTL ${OFFERINGS_CACHE_TTL_MS / 60000}m)`
+                    );
+                } else {
+                    activeSemesterId = cachedSemester;
+                    shouldSync = true;
+                    logger.info(`Cached offerings for semester ${activeSemesterId} are stale — refreshing`);
+                }
             } else {
                 shouldSync = true;
             }
@@ -219,38 +140,36 @@ export class GeneratorService {
             );
         }
 
-        // Step 1: Get what they *can* take
+        await CoursesService.ensureSectionSchema();
+
         const eligibleCourses = await this.getEligibleCourses(userId);
 
-        // Fetch passed courses to validate corequisites during backtracking
         const historyResult = await pool.request()
             .input("userId", userId)
             .query("SELECT courseCode, status FROM AcademicHistory WHERE userId = @userId");
         const passedCourses = new Set<string>();
-        historyResult.recordset
-            .filter((row: any) => isCompletedStatus(row.status))
-            .forEach((row: any) => {
-            passedCourses.add(row.courseCode.replace(/\s+/g, '').toUpperCase());
+        const failedCourses = new Set<string>();
+        historyResult.recordset.forEach((row: any) => {
+            const code = normalizeCourseCode(row.courseCode);
+            if (isCompletedStatus(row.status)) passedCourses.add(code);
+            else if (normalizeAcademicStatus(row.status) === "Failed") failedCourses.add(code);
         });
 
-        // Step 2: Fetch actual offerings for this semester that match eligible courses
-        // We need to fetch from Courses and CourseSections where semester = semesterId
         const eligibleCodes = eligibleCourses
             .filter(c => !c.isElectivePlaceholder)
-            .map(c => c.courseCode.replace(/\s+/g, '').toUpperCase());
+            .map(c => normalizeCourseCode(c.courseCode));
 
         const electiveCategories = eligibleCourses
             .filter(c => c.isElectivePlaceholder && c.category)
-            .map(c => c.category!.trim().toLowerCase());
+            .map(c => normalizeElectiveCategory(c.category));
 
         const electiveLimits: Record<string, number> = {};
-        const freeElectiveLimits: Record<string, number> = {}; // Only free slots (no allowedCodes)
+        const freeElectiveLimits: Record<string, number> = {};
         for (const cat of electiveCategories) {
             electiveLimits[cat] = (electiveLimits[cat] || 0) + 1;
         }
-        // Count free slots — placeholders without allowedCodes
         for (const placeholder of eligibleCourses.filter(c => c.isElectivePlaceholder && c.category)) {
-            const cat = placeholder.category!.trim().toLowerCase();
+            const cat = normalizeElectiveCategory(placeholder.category);
             if (!placeholder.allowedCodes) {
                 freeElectiveLimits[cat] = (freeElectiveLimits[cat] || 0) + 1;
             }
@@ -259,108 +178,89 @@ export class GeneratorService {
         logger.info(`Elective limits: ${JSON.stringify(electiveLimits)}`);
         logger.info(`Eligible elective categories: ${JSON.stringify(electiveCategories)}`);
         logger.info(`Eligible fixed courses: ${eligibleCodes.join(', ')}`);
-        logger.info(`Eligible placeholders: ${eligibleCourses.filter(c => c.isElectivePlaceholder).map(c => `${c.courseCode}(${c.category})`).join(', ')}`);
-
-        logger.info(`Fetching available offerings for semester ${activeSemesterId}...`);
 
         const offeringsResult = await pool.request()
             .input("semester", activeSemesterId.toString())
             .query(`
                 SELECT 
                     c.id as courseId, c.courseCode, c.courseName, c.credits, c.department,
-                    s.id as sectionId, s.sectionNumber, s.instructor, s.day, s.startTime, s.endTime, s.type, s.capacity, s.enrolled, s.room
+                    s.id as sectionId, s.sectionNumber, s.instructor, s.day, s.startTime, s.endTime,
+                    s.type, s.category, s.meetings, s.capacity, s.enrolled, s.room
                 FROM Courses c
                 INNER JOIN CourseSections s ON c.id = s.courseId
                 WHERE c.semester = @semester
             `);
 
-        // Group sections by Course
         const availableCoursesWithSections = new Map<string, any>();
 
         offeringsResult.recordset.forEach(row => {
-            const courseCodeNorm = row.courseCode.replace(/\s+/g, '').toUpperCase();
+            const courseCodeNorm = normalizeCourseCode(row.courseCode);
 
-            // Check if this offered course matches an eligible requirement
             let isEligible = false;
             let matchingType = 'Major';
 
-            // 1. Is it a direct course match?
             if (eligibleCodes.includes(courseCodeNorm)) {
                 isEligible = true;
-                const match = eligibleCourses.find(c => c.courseCode.replace(/\s+/g, '').toUpperCase() === courseCodeNorm);
+                const match = eligibleCourses.find(c => normalizeCourseCode(c.courseCode) === courseCodeNorm);
                 if (match) matchingType = match.type;
-            }
-            // 2. Is it an elective that fills an open placeholder?
-            else if (row.type && electiveCategories.includes(row.type.trim().toLowerCase())) {
-                const categoryRaw = row.type.trim().toLowerCase();
+            } else {
+                // Electives: match offering category (table heading), not Lecture/Lab type
+                const offeringCategory = normalizeElectiveCategory(row.category);
+                if (offeringCategory && electiveCategories.includes(offeringCategory)) {
+                    const categoryRaw = offeringCategory;
+                    const matchingPlaceholders = eligibleCourses.filter(c =>
+                        c.isElectivePlaceholder &&
+                        normalizeElectiveCategory(c.category) === categoryRaw
+                    );
 
-                // Find all placeholders of this specific category that haven't been fulfilled yet
-                const matchingPlaceholders = eligibleCourses.filter(c =>
-                    c.isElectivePlaceholder && c.category?.trim().toLowerCase() === categoryRaw
-                );
-
-                if (matchingPlaceholders.length > 0) {
-                    // Check if *any* of the open placeholders will accept this course
-                    let acceptedByAnyPlaceholder = false;
-                    let isFreeSlotOnly = false;
-                    for (const placeholder of matchingPlaceholders) {
-                        if (placeholder.allowedCodes) {
-                            // This placeholder only accepts specific codes
-                            const normalizedAllowed = placeholder.allowedCodes.map(code => code.replace(/\s+/g, '').toUpperCase());
-                            if (normalizedAllowed.includes(courseCodeNorm)) {
-                                acceptedByAnyPlaceholder = true;
-                                isFreeSlotOnly = false; // Matches a restricted slot — not limited by free count
-                                break;
-                            }
-                        }
-                    }
-                    // If not accepted by any restricted placeholder, check free slots
-                    if (!acceptedByAnyPlaceholder) {
+                    if (matchingPlaceholders.length > 0) {
+                        let acceptedByAnyPlaceholder = false;
+                        let isFreeSlotOnly = false;
                         for (const placeholder of matchingPlaceholders) {
-                            if (!placeholder.allowedCodes) {
-                                acceptedByAnyPlaceholder = true;
-                                isFreeSlotOnly = true; // Can only fill a free slot
-                                break;
+                            if (placeholder.allowedCodes) {
+                                const normalizedAllowed = placeholder.allowedCodes.map(normalizeCourseCode);
+                                if (normalizedAllowed.includes(courseCodeNorm)) {
+                                    acceptedByAnyPlaceholder = true;
+                                    isFreeSlotOnly = false;
+                                    break;
+                                }
                             }
                         }
+                        if (!acceptedByAnyPlaceholder) {
+                            for (const placeholder of matchingPlaceholders) {
+                                if (!placeholder.allowedCodes) {
+                                    acceptedByAnyPlaceholder = true;
+                                    isFreeSlotOnly = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!acceptedByAnyPlaceholder) return;
+
+                        isEligible = true;
+                        matchingType = isFreeSlotOnly ? categoryRaw + ':free' : categoryRaw;
                     }
-
-                    if (!acceptedByAnyPlaceholder) return; // Blocked
-
-                    isEligible = true;
-                    // Tag free-slot-only electives with a special suffix so the backtracker can enforce free limits
-                    matchingType = isFreeSlotOnly ? categoryRaw + ':free' : categoryRaw;
                 }
             }
 
-            if (!isEligible) {
-                if (courseCodeNorm === 'MAT350') logger.info(`MAT350 dropped: not eligible. courseCodeNorm=${courseCodeNorm}`);
-                return;
-            }
+            if (!isEligible) return;
 
-            // Only consider sections with open seats
-            if (row.capacity > 0 && row.enrolled >= row.capacity) {
-                if (courseCodeNorm === 'MAT350') logger.info(`MAT350 dropped: full. cap=${row.capacity}, enr=${row.enrolled}`);
-                return;
-            }
+            if (!hasOpenSeats(row.capacity, row.enrolled)) return;
 
-            // Filter out A- rooms (annex building, not valid)
-            // Also filter out null/empty/TBA rooms — these are A- building sections with unassigned rooms
             const roomVal = row.room ? row.room.trim() : '';
             if (!roomVal || roomVal.toUpperCase() === 'TBA' || roomVal.toUpperCase() === 'T B A' || roomVal.toUpperCase().startsWith('A-')) {
                 return;
             }
 
-            if (courseCodeNorm === 'MAT350') logger.info(`MAT350 SURVIVED! Adding to availableCourses...`);
-
             if (!availableCoursesWithSections.has(courseCodeNorm)) {
-                const match = eligibleCourses.find(c => c.courseCode.replace(/\s+/g, '').toUpperCase() === courseCodeNorm);
+                const match = eligibleCourses.find(c => normalizeCourseCode(c.courseCode) === courseCodeNorm);
                 availableCoursesWithSections.set(courseCodeNorm, {
                     courseId: row.courseId,
                     courseCode: row.courseCode,
                     courseName: row.courseName,
                     credits: row.credits,
-                    type: matchingType, // Inherit type from curriculum mapping or offering
+                    type: matchingType,
                     corequisites: match ? match.corequisites : [],
                     sections: []
                 });
@@ -373,33 +273,25 @@ export class GeneratorService {
                 day: row.day,
                 startTime: row.startTime,
                 endTime: row.endTime,
+                meetings: row.meetings,
                 type: row.type,
+                category: row.category,
                 room: row.room
             });
         });
 
-        // Convert Map to Array for the backtracking engine
         const coursesToSchedule = Array.from(availableCoursesWithSections.values());
-
         logger.info(`Found ${coursesToSchedule.length} available eligible courses with open sections.`);
-        logger.info(`Courses to schedule keys: ${Array.from(availableCoursesWithSections.keys()).join(", ")}`);
 
-        // --- Helper: Conflict Checker ---
-        // SQL Server returns TIME as a string or Date obj depending on the driver, 
-        // but typically e.g. "17:30:00". We'll convert to simple total minutes for safe comparison.
-        const timeToMinutes = (timeValue: any): number => {
-            if (!timeValue) return 0;
-            // If it's a Date object (mssql tedious sometimes casts it), get UTC
+        const toTimeStr = (timeValue: any): string => {
+            if (!timeValue) return "00:00:00";
             if (timeValue instanceof Date) {
-                return (timeValue.getUTCHours() * 60) + timeValue.getUTCMinutes();
+                const h = timeValue.getUTCHours().toString().padStart(2, "0");
+                const m = timeValue.getUTCMinutes().toString().padStart(2, "0");
+                const s = timeValue.getUTCSeconds().toString().padStart(2, "0");
+                return `${h}:${m}:${s}`;
             }
-            // If it's a string like "17:30:00"
-            const str = timeValue.toString();
-            const parts = str.split(":");
-            if (parts.length >= 2) {
-                return (parseInt(parts[0]) * 60) + parseInt(parts[1]);
-            }
-            return 0;
+            return timeValue.toString();
         };
 
         const filteredCoursesToSchedule: any[] = [];
@@ -407,79 +299,67 @@ export class GeneratorService {
 
         for (const course of coursesToSchedule) {
             const validSections = course.sections.filter((sec: any) => {
-                // If the user wants no classes on a specific day
+                sec.startTime = toTimeStr(sec.startTime);
+                sec.endTime = toTimeStr(sec.endTime);
+
                 if (preferences?.excludeDays && preferences.excludeDays.length > 0 && sec.day) {
-                    const secDays = sec.day.split(",");
-                    if (secDays.some((d: string) => preferences.excludeDays.includes(dayMap[d.trim().toUpperCase()]))) return false;
+                    const secDays = normalizeDayList(sec.day);
+                    if (secDays.some((d: string) => preferences.excludeDays.includes(dayMap[d]))) return false;
                 }
 
-                // If the user wants no classes before a specific time
-                if (preferences?.startTime && timeToMinutes(sec.startTime) < timeToMinutes(preferences.startTime)) return false;
+                if (preferences?.startTime && timeToMinutes(sec.startTime) < timeToMinutes(preferences.startTime)) {
+                    // If multi-meeting, reject only if ANY meeting starts before preferred time
+                    return false;
+                }
 
                 return true;
             });
 
             if (validSections.length > 0) {
-                // Keep the course only if it still has valid sections available
                 course.sections = validSections;
                 filteredCoursesToSchedule.push(course);
             }
         }
 
         const hasTimeConflict = (currentSchedule: any[], newSection: any): boolean => {
-            const newStart = timeToMinutes(newSection.startTime);
-            const newEnd = timeToMinutes(newSection.endTime);
-
-            // Time conflict doesn't apply to purely online/TBA courses that have no time
-            if (newStart === 0 && newEnd === 0) return false;
-
-            const newDays: string[] = newSection.day ? newSection.day.split(",") : [];
-
             for (const scheduledCourse of currentSchedule) {
-                const sSec = scheduledCourse.section;
-                const existingDays: string[] = sSec.day ? sSec.day.split(",") : [];
-
-                const sharedDays = existingDays.filter((d: string) => newDays.includes(d) && d !== "TBA");
-
-                if (sharedDays.length > 0) {
-                    const existingStart = timeToMinutes(sSec.startTime);
-                    const existingEnd = timeToMinutes(sSec.endTime);
-
-                    // If times overlap on ANY shared day, conflict!
-                    // (newStart < existingEnd AND newEnd > existingStart)
-                    if (newStart < existingEnd && newEnd > existingStart) {
-                        return true; // Conflict found
-                    }
+                if (sectionsHaveTimeConflict(scheduledCourse.section, newSection)) {
+                    return true;
                 }
             }
             return false;
         };
 
-        // Step 4: Backtracking Cartesian Engine
         const MAX_CREDITS = preferences?.maxCredits || 17;
         const generatedSchedules: any[] = [];
+        let comboCapHit = false;
 
         const backtrack = (courseIndex: number, currentSchedule: any[], currentCredits: number, currentElectiveCounts: Record<string, number>) => {
-            // Stop generating if we hit the credit limit
+            if (comboCapHit) return;
             if (currentCredits > MAX_CREDITS) return;
 
-            // If we've made decisions for all available courses or we hit the maximum reasonable credits, save it
             if (courseIndex === filteredCoursesToSchedule.length) {
                 if (currentSchedule.length > 0) {
-                    // Validate mutual corequisites
-                    const scheduledCodes = new Set(currentSchedule.map(item => item.course.courseCode.replace(/\s+/g, '').toUpperCase()));
+                    const scheduledCodes = new Set(
+                        currentSchedule.map(item => normalizeCourseCode(item.course.courseCode))
+                    );
                     let isValid = true;
                     for (const item of currentSchedule) {
-                        for (const coreq of item.course.corequisites || []) {
-                            const coreqNorm = coreq.replace(/\s+/g, '').toUpperCase();
-                            if (!passedCourses.has(coreqNorm) && !scheduledCodes.has(coreqNorm)) {
-                                isValid = false;
-                                break;
-                            }
+                        if (!corequisitesMetInSchedule(
+                            item.course.corequisites,
+                            passedCourses,
+                            scheduledCodes,
+                            failedCourses
+                        )) {
+                            isValid = false;
+                            break;
                         }
-                        if (!isValid) break;
                     }
                     if (isValid) {
+                        if (generatedSchedules.length >= MAX_GENERATED_COMBOS) {
+                            comboCapHit = true;
+                            return;
+                        }
                         generatedSchedules.push([...currentSchedule]);
                     }
                 }
@@ -488,30 +368,25 @@ export class GeneratorService {
 
             const course = filteredCoursesToSchedule[courseIndex];
 
-            // Branch 1: Skip taking this course this semester
             backtrack(courseIndex + 1, currentSchedule, currentCredits, { ...currentElectiveCounts });
+            if (comboCapHit) return;
 
-            // Branch 2: Try to take this course by iterating over its available sections
             if (currentCredits + course.credits <= MAX_CREDITS) {
-                // Check if this course is an elective that hit its limit
                 const typeNorm = course.type.trim().toLowerCase();
                 const baseCat = typeNorm.replace(':free', '');
                 const isElective = Object.keys(electiveLimits).includes(baseCat);
 
                 if (isElective) {
-                    // Check overall category limit
                     if ((currentElectiveCounts[baseCat] || 0) >= (electiveLimits[baseCat] || 0)) {
-                        return; // Cannot add any more electives of this category
+                        return;
                     }
-                    // Check free-slot limit (courses that don't match restricted allowedCodes)
                     if (typeNorm.endsWith(':free')) {
                         if ((currentElectiveCounts[typeNorm] || 0) >= (freeElectiveLimits[baseCat] || 0)) {
-                            return; // Cannot add more free-slot electives of this category
+                            return;
                         }
                     }
                 }
 
-                // If adding, increment the count for the next recursive call
                 const nextElectiveCounts = { ...currentElectiveCounts };
                 if (isElective) {
                     nextElectiveCounts[baseCat] = (nextElectiveCounts[baseCat] || 0) + 1;
@@ -522,12 +397,10 @@ export class GeneratorService {
 
                 for (const section of course.sections) {
                     if (!hasTimeConflict(currentSchedule, section)) {
-                        // Choose
                         currentSchedule.push({ course, section });
-                        // Explore
                         backtrack(courseIndex + 1, currentSchedule, currentCredits + course.credits, nextElectiveCounts);
-                        // Un-choose (backtrack)
                         currentSchedule.pop();
+                        if (comboCapHit) return;
                     }
                 }
             }
@@ -535,43 +408,38 @@ export class GeneratorService {
 
         logger.info("Running backtracking engine...");
         backtrack(0, [], 0, {});
+        if (comboCapHit) {
+            logger.warn(`Backtracking hit combo cap (${MAX_GENERATED_COMBOS}); scoring partial result set.`);
+        }
 
-        // Step 5: Scoring (Prioritize Majors > Course Count > Credits > Compactness)
         const scoredSchedules = generatedSchedules.map(schedule => {
             let score = 0;
             let majorCredits = 0;
             let totalCredits = 0;
-            let courseCount = schedule.length;
-            let daysOnCampus = new Set<string>();
+            const daysOnCampus = new Set<string>();
 
             schedule.forEach((item: any) => {
                 totalCredits += item.course.credits;
                 if (item.section.day) {
-                    item.section.day.split(",").forEach((d: string) => {
+                    normalizeDayList(item.section.day).forEach((d: string) => {
                         if (d !== "TBA") daysOnCampus.add(d);
                     });
                 }
-                // Heavy priority for Major courses
                 if (item.course.type === 'Major') {
                     majorCredits += item.course.credits;
                     score += (item.course.credits * 10);
                 } else {
-                    score += (item.course.credits * 5); // Still good to take electives
+                    score += (item.course.credits * 5);
                 }
 
-                // Bonus per course — rewards 0-credit courses (e.g., Capstone Project Proposal)
-                // that contribute academic progress even without credits
                 score += 8;
                 if (item.course.credits === 0) {
-                    score += 15; // Extra incentive: 0-credit courses are still valuable for progress
+                    score += 15;
                 }
             });
 
-            // Compactness Bonus: Less days on campus = higher score
             const daysCount = daysOnCampus.size;
-            score += ((5 - daysCount) * 5); // If 2 days on campus, (3 * 5) = +15 bonus.
-
-            // Reward actually getting close to the 17 credit limit
+            score += ((5 - daysCount) * 5);
             score += totalCredits;
 
             return {
@@ -590,16 +458,12 @@ export class GeneratorService {
             };
         });
 
-        // Strict Filter: Two Days Only
         let finalSchedules = scoredSchedules;
         if (preferences?.twoDaysOnly) {
             finalSchedules = scoredSchedules.filter(s => s.daysOnCampus.length <= 2);
         }
 
-        // Sort by highest score first
         finalSchedules.sort((a, b) => b.score - a.score);
-
-        // return top 20 distinct schedules
         const topSchedules = finalSchedules.slice(0, 20);
 
         logger.info(`Generated ${generatedSchedules.length} valid combinations. Returning top ${topSchedules.length}.`);

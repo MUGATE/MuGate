@@ -4,8 +4,7 @@ import { pool, DbSql } from "../../core/database/connection";
 import { decrypt } from "../../core/security/encryption.util";
 import { logger } from "../../core/logger/logger";
 import { normalizeAcademicStatus } from "../../core/utils/academic-status.util";
-import { CS_CURRICULUM } from "../scheduling/generator/curriculum";
-import { isCompletedStatus } from "../../core/utils/academic-status.util";
+import { checkCourseEligibility } from "../scheduling/generator/eligibility";
 
 export class HistoryService {
     static async getStudentHistory(userId: string) {
@@ -19,37 +18,12 @@ export class HistoryService {
     }
 
     static async checkEligibility(userId: string, courseId: string) {
-        const courseCode = String(courseId || "").trim().toUpperCase();
-        if (!courseCode) {
-            return { eligible: false, missingPrereqs: [] as string[] };
-        }
-
-        const curriculum = CS_CURRICULUM.find(
-            (c) => c.courseCode.toUpperCase() === courseCode
-        );
-
         const history = await HistoryRepository.findByUserId(userId);
-        const completed = new Set(
-            history
-                .filter((row: any) => isCompletedStatus(row.status))
-                .map((row: any) => String(row.courseCode || "").toUpperCase())
-        );
-
-        if (!curriculum) {
-            // Unknown course — allow only if not already completed
-            return {
-                eligible: !completed.has(courseCode),
-                missingPrereqs: [] as string[],
-            };
-        }
-
-        const missingPrereqs = curriculum.prerequisites.filter(
-            (code) => !completed.has(code.toUpperCase())
-        );
-
+        const result = checkCourseEligibility(history, courseId);
         return {
-            eligible: missingPrereqs.length === 0 && !completed.has(courseCode),
-            missingPrereqs,
+            eligible: result.eligible,
+            missingPrereqs: result.missingPrereqs,
+            reason: result.reason,
         };
     }
 

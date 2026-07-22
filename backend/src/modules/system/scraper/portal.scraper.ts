@@ -426,38 +426,176 @@ export class PortalScraper {
             }
 
 
-            // 2c. Extract ALL courses from ALL tables on the page in a single pass
-            // Wait for table rows to exist (use 'tbody tr' not 'tbody tr[role=row]' — Major table is plain HTML, not DataTable)
+            // 2c. Extract ALL courses from ALL tables (header-mapped columns + table category headings)
             await page.waitForSelector('tbody tr', { timeout: 10000 }).catch(() => null);
 
-            const allCourses = await page.evaluate((resolvedSemesterId) => {
-                const rows = Array.from(document.querySelectorAll('tbody tr'));
+            const extractResult = await page.evaluate((resolvedSemesterId) => {
                 const extracted: any[] = [];
+                const warnings: string[] = [];
 
-                rows.forEach(row => {
-                    const columns = row.querySelectorAll('td');
-                    if (columns.length >= 12) {
-                        const courseCode = columns[1]?.innerText.trim();
-                        const courseName = columns[2]?.innerText.trim();
-                        const section = columns[3]?.innerText.trim();
-                        const type = columns[4]?.innerText.trim();
-                        const credits = parseInt(columns[5]?.innerText.trim() || '0', 10) || 0;
-                        const instructor = columns[6]?.innerText.trim();
-                        const schedule = columns[8]?.innerText.trim();
-                        const capacity = parseInt(columns[9]?.innerText.trim() || '0', 10) || 0;
-                        const enrolled = parseInt(columns[10]?.innerText.trim() || '0', 10) || 0;
-                        const room = columns[11]?.innerText.trim();
+                const normalizeHeader = (h: string) =>
+                    h.toLowerCase().replace(/\s+/g, " ").trim();
 
-                        if (courseCode && courseName) {
-                            extracted.push({
-                                courseCode, courseName, sectionNumber: section, type,
-                                credits, instructor, schedule, capacity, enrolled, room, semesterId: resolvedSemesterId
-                            });
+                const resolveCol = (headers: string[], predicates: RegExp[]): number => {
+                    for (let i = 0; i < headers.length; i++) {
+                        const h = headers[i];
+                        if (predicates.some((re) => re.test(h))) return i;
+                    }
+                    return -1;
+                };
+
+                const categoryFromTable = (table: Element): string => {
+                    let previousElem = table.parentElement?.previousElementSibling as Element | null | undefined;
+                    if (previousElem && previousElem.tagName === "H2") {
+                        return previousElem.textContent?.trim() || "Unknown";
+                    }
+                    if (
+                        previousElem &&
+                        previousElem.tagName === "DIV" &&
+                        previousElem.previousElementSibling?.tagName === "H2"
+                    ) {
+                        return previousElem.previousElementSibling.textContent?.trim() || "Unknown";
+                    }
+                    // DataTables often wrap the table; walk up a few levels
+                    let el: Element | null = table.parentElement;
+                    for (let depth = 0; depth < 4 && el; depth++) {
+                        const prev = el.previousElementSibling;
+                        if (prev?.tagName === "H2") {
+                            return prev.textContent?.trim() || "Unknown";
+                        }
+                        if (prev?.tagName === "H3" || prev?.tagName === "H4") {
+                            return prev.textContent?.trim() || "Unknown";
+                        }
+                        el = el.parentElement;
+                    }
+                    return "Unknown";
+                };
+
+                const tables = Array.from(document.querySelectorAll("table"));
+                for (const table of tables) {
+                    const category = categoryFromTable(table);
+                    const headerCells = Array.from(
+                        table.querySelectorAll("thead th, thead td, tr:first-child th")
+                    );
+                    let headers = headerCells.map((c) => normalizeHeader(c.textContent || ""));
+
+                    // Fallback: first row may be header cells as <td>
+                    if (headers.length === 0) {
+                        const firstRow = table.querySelector("tr");
+                        if (firstRow) {
+                            headers = Array.from(firstRow.querySelectorAll("th, td")).map((c) =>
+                                normalizeHeader(c.textContent || "")
+                            );
                         }
                     }
-                });
-                return extracted;
+
+                    const idx = {
+                        courseCode: resolveCol(headers, [/^code$/, /course\s*code/, /^crs/]),
+                        courseName: resolveCol(headers, [/^name$/, /course\s*name/, /title/, /description/]),
+                        section: resolveCol(headers, [/^sec/, /section/]),
+                        type: resolveCol(headers, [/^type$/]),
+                        credits: resolveCol(headers, [/^cred/, /^cr$/]),
+                        instructor: resolveCol(headers, [/instructor/, /teacher/, /faculty/]),
+                        schedule: resolveCol(headers, [/schedule/, /timing/, /^time$/, /days?/]),
+                        capacity: resolveCol(headers, [/capacit/, /^cap$/, /size/, /limit/]),
+                        enrolled: resolveCol(headers, [/enroll/, /registered/, /taken/, /^reg$/]),
+                        room: resolveCol(headers, [/room/, /location/, /venue/]),
+                    };
+
+                    // Legacy positional fallback when headers are missing/unrecognized
+                    const useLegacy = idx.courseCode < 0 || idx.courseName < 0;
+                    if (useLegacy && headers.length > 0) {
+                        warnings.push(
+                            `Table category="${category}" missing expected headers; using legacy column indices`
+                        );
+                    }
+
+                    const rows = Array.from(table.querySelectorAll("tbody tr"));
+                    // If no tbody, use all tr except header
+                    const bodyRows =
+                        rows.length > 0
+                            ? rows
+                            : Array.from(table.querySelectorAll("tr")).slice(headerCells.length > 0 ? 1 : 0);
+
+                    for (const row of bodyRows) {
+                        const columns = row.querySelectorAll("td");
+                        if (columns.length < 5) continue;
+
+                        const cell = (i: number) =>
+                            i >= 0 && i < columns.length ? columns[i].innerText.trim() : "";
+
+                        let courseCode: string;
+                        let courseName: string;
+                        let section: string;
+                        let type: string;
+                        let credits: number;
+                        let instructor: string;
+                        let schedule: string;
+                        let capacity: number;
+                        let enrolled: number;
+                        let room: string;
+
+                        if (!useLegacy) {
+                            courseCode = cell(idx.courseCode);
+                            courseName = cell(idx.courseName);
+                            section = cell(idx.section);
+                            type = cell(idx.type) || "Lecture";
+                            credits = parseInt(cell(idx.credits) || "0", 10) || 0;
+                            instructor = cell(idx.instructor);
+                            schedule = cell(idx.schedule);
+                            capacity = parseInt(cell(idx.capacity) || "0", 10) || 0;
+                            enrolled = parseInt(cell(idx.enrolled) || "0", 10) || 0;
+                            room = cell(idx.room);
+                        } else if (columns.length >= 12) {
+                            courseCode = cell(1);
+                            courseName = cell(2);
+                            section = cell(3);
+                            type = cell(4) || "Lecture";
+                            credits = parseInt(cell(5) || "0", 10) || 0;
+                            instructor = cell(6);
+                            schedule = cell(8);
+                            capacity = parseInt(cell(9) || "0", 10) || 0;
+                            enrolled = parseInt(cell(10) || "0", 10) || 0;
+                            room = cell(11);
+                        } else {
+                            continue;
+                        }
+
+                        // Skip header-like or total rows
+                        if (!courseCode || !courseName) continue;
+                        if (/^code$/i.test(courseCode) || /total/i.test(courseCode)) continue;
+
+                        extracted.push({
+                            courseCode,
+                            courseName,
+                            sectionNumber: section,
+                            type,
+                            category,
+                            credits,
+                            instructor,
+                            schedule,
+                            capacity,
+                            enrolled,
+                            room,
+                            semesterId: resolvedSemesterId,
+                        });
+                    }
+                }
+
+                return { courses: extracted, warnings };
             }, activeSemesterId);
+
+            for (const w of extractResult.warnings || []) {
+                logger.warn(`Offerings extract: ${w}`);
+            }
+
+            const allCourses = extractResult.courses || [];
+            if (allCourses.length === 0) {
+                throw new Error(
+                    `No course sections extracted from portal for semester ${activeSemesterId}. ` +
+                        "The offerings table may have failed to load or the page layout changed."
+                );
+            }
 
             logger.info(`Successfully extracted a total of ${allCourses.length} course sections from portal.`);
             return { courses: allCourses, semesterId: activeSemesterId };

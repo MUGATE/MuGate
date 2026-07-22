@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
     normalizeAcademicStatus,
     isCompletedStatus,
+    isRegisteredOrInProgressStatus,
 } from "./academic-status.util";
 
 describe("normalizeAcademicStatus", () => {
@@ -23,5 +24,11 @@ describe("normalizeAcademicStatus", () => {
         assert.equal(isCompletedStatus("Transferred"), true);
         assert.equal(isCompletedStatus("Registered"), false);
         assert.equal(isCompletedStatus("Failed"), false);
+    });
+
+    it("detects registered / in-progress", () => {
+        assert.equal(isRegisteredOrInProgressStatus("Registered"), true);
+        assert.equal(isRegisteredOrInProgressStatus("In Progress"), true);
+        assert.equal(isRegisteredOrInProgressStatus("Passed"), false);
     });
 });

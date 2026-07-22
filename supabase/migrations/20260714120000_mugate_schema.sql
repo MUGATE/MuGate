@@ -70,9 +70,12 @@ CREATE TABLE IF NOT EXISTS "CourseSections" (
     "startTime"       time NOT NULL,
     "endTime"         time NOT NULL,
     type              text NOT NULL,
+    category          text NULL,
+    meetings          text NULL,
     capacity          integer NOT NULL DEFAULT 0,
     enrolled          integer NOT NULL DEFAULT 0,
-    room              text NULL
+    room              text NULL,
+    "syncedAt"        timestamptz NULL
 );
 
 -- ============================================

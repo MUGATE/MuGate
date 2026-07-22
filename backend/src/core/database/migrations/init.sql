@@ -80,13 +80,16 @@ CREATE TABLE CourseSections (
     courseId         UNIQUEIDENTIFIER NOT NULL,
     sectionNumber   NVARCHAR(10)     NOT NULL,
     instructor      NVARCHAR(255)    NULL,
-    day             NVARCHAR(20)     NOT NULL,       -- e.g. 'Sunday', 'Monday'
+    day             NVARCHAR(20)     NOT NULL,       -- e.g. 'M,W' (normalized day tokens)
     startTime       TIME             NOT NULL,
     endTime         TIME             NOT NULL,
     type            NVARCHAR(50)     NOT NULL,       -- 'Lecture' or 'Laboratory'
+    category        NVARCHAR(100)    NULL,           -- Offering group heading e.g. 'Technical Elective'
+    meetings        NVARCHAR(MAX)    NULL,           -- JSON array of {day,startTime,endTime}
     capacity        INT              NOT NULL DEFAULT 0,
     enrolled        INT              NOT NULL DEFAULT 0,
     room            NVARCHAR(50)     NULL,
+    syncedAt        DATETIME2        NULL,
 
     CONSTRAINT FK_CourseSections_Courses FOREIGN KEY (courseId) REFERENCES Courses(id) ON DELETE CASCADE
 );

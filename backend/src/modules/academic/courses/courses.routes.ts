@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { CoursesController } from "./courses.controller";
 import { authMiddleware } from "../../../core/middleware/auth.middleware";
+import { syncRateLimiter } from "../../../core/middleware/rateLimiter.middleware";
 
 const router = Router();
 
@@ -9,7 +10,6 @@ router.use(authMiddleware);
 router.get("/", CoursesController.getAll);
 router.get("/:id", CoursesController.getById);
 
-// Admin / Sync routes will go here
-router.post("/sync", CoursesController.syncCourses);
+router.post("/sync", syncRateLimiter, CoursesController.syncCourses);
 
 export default router;

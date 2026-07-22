@@ -24,3 +24,12 @@ export const aiRateLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
+
+/** Portal course sync is expensive (Playwright); keep it tight. */
+export const syncRateLimiter = rateLimit({
+    windowMs: APP_CONSTANTS.SYNC_RATE_LIMIT_WINDOW_MS,
+    max: APP_CONSTANTS.SYNC_RATE_LIMIT_MAX_REQUESTS,
+    message: { success: false, message: "Too many course sync requests. Please try again later." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});

@@ -1,10 +1,18 @@
 import { CoursesRepository } from "./courses.repository";
 import { PortalScraper } from "../../system/scraper/portal.scraper";
-import { pool, DbSql } from "../../../core/database/connection";
+import { pool, DbSql, usePostgres } from "../../../core/database/connection";
 import { decrypt } from "../../../core/security/encryption.util";
 import { logger } from "../../../core/logger/logger";
 import { env } from "../../../config/env";
+import { parsePortalSchedule } from "../../../core/utils/schedule-parse.util";
+
+/** Offerings older than this are refreshed on generate / sync. */
+export const OFFERINGS_CACHE_TTL_MS = 45 * 60 * 1000;
+
 export class CoursesService {
+    private static syncInFlight: Promise<number> | null = null;
+    private static schemaEnsured = false;
+
     static async getAllCourses() {
         return CoursesRepository.findAll();
     }
@@ -13,12 +21,72 @@ export class CoursesService {
         return CoursesRepository.findById(id);
     }
 
+    /** Ensure category / meetings / syncedAt columns exist (Postgres + SQL Server). */
+    static async ensureSectionSchema(): Promise<void> {
+        if (this.schemaEnsured) return;
+
+        try {
+            if (usePostgres) {
+                await pool.request().query(
+                    `ALTER TABLE "CourseSections" ADD COLUMN IF NOT EXISTS category text NULL`
+                );
+                await pool.request().query(
+                    `ALTER TABLE "CourseSections" ADD COLUMN IF NOT EXISTS meetings text NULL`
+                );
+                await pool.request().query(
+                    `ALTER TABLE "CourseSections" ADD COLUMN IF NOT EXISTS "syncedAt" timestamptz NULL`
+                );
+            } else {
+                await pool.request().query(`
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('CourseSections') AND name = 'category')
+                        ALTER TABLE CourseSections ADD category NVARCHAR(100) NULL
+                `);
+                await pool.request().query(`
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('CourseSections') AND name = 'meetings')
+                        ALTER TABLE CourseSections ADD meetings NVARCHAR(MAX) NULL
+                `);
+                await pool.request().query(`
+                    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('CourseSections') AND name = 'syncedAt')
+                        ALTER TABLE CourseSections ADD syncedAt DATETIME2 NULL
+                `);
+            }
+            this.schemaEnsured = true;
+        } catch (err: any) {
+            logger.warn(`CourseSections schema ensure warning: ${err.message}`);
+            // Still mark ensured to avoid hammering; queries tolerate null columns via try/catch elsewhere
+            this.schemaEnsured = true;
+        }
+    }
+
+    static async getOfferingsSyncedAt(semesterId: number): Promise<Date | null> {
+        await this.ensureSectionSchema();
+        try {
+            const result = await pool.request()
+                .input("semester", semesterId.toString())
+                .query(`
+                    SELECT MAX(s.syncedAt) as lastSync
+                    FROM CourseSections s
+                    INNER JOIN Courses c ON c.id = s.courseId
+                    WHERE c.semester = @semester
+                `);
+            const val = result.recordset[0]?.lastSync;
+            return val ? new Date(val) : null;
+        } catch {
+            return null;
+        }
+    }
+
+    static async areOfferingsFresh(semesterId: number, ttlMs = OFFERINGS_CACHE_TTL_MS): Promise<boolean> {
+        const last = await this.getOfferingsSyncedAt(semesterId);
+        if (!last) return false;
+        return Date.now() - last.getTime() < ttlMs;
+    }
+
     static async syncCoursesFromPortal(userId: string, semesterId?: number): Promise<number> {
         const resolvedHint = semesterId ?? env.currentSemesterId;
         logger.info(
             `Starting course offerings sync for semester ${resolvedHint ?? "(auto-detect)"} by user ${userId}`
         );
-        // 1. Get decrypted credentials from DB to perform the scraping
         const credsResult = await pool.request()
             .input("userId", userId)
             .query("SELECT * FROM PortalCredentials WHERE userId = @userId");
@@ -36,44 +104,70 @@ export class CoursesService {
 
     /**
      * Core syncing logic separated so the background CRON job can trigger it globally.
-     * Returns the semester id that was synced (resolved from portal when not provided).
+     * Serialized via mutex so concurrent generate/sync requests share one Playwright run.
      */
     static async syncCoursesGlobal(
         universityIdString: string,
         passwordString: string,
         semesterId?: number
     ): Promise<number> {
+        if (this.syncInFlight) {
+            logger.info("Course sync already in progress — waiting for in-flight sync.");
+            return this.syncInFlight;
+        }
+
+        this.syncInFlight = this.runSyncCoursesGlobal(universityIdString, passwordString, semesterId)
+            .finally(() => {
+                this.syncInFlight = null;
+            });
+
+        return this.syncInFlight;
+    }
+
+    private static async runSyncCoursesGlobal(
+        universityIdString: string,
+        passwordString: string,
+        semesterId?: number
+    ): Promise<number> {
+        await this.ensureSectionSchema();
+
         const { courses: coursesData, semesterId: activeSemesterId } =
             await PortalScraper.extractCourses(universityIdString, passwordString, semesterId);
 
         if (!coursesData || coursesData.length === 0) {
-            logger.warn(`No courses found for semester ${activeSemesterId}`);
-            return activeSemesterId;
+            throw new Error(
+                `No courses found for semester ${activeSemesterId}. Portal scrape returned an empty offering list.`
+            );
         }
-        // 3. UPSERT the scraped data into Courses and CourseSections tables
+
+        const syncedAt = new Date();
+        const seenSectionKeys = new Set<string>();
+        const sectionKey = (courseId: string, sectionNumber: string) =>
+            `${courseId}::${String(sectionNumber).trim()}`;
         const transaction = new DbSql.Transaction(pool as any);
         await transaction.begin();
 
         try {
             for (const course of coursesData) {
-                // Completely skip any sections assigned to invalid rooms starting with 'A-' (e.g. A-120)
-                // Also skip sections with no room assigned (null/empty/TBA) — these are typically A- building sections
-                const roomVal = course.room ? course.room.trim() : '';
-                if (!roomVal || roomVal.toUpperCase() === 'TBA' || roomVal.toUpperCase() === 'T B A' || roomVal.toUpperCase().startsWith('A-')) {
+                const roomVal = course.room ? course.room.trim() : "";
+                if (
+                    !roomVal ||
+                    roomVal.toUpperCase() === "TBA" ||
+                    roomVal.toUpperCase() === "T B A" ||
+                    roomVal.toUpperCase().startsWith("A-")
+                ) {
                     continue;
                 }
 
-                // Upsert Course entity
                 const existingCourse = await transaction.request()
                     .input("courseCode", course.courseCode)
                     .input("semester", activeSemesterId.toString())
                     .query("SELECT id FROM Courses WHERE courseCode = @courseCode AND semester = @semester");
 
-                let internalCourseId;
+                let internalCourseId: string;
 
                 if (existingCourse.recordset.length > 0) {
                     internalCourseId = existingCourse.recordset[0].id;
-                    // Update course in case name/credits changed
                     await transaction.request()
                         .input("id", internalCourseId)
                         .input("courseName", course.courseName)
@@ -97,39 +191,11 @@ export class CoursesService {
                     internalCourseId = insertCourse.recordset[0].id;
                 }
 
-                // Upsert CourseSection entity
-
-                // Parse schedule: "W 17:30:00->18:45:00" or similar
-                let day = "TBA";
-                let startTime = "00:00:00";
-                let endTime = "00:00:00";
-
-                if (course.schedule && course.schedule.includes("->")) {
-                    // Portal outputs newlines for multiple days
-                    const scheduleLines = course.schedule.trim().split("\n");
-                    const daysArr: string[] = [];
-
-                    for (let i = 0; i < scheduleLines.length; i++) {
-                        const parts = scheduleLines[i].trim().split(" ");
-                        if (parts.length >= 2) {
-                            const parsedDay = parts[0].trim();
-                            if (!daysArr.includes(parsedDay)) {
-                                daysArr.push(parsedDay);
-                            }
-                            // Take times from the first valid schedule line
-                            if (i === 0) {
-                                const times = parts[1].split("->");
-                                if (times.length === 2) {
-                                    startTime = times[0].trim();
-                                    endTime = times[1].trim();
-                                }
-                            }
-                        }
-                    }
-                    if (daysArr.length > 0) {
-                        day = daysArr.join(","); // Stores as "M,W" or "T,Th"
-                    }
-                }
+                const parsed = parsePortalSchedule(course.schedule);
+                const meetingsJson = JSON.stringify(parsed.meetings);
+                const sectionType = course.type || "Lecture";
+                const category = course.category || null;
+                seenSectionKeys.add(sectionKey(String(internalCourseId), course.sectionNumber));
 
                 const existingSection = await transaction.request()
                     .input("courseId", internalCourseId)
@@ -143,40 +209,80 @@ export class CoursesService {
                     await transaction.request()
                         .input("id", existingSection.recordset[0].id)
                         .input("instructor", course.instructor)
-                        .input("day", day)
-                        .input("startTime", startTime)
-                        .input("endTime", endTime)
+                        .input("day", parsed.day)
+                        .input("startTime", parsed.startTime)
+                        .input("endTime", parsed.endTime)
+                        .input("type", sectionType)
+                        .input("category", category)
+                        .input("meetings", meetingsJson)
                         .input("capacity", course.capacity)
                         .input("enrolled", course.enrolled)
                         .input("room", course.room)
+                        .input("syncedAt", syncedAt)
                         .query(`
                             UPDATE CourseSections 
-                            SET instructor = @instructor, day = @day, startTime = @startTime, endTime = @endTime, capacity = @capacity, enrolled = @enrolled, room = @room
+                            SET instructor = @instructor, day = @day, startTime = @startTime, endTime = @endTime,
+                                type = @type, category = @category, meetings = @meetings,
+                                capacity = @capacity, enrolled = @enrolled, room = @room, syncedAt = @syncedAt
                             WHERE id = @id
                         `);
                 } else {
-                    // Insert new section
                     await transaction.request()
                         .input("courseId", internalCourseId)
                         .input("sectionNumber", course.sectionNumber)
                         .input("instructor", course.instructor)
-                        .input("day", day)
-                        .input("startTime", startTime)
-                        .input("endTime", endTime)
-                        .input("type", course.type || 'Lecture')
+                        .input("day", parsed.day)
+                        .input("startTime", parsed.startTime)
+                        .input("endTime", parsed.endTime)
+                        .input("type", sectionType)
+                        .input("category", category)
+                        .input("meetings", meetingsJson)
                         .input("capacity", course.capacity)
                         .input("enrolled", course.enrolled)
                         .input("room", course.room)
+                        .input("syncedAt", syncedAt)
                         .query(`
-                            INSERT INTO CourseSections (courseId, sectionNumber, instructor, day, startTime, endTime, type, capacity, enrolled, room)
-                            VALUES (@courseId, @sectionNumber, @instructor, @day, @startTime, @endTime, @type, @capacity, @enrolled, @room)
+                            INSERT INTO CourseSections (
+                                courseId, sectionNumber, instructor, day, startTime, endTime,
+                                type, category, meetings, capacity, enrolled, room, syncedAt
+                            )
+                            VALUES (
+                                @courseId, @sectionNumber, @instructor, @day, @startTime, @endTime,
+                                @type, @category, @meetings, @capacity, @enrolled, @room, @syncedAt
+                            )
                         `);
                 }
             }
 
-            await transaction.commit();
-            logger.info(`Successfully synced ${coursesData.length} course sections for semester ${activeSemesterId}`);
+            // Prune sections for this semester not seen in this scrape
+            const existingRows = await transaction.request()
+                .input("semester", activeSemesterId.toString())
+                .query(`
+                    SELECT s.id, s.courseId, s.sectionNumber
+                    FROM CourseSections s
+                    INNER JOIN Courses c ON c.id = s.courseId
+                    WHERE c.semester = @semester
+                `);
 
+            let pruned = 0;
+            for (const row of existingRows.recordset) {
+                const key = sectionKey(String(row.courseId), row.sectionNumber);
+                if (!seenSectionKeys.has(key)) {
+                    await transaction.request()
+                        .input("id", row.id)
+                        .query("DELETE FROM ScheduleSections WHERE sectionId = @id");
+                    await transaction.request()
+                        .input("id", row.id)
+                        .query("DELETE FROM CourseSections WHERE id = @id");
+                    pruned++;
+                }
+            }
+
+            await transaction.commit();
+            logger.info(
+                `Successfully synced ${coursesData.length} portal rows ` +
+                    `(${seenSectionKeys.size} active sections, pruned ${pruned}) for semester ${activeSemesterId}`
+            );
         } catch (error: any) {
             await transaction.rollback();
             logger.error(`Failed to sync courses:`, error);

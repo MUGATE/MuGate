@@ -13,6 +13,10 @@ scrape_log.txt
 backend/.env
 backend/node_modules/.package-lock.json
 
+# Plaintext UMS credentials for local/cron scrapes (use SCRAPER_* env vars instead)
+scraper-credentials.json
+backend/scraper-credentials.json
+
 # Local runtime data (regenerated; never commit)
 backend/data/
 

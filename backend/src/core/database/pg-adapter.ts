@@ -48,6 +48,8 @@ const QUOTED_COLUMNS = [
     "sectionNumber",
     "startTime",
     "endTime",
+    "syncedAt",
+    "meetings",
     "isElective",
     "totalCredits",
     "scheduleId",

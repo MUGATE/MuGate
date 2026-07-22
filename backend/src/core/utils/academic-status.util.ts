@@ -71,3 +71,9 @@ export function isCompletedStatus(status: string | null | undefined): boolean {
     const n = normalizeAcademicStatus(status);
     return n === "Passed" || n === "Transferred";
 }
+
+/** Currently enrolled / in-progress — should not be re-suggested by the scheduler. */
+export function isRegisteredOrInProgressStatus(status: string | null | undefined): boolean {
+    const n = normalizeAcademicStatus(status);
+    return n === "Registered" || n === "InProgress";
+}
