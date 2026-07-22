@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://mugate.vercel.app/</loc>
+  </url>
+  <url>
+    <loc>https://mugate.vercel.app/chatbot</loc>
+  </url>
+  <url>
+    <loc>https://mugate.vercel.app/internships</loc>
+  </url>
+  <url>
+    <loc>https://mugate.vercel.app/schedule</loc>
+  </url>
+  <url>
+    <loc>https://mugate.vercel.app/resume-enhancer</loc>
+  </url>
+  <url>
+    <loc>https://mugate.vercel.app/capstone</loc>
+  </url>
+  <url>
+    <loc>https://mugate.vercel.app/events</loc>
+  </url>
+  <url>
+    <loc>https://mugate.vercel.app/roadmap</loc>
+  </url>
+  <url>
+    <loc>https://mugate.vercel.app/about</loc>
+  </url>
+  <url>
+    <loc>https://mugate.vercel.app/download</loc>
+  </url>
+</urlset>

@@ -22,6 +22,7 @@ const About = lazy(() => import("./pages/About/About"));
 const Download = lazy(() => import("./pages/Download"));
 const AdminControl = lazy(() => import("./pages/AdminControl/AdminControl"));
 const Profile = lazy(() => import("./pages/Profile/Profile"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 function ProfileReturnTracker() {
   const location = useLocation();
@@ -86,6 +87,7 @@ function App() {
             <Route path="/download" element={<Download />} />
             <Route path="/admin-control" element={<AdminControl />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </Router>
