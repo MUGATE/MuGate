@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mugate.vercel.app/sitemap.xml
+Sitemap: https://mugate.org/sitemap.xml

@@ -1,0 +1,22 @@
+# MuGate
+
+> University AI platform that guides students to academic excellence at the Lebanese University.
+
+MuGate helps students with chatbot Q&A, course scheduling, internships, resume tools, capstone planning, events, and degree roadmaps.
+
+## Main pages
+
+- [Home](https://mugate.org/): Landing page and sign-in.
+- [Chatbot](https://mugate.org/chatbot): AI assistant for university and academic questions.
+- [Schedule](https://mugate.org/schedule): Build and manage course schedules.
+- [Internships](https://mugate.org/internships): Browse and explore internship opportunities.
+- [Resume enhancer](https://mugate.org/resume-enhancer): Create and improve student resumes.
+- [Capstone](https://mugate.org/capstone): Capstone project ideas, partners, and guidance.
+- [Events](https://mugate.org/events): University events and announcements.
+- [Roadmap](https://mugate.org/roadmap): Degree and course progression planning.
+- [About](https://mugate.org/about): Project overview and team information.
+- [Download](https://mugate.org/download): MuGate mobile app download.
+
+## Optional
+
+- [Sitemap](https://mugate.org/sitemap.xml): Full list of public URLs for crawlers.
