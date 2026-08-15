@@ -39,6 +39,48 @@ function ProfileReturnTracker() {
   return null;
 }
 
+const CANONICAL_ORIGIN = "https://mugate.org";
+const NOINDEX_PATHS = new Set(["/admin-control", "/profile"]);
+
+/** Keep <link rel="canonical"> and private-route robots meta in sync with the SPA path. */
+function RouteCanonical() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const normalized =
+      pathname.length > 1 && pathname.endsWith("/")
+        ? pathname.slice(0, -1)
+        : pathname || "/";
+
+    let canonical = document.querySelector('link[rel="canonical"]');
+    let robots = document.querySelector('meta[name="robots"]');
+
+    if (NOINDEX_PATHS.has(normalized)) {
+      if (canonical) canonical.remove();
+      if (!robots) {
+        robots = document.createElement("meta");
+        robots.setAttribute("name", "robots");
+        document.head.appendChild(robots);
+      }
+      robots.setAttribute("content", "noindex, nofollow");
+      return undefined;
+    }
+
+    if (robots) robots.remove();
+
+    const href = `${CANONICAL_ORIGIN}${normalized === "/" ? "/" : normalized}`;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", href);
+    return undefined;
+  }, [pathname]);
+
+  return null;
+}
+
 function IdleRoutePrefetch() {
   useEffect(() => {
     if (!shouldPrefetchRoutes()) return undefined;
@@ -70,6 +112,7 @@ function App() {
     <ThemeProvider>
       <Router>
         <ProfileReturnTracker />
+        <RouteCanonical />
         <BackendWakePing />
         <IdleRoutePrefetch />
         <GlobalGlow />

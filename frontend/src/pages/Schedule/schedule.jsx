@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
 import { Clock, CalendarDays, PartyPopper } from 'lucide-react';
 import NotchedHeroNav from '../../components/layout/NotchedHeroNav';
+import LoginGate from '../../components/layout/LoginGate';
 import '../Home/Home.css';
 import './schedule.css';
 
@@ -41,6 +42,7 @@ const Schedule = () => {
   const [scheduleVisible, setScheduleVisible] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
+  const [isAuthed] = useState(() => !!localStorage.getItem("mugate_token"));
 
   const gridRef = useRef(null);
 
@@ -82,13 +84,9 @@ const Schedule = () => {
     setCourses(parsedCourses);
   }, []);
 
-  // Protect Route & Fetch Saved Schedule
+  // Fetch saved schedule only when authenticated (no hard redirect — same-URL login gate)
   useEffect(() => {
-    const token = localStorage.getItem("mugate_token");
-    if (!token) {
-      window.location.href = "/?auth=login";
-      return;
-    }
+    if (!isAuthed) return undefined;
 
     const fetchSaved = async () => {
       try {
@@ -104,7 +102,8 @@ const Schedule = () => {
       }
     };
     fetchSaved();
-  }, [parseBackendSchedule]);
+    return undefined;
+  }, [isAuthed, parseBackendSchedule]);
 
   /* Toggle a preference */
   const togglePref = (key) => {
@@ -258,6 +257,10 @@ const Schedule = () => {
     }
     return false;
   })();
+
+  if (!isAuthed) {
+    return <LoginGate feature="the schedule builder" />;
+  }
 
   return (
     <div className="schedule-page">

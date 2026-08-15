@@ -1,25 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import CapstoneSidebar from './components/CapstoneSidebar';
 import FindPartner from './components/FindPartner';
 import IdeasDatabase from './components/IdeasDatabase/IdeasDatabase';
 import AIAdvisor from './components/AIAdvisor';
 import NotchedHeroNav from '../../components/layout/NotchedHeroNav';
+import LoginGate from '../../components/layout/LoginGate';
 import '../Home/Home.css';
 import './capstone.css';
 
 const Capstone = () => {
   const [activeFeature, setActiveFeature] = useState('partners');
-  const [isAuthed, setIsAuthed] = useState(() => !!localStorage.getItem('mugate_token'));
-
-  // Require login — same gate as Schedule
-  useEffect(() => {
-    const token = localStorage.getItem('mugate_token');
-    if (!token) {
-      window.location.href = '/?auth=login';
-      return;
-    }
-    setIsAuthed(true);
-  }, []);
+  const [isAuthed] = useState(() => !!localStorage.getItem('mugate_token'));
 
   // ─── Auth ───────────────────────────────────────────────
   const token = localStorage.getItem('mugate_token');
@@ -33,7 +24,10 @@ const Capstone = () => {
     } catch { /* ignore */ }
   }
 
-  if (!isAuthed) return null;
+  // Same-URL login gate — no hard redirect (avoids GSC "Page with redirect")
+  if (!isAuthed) {
+    return <LoginGate feature="Capstone tools" />;
+  }
 
   // ─── Render ─────────────────────────────────────────────
   return (
