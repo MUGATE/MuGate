@@ -18,7 +18,7 @@ function resolveApiBaseUrl() {
 
     // Production without VITE_API_BASE_URL must not invent hostname:5000 (breaks on Vercel).
     console.error(
-        "[MuGate] VITE_API_BASE_URL is not set. Set it to your Railway API URL (…/api) and rebuild."
+        "[MuGate] VITE_API_BASE_URL is not set. Set it to your Render API URL (…/api) and rebuild."
     );
     return MISSING_PROD_API;
 }

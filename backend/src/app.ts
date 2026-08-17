@@ -72,7 +72,7 @@ app.get("/", (req, res) => {
     res.send("MuGate Backend Running 🚀");
 });
 
-/** Railway / load-balancer healthcheck */
+/** Render / load-balancer healthcheck */
 app.get("/api/health", async (_req, res) => {
     try {
         await poolConnect;

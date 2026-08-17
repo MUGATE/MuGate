@@ -1,0 +1,47 @@
+# MuGate API on Render (frontend stays on Vercel at mugate.org).
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: mugate-api
+    runtime: docker
+    plan: standard
+    region: frankfurt
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: AUTO_INITIAL_CRAWL
+        value: "false"
+      - key: CORS_ORIGINS
+        value: https://mugate.org,https://www.mugate.org,https://mugate.vercel.app
+      - key: DB_SSL_REJECT_UNAUTHORIZED
+        value: "false"
+      - key: AI_PRIMARY_PROVIDER
+        value: deepseek
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_PROJECT_REF
+        sync: false
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ENCRYPTION_SECRET
+        sync: false
+      - key: SUPER_ADMIN_UNIVERSITY_ID
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: SCRAPER_UNIVERSITY_ID
+        sync: false
+      - key: SCRAPER_PASSWORD
+        sync: false
+      - key: SCRAPER_SEMESTER_ID
+        sync: false
